@@ -11,6 +11,11 @@ const config: Config = {
       colors: {
         // 커스텀 색상을 추가할 수 있습니다
       },
+      fontFamily: {
+        "title-light": ["Title_Light", "sans-serif"],
+        "title-medium": ["Title_Medium", "sans-serif"],
+        "title-bold": ["Title_Bold", "sans-serif"],
+      },
     },
   },
   plugins: [],

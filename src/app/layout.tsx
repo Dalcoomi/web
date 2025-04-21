@@ -1,23 +1,25 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+// app/layout.tsx
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "모바일 웹 앱",
-  description: "Next.js로 만든 모바일 웹 애플리케이션",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
-};
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="ko">
-      <body className={inter.className}>{children}</body>
+      <head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, user-scalable=no"
+        />
+      </head>
+      <body className="flex justify-center items-center min-h-screen">
+        {/* 모바일 앱 스타일 컨테이너 - 모든 페이지에서 동일한 크기와 스타일 유지 */}
+        <div className="w-full max-w-[390px] h-screen max-h-[844px] relative overflow-hidden shadow-lg">
+          {children}
+        </div>
+      </body>
     </html>
   );
 }
