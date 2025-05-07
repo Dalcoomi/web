@@ -38,10 +38,11 @@ export default function SignUpAgreement() {
   const handleNext = () => {
     if (agreements.service && agreements.privacy) {
       router.push("/sign-up/step2"); // 다음 단계 경로로 변경하세요
-    } else {
-      alert("모든 필수 약관에 동의해야 합니다.");
     }
   };
+
+  // 필수 약관 모두 동의했는지 확인
+  const isAllRequiredAgreed = agreements.service && agreements.privacy;
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -59,12 +60,12 @@ export default function SignUpAgreement() {
 
       {/* 메인 콘텐츠 */}
       <div className="flex-1 px-5">
-        <h1 className="text-xl font-medium text-left mb-8">
+        <h1 className="text-xl font-medium text-left mb-5">
           약관에 동의해주세요
         </h1>
 
         {/* 전체 동의 */}
-        <div className="mb-6">
+        <div className="mb-5">
           <div
             className="flex items-center cursor-pointer"
             onClick={handleAllAgreement}
@@ -82,7 +83,7 @@ export default function SignUpAgreement() {
             </div>
             <span className="text-base font-light">모두 동의</span>
           </div>
-          <p className="text-sm text-gray-500 mt-1 ml-8">
+          <p className="text-sm text-[#737373] mt-1 ml-8">
             서비스 이용을 위해 아래 약관에 모두 동의합니다.
           </p>
         </div>
@@ -151,12 +152,13 @@ export default function SignUpAgreement() {
       {/* 다음 버튼 */}
       <div className="px-7 pb-7">
         <button
-          className={`w-full py-3 rounded-md font-medium transition-colors cursor-pointer ${
-            agreements.service && agreements.privacy
-              ? "bg-[#0EABFF] text-white hover:bg-blue-500"
-              : "bg-blue-300 text-white"
+          className={`w-full py-3 rounded-md font-medium transition-colors ${
+            isAllRequiredAgreed
+              ? "bg-[#0EABFF] text-white hover:bg-blue-500 cursor-pointer"
+              : "bg-gray-300 text-white cursor-not-allowed"
           }`}
           onClick={handleNext}
+          disabled={!isAllRequiredAgreed}
         >
           다음
         </button>
