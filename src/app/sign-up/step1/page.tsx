@@ -1,15 +1,39 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function SignUpAgreement() {
   const router = useRouter();
+  const { isLoading: authLoading, requireUnauth } = useAuth();
   const [agreements, setAgreements] = useState({
     all: false,
     service: false,
     privacy: false,
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // 로그인 상태 및 소셜 로그인 데이터 확인
+  useEffect(() => {
+    requireUnauth(() => {
+      // 이 콜백은 로그인되지 않은 상태일 때만 실행됨
+
+      // 소셜 로그인 데이터 확인
+      const socialLoginData = sessionStorage.getItem("socialLoginData");
+      if (!socialLoginData) {
+        console.error(
+          "소셜 로그인 데이터가 없습니다. 로그인 페이지로 이동합니다."
+        );
+        router.replace("/login");
+        return;
+      }
+
+      // 로딩 상태 해제
+      setIsLoading(false);
+    });
+  }, [router, requireUnauth]);
 
   // 모든 동의 체크/해제 처리
   const handleAllAgreement = () => {
@@ -36,13 +60,49 @@ export default function SignUpAgreement() {
 
   // 다음 단계로 이동
   const handleNext = () => {
+    console.log("handleNext 실행됨, 약관 상태:", agreements);
+
     if (agreements.service && agreements.privacy) {
-      router.push("/sign-up/step2"); // 다음 단계 경로로 변경하세요
+      try {
+        // 중복 실행 방지
+        if (isNavigating) return;
+        setIsNavigating(true);
+
+        console.log("모든 약관에 동의함");
+
+        // 세션 스토리지에도 백업 (기존 코드와의 호환성)
+        sessionStorage.setItem(
+          "agreementData",
+          JSON.stringify({
+            service: true,
+            privacy: true,
+          })
+        );
+        sessionStorage.setItem("signupStep1Completed", "true");
+
+        console.log("Step2로 이동 시도");
+
+        router.push("/sign-up/step2");
+      } catch (error) {
+        console.error("페이지 이동 중 오류 발생:", error);
+        setIsNavigating(false);
+      }
+    } else {
+      console.log("약관 동의가 완료되지 않음");
     }
   };
 
   // 필수 약관 모두 동의했는지 확인
   const isAllRequiredAgreed = agreements.service && agreements.privacy;
+
+  // 인증 상태 또는 일반 로딩 중이면 로딩 표시
+  if (authLoading || isLoading) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-center">로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -154,13 +214,15 @@ export default function SignUpAgreement() {
         <button
           className={`w-full py-3 rounded-md font-medium transition-colors ${
             isAllRequiredAgreed
-              ? "bg-[#0EABFF] text-white hover:bg-blue-500 cursor-pointer"
+              ? isNavigating
+                ? "bg-[#0EABFF] opacity-70 cursor-not-allowed text-white"
+                : "bg-[#0EABFF] text-white hover:bg-blue-500 cursor-pointer"
               : "bg-gray-300 text-white cursor-not-allowed"
           }`}
           onClick={handleNext}
-          disabled={!isAllRequiredAgreed}
+          disabled={!isAllRequiredAgreed || isNavigating}
         >
-          다음
+          {isNavigating ? "이동 중..." : "다음"}
         </button>
       </div>
     </div>
