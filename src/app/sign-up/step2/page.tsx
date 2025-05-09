@@ -1,11 +1,16 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { signUp } from "@/services/authService";
 
 export default function SignUpInfo() {
   const router = useRouter();
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [userInfo, setUserInfo] = useState({
     name: "",
     nickname: "",
@@ -15,6 +20,58 @@ export default function SignUpInfo() {
   const [nameError, setNameError] = useState(false);
   const [birthdateError, setBirthdateError] = useState(false);
   const [birthdateErrorMessage, setBirthdateErrorMessage] = useState("");
+  const [socialData, setSocialData] = useState<{
+    socialId?: string;
+    socialType?: string;
+    email?: string;
+  }>({});
+
+  // 로그인 상태 및 접근 권한 확인
+  useEffect(() => {
+    // authLoading이 true인 동안에는 아무 작업도 하지 않음
+    if (authLoading) return;
+
+    // 이미 로그인 상태인 경우 메인 페이지로 리디렉션
+    if (isLoggedIn) {
+      router.replace("/main");
+      return;
+    }
+
+    // step1 완료 여부 확인
+    const step1Completed = sessionStorage.getItem("signupStep1Completed");
+    if (!step1Completed) {
+      console.log("Step1이 완료되지 않았습니다. Step1으로 이동합니다.");
+      router.replace("/sign-up/step1");
+      return;
+    }
+
+    // 소셜 로그인 데이터 가져오기
+    const socialDataJson = sessionStorage.getItem("socialLoginData");
+    if (!socialDataJson) {
+      console.log("소셜 로그인 데이터가 없습니다. 로그인 페이지로 이동합니다.");
+      router.replace("/login");
+      return;
+    }
+
+    try {
+      const parsedSocialData = JSON.parse(socialDataJson);
+      setSocialData(parsedSocialData);
+
+      // 이름 설정
+      if (parsedSocialData.nickname) {
+        setUserInfo((prev) => ({
+          ...prev,
+          name: parsedSocialData.nickname,
+        }));
+      }
+
+      // 모든 초기화가 완료된 후에 로딩 상태 해제
+      setIsLoading(false);
+    } catch (error) {
+      console.error("소셜 로그인 데이터 파싱 오류:", error);
+      router.replace("/login");
+    }
+  }, [authLoading, isLoggedIn, router]);
 
   // 폼 유효성 검사
   useEffect(() => {
@@ -89,7 +146,7 @@ export default function SignUpInfo() {
   };
 
   // 생년월일 유효성 검사 함수
-  const validateBirthdate = (birthdate: string): boolean => {
+  const validateBirthdate = useCallback((birthdate: string): boolean => {
     // 비어있으면 유효 (필수 항목 아님)
     if (!birthdate.trim()) {
       return true;
@@ -129,8 +186,9 @@ export default function SignUpInfo() {
     }
 
     return true;
-  };
+  }, []);
 
+  // 폼 제출 처리
   const handleSubmit = async () => {
     let isValid = true;
 
@@ -171,47 +229,82 @@ export default function SignUpInfo() {
     try {
       setIsSubmitting(true);
 
-      // 서버로 전송할 데이터 준비
-      const userData = {
-        name: userInfo.name.trim(),
-        nickname: userInfo.nickname.trim(),
-        birthdate: userInfo.birthdate.trim(),
-        gender: userInfo.gender,
-      };
-
-      // API 엔드포인트로 POST 요청 보내기
-      // 실제 API URL로 변경 필요
-      const response = await fetch("/api/sign-up", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        throw new Error("회원가입 처리 중 오류가 발생했습니다.");
+      // 약관 동의 정보 가져오기
+      const agreementDataJson = sessionStorage.getItem("agreementData");
+      if (!agreementDataJson) {
+        throw new Error("약관 동의 정보가 없습니다.");
       }
 
-      const data = await response.json();
-      console.log("회원가입 성공:", data);
+      const { service: serviceAgreement, privacy: collectionAgreement } =
+        JSON.parse(agreementDataJson);
 
-      // 회원가입 성공 페이지로 이동
+      // 생년월일 형식 변환
+      let formattedBirthday = null;
+      if (userInfo.birthdate) {
+        formattedBirthday = userInfo.birthdate.replace(/\//g, "-");
+      }
+
+      // API 요청 데이터 준비
+      const signUpData = {
+        socialId: socialData.socialId,
+        socialType: socialData.socialType,
+        email: socialData.email,
+        name: userInfo.name.trim(),
+        birthday: formattedBirthday,
+        gender: userInfo.gender || null,
+        serviceAgreement,
+        collectionAgreement,
+      };
+
+      // API 서비스로 회원가입 요청
+      const response = await signUp(signUpData);
+
+      console.log("회원가입 성공:", response);
+
+      // 로그인 토큰을 success 페이지로 전달하기 위해 sessionStorage에 저장
+      // 이 토큰은 success 페이지에서만 사용되고 삭제됨
+      sessionStorage.setItem("signupResponse", JSON.stringify(response));
+
+      // step2 완료 표시 (success 페이지 접근 권한용)
+      sessionStorage.setItem("signupStep2Completed", "true");
+
+      // 성공 페이지로 이동
       router.push("/sign-up/success");
     } catch (error) {
       console.error("회원가입 오류:", error);
-      alert("회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+      alert(error.message || "회원가입 처리 중 오류가 발생했습니다.");
+
+      if (error.message.includes("약관 동의")) {
+        router.push("/sign-up/step1");
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // 이전 단계로 이동
+  const handleBack = () => {
+    router.push("/sign-up/step1");
+  };
+
+  // 로딩 중이면 로딩 표시
+  if (authLoading || isLoading) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-center">로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-white">
       {/* 상단 단계 표시 */}
       <div className="flex justify-center mt-6 mb-6">
         <div className="flex space-x-2">
-          <div className="w-8 h-8 rounded-full bg-[#DDECFF] text-[#D4D4D4] flex items-center justify-center">
+          <div
+            className="w-8 h-8 rounded-full bg-[#DDECFF] text-[#D4D4D4] flex items-center justify-center cursor-pointer"
+            onClick={handleBack}
+          >
             1
           </div>
           <div className="w-8 h-8 rounded-full bg-[#0EABFF] text-white flex items-center justify-center">
@@ -225,6 +318,20 @@ export default function SignUpInfo() {
         <h1 className="text-xl font-medium text-left mb-6">
           회원 정보를 입력해주세요
         </h1>
+
+        {/* 소셜 로그인 정보 표시 */}
+        {socialData.email && (
+          <div className="mb-6 p-3 bg-gray-50 rounded-md">
+            <p className="text-sm text-gray-600">
+              <span className="font-medium">연결된 계정 :</span>{" "}
+              {socialData.email}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {socialData.socialType === "KAKAO" ? "카카오" : "소셜"} 계정으로
+              가입합니다
+            </p>
+          </div>
+        )}
 
         {/* 입력 폼 */}
         <div className="space-y-7">
@@ -280,9 +387,9 @@ export default function SignUpInfo() {
             <div className="flex space-x-4">
               <button
                 type="button"
-                onClick={() => handleGenderSelect("male")}
+                onClick={() => handleGenderSelect("남성")}
                 className={`flex-1 py-2 border-2 rounded-[10px] transition-colors cursor-pointer ${
-                  userInfo.gender === "male"
+                  userInfo.gender === "남성"
                     ? "border-[#2FA5FF] text-[#2FA5FF] bg-[#DDECFF]"
                     : "border-[#808080] bg-white text-[#808080]"
                 }`}
@@ -291,9 +398,9 @@ export default function SignUpInfo() {
               </button>
               <button
                 type="button"
-                onClick={() => handleGenderSelect("female")}
+                onClick={() => handleGenderSelect("여성")}
                 className={`flex-1 py-2 border-2 rounded-[10px] transition-colors cursor-pointer ${
-                  userInfo.gender === "female"
+                  userInfo.gender === "여성"
                     ? "border-[#2FA5FF] text-[#2FA5FF] bg-[#DDECFF]"
                     : "border-[#808080] bg-white text-[#808080]"
                 }`}

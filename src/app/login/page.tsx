@@ -1,13 +1,36 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useAuth } from "@/hooks/useAuth";
+import { kakaoLogin } from "@/services/authService";
 
-// 카카오 로그인 페이지 컴포넌트
 export default function LoginPage() {
-  // 카카오 로그인 처리 함수 - SDK 사용하지 않고 직접 URL 열기
+  const router = useRouter();
+  const { login, isLoggedIn, isLoading: authLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  // 컴포넌트 마운트 시 로그인 상태 확인
+  useEffect(() => {
+    // 인증 상태 로딩 중이면 아직 체크하지 않음
+    if (authLoading) return;
+
+    // 이미 로그인 상태면 메인 페이지로 리디렉션
+    if (isLoggedIn) {
+      router.replace("/main");
+      return;
+    }
+
+    // 페이지 로딩 완료 표시
+    setPageLoading(false);
+  }, [authLoading, isLoggedIn, router]);
+
+  // 카카오 로그인 처리 함수
   const handleKakaoLogin = () => {
-    const KAKAO_REST_API_KEY = "79c681149b318adcf857208b02581d0e";
-    const REDIRECT_URI = "http://localhost:3000/api/auth/kakao/callback";
+    const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_API_KEY;
+    const REDIRECT_URI = `${window.location.origin}/api/auth/kakao/callback`;
 
     // 팝업 창 크기 설정
     const width = 500;
@@ -41,12 +64,18 @@ export default function LoginPage() {
       // 메시지 출처 확인 (보안)
       if (event.origin !== window.location.origin) return;
 
-      if (event.data.type === "kakaoLogin" && event.data.success) {
-        // 로그인 성공 처리
-        console.log("카카오 로그인 성공:", event.data.userData);
+      if (event.data.type === "kakaoLogin") {
+        if (event.data.success) {
+          // 로그인 성공 처리
+          console.log("카카오 로그인 성공:", event.data.userData);
 
-        // 백엔드로 데이터 전송
-        sendToBackend(event.data.userData);
+          // 백엔드로 데이터 전송
+          sendToBackend(event.data.userData);
+        } else {
+          // 로그인 실패 처리
+          console.error("카카오 로그인 실패:", event.data.error);
+          alert(`로그인 실패: ${event.data.error}`);
+        }
 
         // 더 이상 메시지를 받지 않음
         window.removeEventListener("message", receiveMessage, false);
@@ -57,29 +86,65 @@ export default function LoginPage() {
   // 백엔드로 데이터 전송
   const sendToBackend = async (userData) => {
     try {
-      const response = await fetch("http://your-backend-url/api/auth/kakao", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
+      setIsLoading(true);
 
-      if (!response.ok) {
-        throw new Error("서버 응답 오류");
+      // 백엔드 요청 형식에 맞게 데이터 구성
+      const requestData = {
+        socialId: userData.kakaoId.toString(),
+        socialType: "KAKAO",
+      };
+
+      try {
+        // API 서비스를 통한 로그인 요청
+        const response = await kakaoLogin(requestData);
+
+        // 로그인 성공 처리
+        console.log("로그인 성공:", response);
+
+        // 토큰 저장 및 로그인 상태 업데이트
+        login(response.accessToken, response.refreshToken);
+
+        // 메인 페이지로 리디렉션
+        router.push("/main");
+      } catch (error) {
+        // API 에러 처리
+        if (error.message === "존재하지 않는 회원입니다.") {
+          // 소셜 로그인 정보를 로컬 스토리지에 저장
+          sessionStorage.setItem(
+            "socialLoginData",
+            JSON.stringify({
+              socialId: userData.kakaoId.toString(),
+              socialType: "KAKAO",
+              email: userData.email || null,
+              nickname: userData.nickname || null,
+              profileImage: userData.profileImage || null,
+            })
+          );
+
+          // 회원가입을 위한 리디렉션
+          router.push("/sign-up/step1");
+        } else {
+          alert(`로그인 실패: ${error.message}`);
+        }
       }
-
-      const data = await response.json();
-      console.log("백엔드 응답:", data);
-
-      // 로그인 성공 후 처리
-      localStorage.setItem("token", data.token);
-      window.location.href = "/";
     } catch (error) {
       console.error("백엔드 요청 오류:", error);
-      alert("로그인 처리 중 오류가 발생했습니다.");
+      alert(
+        "로그인 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요."
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // 로딩 중이면 로딩 표시
+  if (authLoading || pageLoading || isLoading) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-center">로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full">
