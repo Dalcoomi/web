@@ -1,3 +1,4 @@
+// hooks/useAuth.ts (수정된 버전)
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -13,39 +14,66 @@ export function useAuth() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [mounted, setMounted] = useState(false);
 
-  // 컴포넌트 마운트 시 인증 상태 확인
+  // 컴포넌트 마운트 확인
   useEffect(() => {
-    const checkAuth = () => {
-      const authStatus = isAuthenticated();
-      setIsLoggedIn(authStatus);
-      setIsLoading(false);
-    };
-
-    // 초기 로딩 시 한 번만 실행
-    checkAuth();
+    setMounted(true);
   }, []);
 
-  // 로그인 함수 - useCallback으로 메모이제이션
+  // 인증 상태 확인
+  useEffect(() => {
+    if (!mounted) return;
+
+    const checkAuth = () => {
+      try {
+        const authStatus = isAuthenticated();
+        setIsLoggedIn(authStatus);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // 401 에러 발생 시 처리할 이벤트 리스너
+    const handleAuthError = () => {
+      setIsLoggedIn(false);
+      router.replace("/");
+    };
+
+    // 이벤트 리스너 등록
+    window.addEventListener("auth-error", handleAuthError);
+
+    // 클린업 함수
+    return () => {
+      window.removeEventListener("auth-error", handleAuthError);
+    };
+  }, [router, mounted]);
+
+  // 로그인 함수
   const login = useCallback((accessToken: string, refreshToken?: string) => {
     saveTokens(accessToken, refreshToken);
     setIsLoggedIn(true);
   }, []);
 
-  // 로그아웃 함수 - useCallback으로 메모이제이션
+  // 로그아웃 함수
   const logout = useCallback(() => {
     clearTokens();
     setIsLoggedIn(false);
-    router.push("/login");
+    router.push("/");
   }, [router]);
 
-  // 보호된 페이지 접근 권한 확인 - useCallback으로 메모이제이션
+  // 보호된 페이지 접근 권한 확인
   const requireAuth = useCallback(
     (callback?: () => void) => {
-      if (isLoading) return; // 로딩 중에는 아무 작업도 하지 않음
+      if (isLoading) return;
 
       if (!isLoggedIn) {
-        router.replace("/login");
+        router.replace("/");
         return;
       }
 
@@ -56,13 +84,13 @@ export function useAuth() {
     [isLoading, isLoggedIn, router]
   );
 
-  // 비로그인 페이지 접근 권한 확인 - useCallback으로 메모이제이션
+  // 비로그인 페이지 접근 권한 확인
   const requireUnauth = useCallback(
     (callback?: () => void) => {
-      if (isLoading) return; // 로딩 중에는 아무 작업도 하지 않음
+      if (isLoading) return;
 
       if (isLoggedIn) {
-        router.replace("/main");
+        router.replace("/transaction/my");
         return;
       }
 

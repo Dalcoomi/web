@@ -1,12 +1,12 @@
 // utils/tokenManager.ts
 import { setCookie, getCookie, eraseCookie } from "./cookieManager";
 
-// 토큰 저장 (localStorage 및 쿠키 둘 다 사용)
+// 토큰 저장
 export const saveTokens = (accessToken: string, refreshToken?: string) => {
   if (typeof window === "undefined") return; // 서버 사이드에서 실행 방지
 
   // 쿠키 저장 (미들웨어용)
-  setCookie("accessToken", accessToken, 1); // 1일 유효
+  setCookie("accessToken", accessToken, 1 / 24); // 1일 유효
   if (refreshToken) {
     setCookie("refreshToken", refreshToken, 7); // 7일 유효
   }
@@ -38,6 +38,5 @@ export const clearTokens = () => {
 export const isAuthenticated = () => {
   if (typeof window === "undefined") return false;
 
-  // localStorage 또는 쿠키 중 하나라도 토큰이 있으면 인증 상태로 간주
   return !!getCookie("accessToken");
 };
