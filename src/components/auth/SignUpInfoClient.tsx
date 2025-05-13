@@ -179,6 +179,12 @@ export default function SignUpInfoClient() {
 
   // 폼 제출 처리
   const handleSubmit = async () => {
+    // 이미 제출 중이면 무시
+    if (isSubmitting) {
+      console.log("이미 처리 중입니다.");
+      return;
+    }
+
     let isValid = true;
 
     // 이름 유효성 검사
@@ -215,9 +221,11 @@ export default function SignUpInfoClient() {
 
     if (!isValid) return;
 
-    try {
-      setIsSubmitting(true);
+    // 제출 시작
+    console.log("회원가입 제출 시작");
+    setIsSubmitting(true);
 
+    try {
       // 약관 동의 정보 가져오기
       const agreementDataJson = sessionStorage.getItem("agreementData");
       if (!agreementDataJson) {
@@ -265,7 +273,8 @@ export default function SignUpInfoClient() {
       if (error.message.includes("약관 동의")) {
         router.push("/sign-up/step1");
       }
-    } finally {
+
+      // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);
     }
   };
@@ -404,16 +413,43 @@ export default function SignUpInfoClient() {
       <div className="px-7 pb-7 mt-6">
         <button
           className={`w-full py-3 rounded-md font-medium transition-colors ${
-            isFormValid
-              ? isSubmitting
-                ? "bg-[#0EABFF] opacity-70 cursor-not-allowed text-white"
-                : "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
+            isFormValid && !isSubmitting
+              ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
+              : isSubmitting
+              ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
               : "bg-gray-300 text-white cursor-not-allowed"
           }`}
           onClick={handleSubmit}
           disabled={!isFormValid || isSubmitting}
+          style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
         >
-          {isSubmitting ? "처리 중..." : "완료"}
+          {isSubmitting ? (
+            <span className="flex items-center justify-center">
+              <svg
+                className="animate-spin h-5 w-5 mr-2"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              처리 중...
+            </span>
+          ) : (
+            "완료"
+          )}
         </button>
       </div>
     </div>
