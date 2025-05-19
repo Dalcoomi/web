@@ -3,6 +3,7 @@ import { get, post, put, del } from "@/utils/apiClient";
 
 // 백엔드 응답에 맞춘 트랜잭션 타입 정의
 export interface Transaction {
+  transactionId: number;
   creatorNickname: string;
   categoryName: string;
   transactionDate: string;
@@ -26,7 +27,7 @@ export interface MonthlyTransactionsResponse {
   transactions: Transaction[];
 }
 
-// 내 거래 내역 조회
+// 내 전체 거래 내역 조회 API
 export const getMyTransactions = async (
   year: number,
   month: number
@@ -48,17 +49,28 @@ export const getMyTransactions = async (
   }
 };
 
-// 내 거래 내역 추가
-export const addMyTransaction = async (
-  transaction: Omit<Transaction, "creatorNickname">
+// 내 특정 거래 내역 조회 API
+export const getMyTransactionById = async (
+  id: number
 ): Promise<Transaction> => {
-  return post("/api/transaction", transaction);
+  try {
+    const response = await get(`/api/transaction/${id}`);
+    return response;
+  } catch (error) {
+    console.error("거래 내역 상세 조회 중 오류 발생:", error);
+    throw error;
+  }
+};
+
+// 내 거래 내역 추가 API
+export const addMyTransaction = async (transactionData: any) => {
+  return post("/api/transaction/my", transactionData);
 };
 
 // 내 거래 내역 수정
 export const updateMyTransaction = async (
   id: number,
-  data: Partial<Transaction>
+  data: any
 ): Promise<Transaction> => {
   return put(`/api/transaction/${id}`, data);
 };

@@ -127,7 +127,7 @@ export default function LoginPageClient() {
       {/* 배경 이미지 */}
       <div className="absolute inset-0 w-full h-full z-0">
         <Image
-          src="/images/login-background.svg"
+          src="/images/auth/login-background.svg"
           alt="로그인 배경"
           fill
           className="object-cover"
@@ -140,7 +140,7 @@ export default function LoginPageClient() {
         {/* 네이버 로그인 버튼 (비활성화) */}
         <button className="w-[180px] cursor-pointer">
           <Image
-            src="/images/네이버 버튼1.svg"
+            src="/images/auth/네이버 버튼1.svg"
             alt="네이버 로그인"
             width={180}
             height={40}
@@ -155,7 +155,7 @@ export default function LoginPageClient() {
           disabled={isLoading}
         >
           <Image
-            src="/images/카카오 버튼1.svg"
+            src="/images/auth/카카오 버튼1.svg"
             alt="카카오 로그인"
             width={180}
             height={41}

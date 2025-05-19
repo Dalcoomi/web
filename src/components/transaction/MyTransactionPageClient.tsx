@@ -3,10 +3,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
-import DateSelector from "@/components/transaction/DateSelector";
-import TransactionSummary from "@/components/transaction/TransactionSummary";
 import TransactionItem from "@/components/transaction/TransactionItem";
 import EmptyTransactionList from "@/components/transaction/EmptyTransactionList";
 import {
@@ -24,9 +23,6 @@ export default function MyTransactionPageClient() {
     total: 0,
     transactions: [],
   });
-  const [selectedTab, setSelectedTab] = useState<
-    "category" | "description" | "amount"
-  >("category");
 
   // 중복 호출 방지를 위한 ref
   const lastRequestRef = useRef<string>("");
@@ -58,7 +54,9 @@ export default function MyTransactionPageClient() {
 
       try {
         console.log(`거래 내역 조회 요청: ${year}년 ${month}월`);
+
         const response = await getMyTransactions(year, month);
+
         setResponse(response);
       } catch (error) {
         console.error("거래 내역 로드 중 오류 발생:", error);
@@ -110,56 +108,141 @@ export default function MyTransactionPageClient() {
 
   // 새 거래 추가 버튼 클릭 핸들러
   const handleAddTransaction = () => {
-    router.push("/transaction/add");
+    router.push("/transaction/my/add");
+  };
+
+  const formatDateForDisplay = (date: Date): string => {
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+  };
+
+  const handlePrevMonth = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    handleDateChange(newDate);
+  };
+
+  const handleNextMonth = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    handleDateChange(newDate);
+  };
+
+  const isCurrentMonth = () => {
+    const now = new Date();
+    return (
+      selectedDate.getFullYear() === now.getFullYear() &&
+      selectedDate.getMonth() === now.getMonth()
+    );
+  };
+
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString("ko-KR");
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-white">
       <TopBar />
 
-      <DateSelector
-        selectedDate={selectedDate}
-        onDateChange={handleDateChange}
-      />
+      {/* 파란색 박스 영역 */}
+      <div className="px-2 py-2">
+        <div className="bg-[#EEF9FF] rounded-[10px] px-2 py-1.5">
+          {/* 날짜 선택기 */}
+          <div className="flex items-center mb-2">
+            <button
+              onClick={handlePrevMonth}
+              className="p-0 mr-4 cursor-pointer"
+            >
+              <Image
+                src="/images/transaction/화살표_왼쪽.svg"
+                alt="이전 달"
+                width={11}
+                height={11}
+              />
+            </button>
 
-      <TransactionSummary
-        income={response.income}
-        expense={response.expense}
-        total={response.total}
-      />
+            <div className="text-m font-light text-[#534E4E]">
+              {formatDateForDisplay(selectedDate)}
+            </div>
 
-      {/* 탭 메뉴 */}
-      <div className="flex border-b border-gray-200 bg-white">
-        <button
-          className={`flex-1 py-3 text-sm font-medium ${
-            selectedTab === "category"
-              ? "text-black border-b-2 border-blue-500"
-              : "text-gray-500"
-          }`}
-          onClick={() => setSelectedTab("category")}
-        >
-          카테고리
-        </button>
-        <button
-          className={`flex-1 py-3 text-sm font-medium ${
-            selectedTab === "description"
-              ? "text-black border-b-2 border-blue-500"
-              : "text-gray-500"
-          }`}
-          onClick={() => setSelectedTab("description")}
-        >
-          내용
-        </button>
-        <button
-          className={`flex-1 py-3 text-sm font-medium ${
-            selectedTab === "amount"
-              ? "text-black border-b-2 border-blue-500"
-              : "text-gray-500"
-          }`}
-          onClick={() => setSelectedTab("amount")}
-        >
-          금액
-        </button>
+            <button
+              onClick={handleNextMonth}
+              className="p-0 ml-4 cursor-pointer"
+              disabled={isCurrentMonth()}
+            >
+              <Image
+                src="/images/transaction/화살표_오른쪽.svg"
+                alt="다음 달"
+                width={11}
+                height={11}
+                style={{ opacity: isCurrentMonth() ? 0.3 : 1 }}
+              />
+            </button>
+
+            {/* 새 거래 추가 버튼 */}
+            <button
+              onClick={handleAddTransaction}
+              className="ml-auto border-none cursor-pointer"
+            >
+              <Image
+                src="/images/transaction/거래_내역_작성.svg"
+                alt="새 거래 추가"
+                width={30}
+                height={30}
+                priority
+              />
+            </button>
+          </div>
+
+          {/* 수입/지출 태그 */}
+          <div className="grid grid-cols-2 mb-2">
+            <div className="flex items-center">
+              <div className="px-1 border border-[#0E7AFF] rounded-[3px] leading-[1]">
+                <span className="text-xs font-light text-[#0E7AFF]">수입</span>
+              </div>
+              <span className="ml-1 text-sm font-light text-[#0E7AFF]">
+                {response.income === 0
+                  ? "0"
+                  : `+${formatNumber(response.income)}`}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-left">
+              <div className="px-1 border border-[#FF005E] rounded-[3px] leading-[1]">
+                <span className="text-xs font-light text-[#FF005E]">지출</span>
+              </div>
+              <span className="ml-1 text-sm font-light text-[#FF005E]">
+                {response.expense === 0
+                  ? "0"
+                  : `-${formatNumber(response.expense)}`}
+              </span>
+            </div>
+          </div>
+
+          {/* 총액 태그 */}
+          <div className="flex items-center">
+            <div className="px-1 border border-[#534E4E] rounded-[3px] leading-[1]">
+              <span className="text-xs font-light text-[#534E4E]">총액</span>
+            </div>
+            <span className="ml-1 text-sm font-light text-[#534E4E]">
+              {response.total === 0 ? "0" : formatNumber(response.total)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 카테고리/내용/금액 헤더 */}
+      <div className="mx-2  border-t-2 border-[#959595] rounded-t-[20px] overflow-hidden">
+        <div className="flex py-2 px-7 bg-white">
+          <div className="flex-1 text-center text-sm font-light text-[#959595]">
+            카테고리
+          </div>
+          <div className="flex-1 text-left text-sm font-light text-[#959595]">
+            내용
+          </div>
+          <div className="flex-1 text-right text-sm font-light text-[#959595]">
+            금액
+          </div>
+        </div>
       </div>
 
       {/* 거래 내역 목록 */}
@@ -169,40 +252,39 @@ export default function MyTransactionPageClient() {
             <div className="text-gray-500">로딩 중...</div>
           </div>
         ) : response.transactions.length > 0 ? (
-          response.transactions.map((transaction, index) => (
-            <TransactionItem
-              key={index}
-              date={formatDateToMMDD(transaction.transactionDate)}
-              category={transaction.categoryName}
-              description={transaction.content}
-              amount={
-                transaction.transactionType === "EXPENSE"
-                  ? -transaction.amount
-                  : transaction.amount
-              }
-            />
-          ))
+          response.transactions.map((transaction, index) => {
+            // 현재 거래의 날짜
+            const currentDate = formatDateToMMDD(transaction.transactionDate);
+
+            // 이전 거래와 날짜가 같은지 확인
+            const prevDate =
+              index > 0
+                ? formatDateToMMDD(
+                    response.transactions[index - 1].transactionDate
+                  )
+                : null;
+
+            // 이전 거래와 날짜가 같으면 날짜를 숨김
+            const shouldShowDate = prevDate !== currentDate;
+
+            return (
+              <TransactionItem
+                key={index}
+                date={shouldShowDate ? currentDate : ""}
+                category={transaction.categoryName}
+                description={transaction.content}
+                amount={
+                  transaction.transactionType === "EXPENSE"
+                    ? -transaction.amount
+                    : transaction.amount
+                }
+                transactionId={transaction.transactionId}
+              />
+            );
+          })
         ) : (
           <EmptyTransactionList />
         )}
-      </div>
-
-      {/* 새 거래 추가 버튼 */}
-      <div className="fixed bottom-20 right-5">
-        <button
-          onClick={handleAddTransaction}
-          className="w-14 h-14 rounded-full bg-[#0EABFF] text-white flex items-center justify-center shadow-lg"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="white" />
-          </svg>
-        </button>
       </div>
 
       <BottomBar />

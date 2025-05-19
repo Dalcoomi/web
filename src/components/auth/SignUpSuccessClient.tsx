@@ -123,7 +123,7 @@ export default function SignUpSuccessClient() {
       {/* 배경 이미지가 전체 화면을 채우도록 설정 */}
       <div className="absolute inset-0 w-full h-full flex items-center justify-center">
         <Image
-          src="/images/signup-success.svg"
+          src="/images/auth/signup-success.svg"
           alt="회원가입 완료"
           width={414}
           height={680}
@@ -133,9 +133,9 @@ export default function SignUpSuccessClient() {
       </div>
 
       {/* 카운트다운 메시지 (배경 위에 표시) */}
-      <div className="absolute bottom-8 left-0 right-0 text-center">
+      <div className="absolute top-10 left-0 right-0 text-center">
         <div className="bg-white/80 mx-auto py-2 px-6 rounded-full inline-block backdrop-blur-sm">
-          <p className="text-gray-700 font-medium">
+          <p className="font-medium">
             {timeLeft}초 후 메인 화면으로 이동합니다
           </p>
         </div>

@@ -424,7 +424,7 @@ export default function SignUpInfoClient() {
           style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
         >
           {isSubmitting ? (
-            <span className="flex items-center justify-center">
+            <span className="flex items-center justify-center cursor-not-allowed">
               <svg
                 className="animate-spin h-5 w-5 mr-2"
                 xmlns="http://www.w3.org/2000/svg"
