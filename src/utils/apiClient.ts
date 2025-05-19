@@ -47,7 +47,7 @@ export const apiClient = async (
       } else {
         // 리프레시 실패 시 로그아웃 처리
         clearTokens();
-        window.location.href = "/login";
+        window.location.href = "/";
         throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
       }
     }

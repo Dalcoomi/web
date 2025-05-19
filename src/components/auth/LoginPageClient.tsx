@@ -1,31 +1,16 @@
+// components/auth/LoginPageClient.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { kakaoLogin } from "@/services/authService";
 
-export default function LoginPage() {
+export default function LoginPageClient() {
   const router = useRouter();
-  const { login, isLoggedIn, isLoading: authLoading } = useAuth();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
-
-  // 컴포넌트 마운트 시 로그인 상태 확인
-  useEffect(() => {
-    // 인증 상태 로딩 중이면 아직 체크하지 않음
-    if (authLoading) return;
-
-    // 이미 로그인 상태면 메인 페이지로 리디렉션
-    if (isLoggedIn) {
-      router.replace("/main");
-      return;
-    }
-
-    // 페이지 로딩 완료 표시
-    setPageLoading(false);
-  }, [authLoading, isLoggedIn, router]);
 
   // 카카오 로그인 처리 함수
   const handleKakaoLogin = () => {
@@ -104,8 +89,8 @@ export default function LoginPage() {
         // 토큰 저장 및 로그인 상태 업데이트
         login(response.accessToken, response.refreshToken);
 
-        // 메인 페이지로 리디렉션
-        router.push("/main");
+        // 내 거래 페이지로 리디렉션
+        router.push("/transaction/my");
       } catch (error) {
         // API 에러 처리
         if (error.message === "존재하지 않는 회원입니다.") {
@@ -137,51 +122,54 @@ export default function LoginPage() {
     }
   };
 
-  // 로딩 중이면 로딩 표시
-  if (authLoading || pageLoading || isLoading) {
-    return (
-      <div className="flex items-center justify-center w-full h-full">
-        <div className="text-center">로딩 중...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-screen">
       {/* 배경 이미지 */}
-      <div className="inset-0 w-full h-full z-0">
+      <div className="absolute inset-0 w-full h-full z-0">
         <Image
-          src="/images/login-background.svg"
+          src="/images/auth/login-background.svg"
           alt="로그인 배경"
-          width={390}
-          height={700}
+          fill
+          className="object-cover"
+          priority
         />
       </div>
 
       {/* 로그인 버튼들 */}
-      <div className="absolute w-full bottom-7 flex flex-col items-center space-y-4 z-10">
+      <div className="absolute w-full bottom-15 flex flex-col items-center space-y-4 z-10">
         {/* 네이버 로그인 버튼 (비활성화) */}
         <button className="w-[180px] cursor-pointer">
           <Image
-            src="/images/네이버 버튼1.svg"
+            src="/images/auth/네이버 버튼1.svg"
             alt="네이버 로그인"
-            width={160}
+            width={180}
             height={40}
             className="w-full"
           />
         </button>
 
         {/* 카카오 로그인 버튼 */}
-        <button className="w-[180px] cursor-pointer" onClick={handleKakaoLogin}>
+        <button
+          className="w-[180px] cursor-pointer"
+          onClick={handleKakaoLogin}
+          disabled={isLoading}
+        >
           <Image
-            src="/images/카카오 버튼1.svg"
+            src="/images/auth/카카오 버튼1.svg"
             alt="카카오 로그인"
-            width={160}
+            width={180}
             height={41}
             className="w-full"
           />
         </button>
       </div>
+
+      {/* 로딩 오버레이 */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-opacity-50 flex items-center justify-center z-20">
+          <div className="text-white text-lg">로그인 중...</div>
+        </div>
+      )}
     </div>
   );
 }
