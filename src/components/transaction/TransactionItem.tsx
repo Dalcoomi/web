@@ -8,7 +8,7 @@ interface TransactionItemProps {
   category: string;
   description: string;
   amount: number; // 양수는 수입, 음수는 지출
-  transactionId: number; // 거래 ID 추가
+  transactionId: string; // 거래 ID 추가
 }
 
 export default function TransactionItem({
@@ -28,6 +28,7 @@ export default function TransactionItem({
 
   // 텍스트 길이에 따른 자르기 함수
   const truncateText = (text: string, maxLength: number): string => {
+    if (text == null) text = "";
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
   };

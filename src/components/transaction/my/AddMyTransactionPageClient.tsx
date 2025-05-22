@@ -1,18 +1,14 @@
-// components/transaction/UpdateTransactionPageClient.tsx
+// components/transaction/AddTransactionPageClient.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  getMyTransactionById,
-  updateMyTransaction,
-  deleteMyTransaction,
-} from "@/services/transactionService";
+import { useRouter } from "next/navigation";
+import { addMyTransaction } from "@/services/transactionService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 
-// 지출 카테고리 목록 (AddTransactionPageClient와 동일)
+// 지출 카테고리 목록
 const expenseCategories = [
   {
     id: "식비",
@@ -26,10 +22,130 @@ const expenseCategories = [
     icon: "/images/카테고리/카페.svg",
     color: "#4CAF50",
   },
-  // ... 나머지 지출 카테고리들도 동일하게 추가
+  { id: "술", name: "술", icon: "/images/카테고리/술.svg", color: "#9C27B0" },
+  {
+    id: "마트",
+    name: "마트",
+    icon: "/images/카테고리/마트.svg",
+    color: "#2196F3",
+  },
+  {
+    id: "주거",
+    name: "주거",
+    icon: "/images/카테고리/주거.svg",
+    color: "#00BCD4",
+  },
+  {
+    id: "통신",
+    name: "통신",
+    icon: "/images/카테고리/통신.svg",
+    color: "#FF9800",
+  },
+  {
+    id: "교통",
+    name: "교통",
+    icon: "/images/카테고리/교통.svg",
+    color: "#673AB7",
+  },
+  {
+    id: "쇼핑",
+    name: "쇼핑",
+    icon: "/images/카테고리/쇼핑.svg",
+    color: "#E91E63",
+  },
+  {
+    id: "의류",
+    name: "의류",
+    icon: "/images/카테고리/의류.svg",
+    color: "#3F51B5",
+  },
+  {
+    id: "여행",
+    name: "여행",
+    icon: "/images/카테고리/여행.svg",
+    color: "#8BC34A",
+  },
+  {
+    id: "운동",
+    name: "운동",
+    icon: "/images/카테고리/운동.svg",
+    color: "#FF5722",
+  },
+  {
+    id: "취미",
+    name: "취미",
+    icon: "/images/카테고리/취미.svg",
+    color: "#03A9F4",
+  },
+  {
+    id: "반려동물",
+    name: "반려동물",
+    icon: "/images/카테고리/반려동물.svg",
+    color: "#FFC107",
+  },
+  {
+    id: "교육",
+    name: "교육",
+    icon: "/images/카테고리/교육.svg",
+    color: "#607D8B",
+  },
+  {
+    id: "외료",
+    name: "외료",
+    icon: "/images/카테고리/외료.svg",
+    color: "#9C27B0",
+  },
+  {
+    id: "보험",
+    name: "보험",
+    icon: "/images/카테고리/보험.svg",
+    color: "#4CAF50",
+  },
+  {
+    id: "선물",
+    name: "선물",
+    icon: "/images/카테고리/선물.svg",
+    color: "#E91E63",
+  },
+  {
+    id: "모임",
+    name: "모임",
+    icon: "/images/카테고리/모임.svg",
+    color: "#FF9800",
+  },
+  {
+    id: "저축",
+    name: "저축",
+    icon: "/images/카테고리/저축.svg",
+    color: "#673AB7",
+  },
+  {
+    id: "투자",
+    name: "투자",
+    icon: "/images/카테고리/투자.svg",
+    color: "#2196F3",
+  },
+  {
+    id: "대출",
+    name: "대출",
+    icon: "/images/카테고리/대출.svg",
+    color: "#00BCD4",
+  },
+  {
+    id: "카드대금",
+    name: "카드대금",
+    icon: "/images/카테고리/카드대금.svg",
+    color: "#607D8B",
+  },
+  {
+    id: "기타",
+    name: "기타",
+    icon: "/images/카테고리/기타.svg",
+    color: "#FF5722",
+  },
 ];
 
-// 수입 카테고리 목록 (AddTransactionPageClient와 동일)
+// 수입 카테고리 목록
 const incomeCategories = [
   {
     id: "급여",
@@ -43,15 +159,28 @@ const incomeCategories = [
     icon: "/images/카테고리/수입/용돈.svg",
     color: "#E91E63",
   },
-  // ... 나머지 수입 카테고리들도 동일하게 추가
+  {
+    id: "이체",
+    name: "이체",
+    icon: "/images/카테고리/수입/이체.svg",
+    color: "#FF9800",
+  },
+  {
+    id: "금융수익",
+    name: "금융수익",
+    icon: "/images/카테고리/수입/금융수익.svg",
+    color: "#2196F3",
+  },
+  {
+    id: "기타",
+    name: "기타",
+    icon: "/images/카테고리/수입/기타.svg",
+    color: "#03A9F4",
+  },
 ];
 
-export default function UpdateTransactionPageClient() {
+export default function AddMyTransactionPageClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const transactionId = searchParams.get("id");
-
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [transactionType, setTransactionType] = useState<"EXPENSE" | "INCOME">(
@@ -67,76 +196,44 @@ export default function UpdateTransactionPageClient() {
   const [amountError, setAmountError] = useState(false);
   const [amountTouched, setAmountTouched] = useState(false);
 
-  // 기존 거래 내역 로드
-  useEffect(() => {
-    const loadTransaction = async () => {
-      if (!transactionId) {
-        router.replace("/transaction/my");
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const transaction = await getMyTransactionById(Number(transactionId));
-
-        // 기존 데이터로 폼 초기화
-        setTransactionType(transaction.transactionType);
-        setAmount(transaction.amount.toString());
-        setContent(transaction.content || "");
-        setDate(
-          new Date(transaction.transactionDate)
-            .toISOString()
-            .split("T")[0]
-            .replace(/-/g, "/")
-        );
-        setCategory(transaction.categoryName);
-      } catch (error) {
-        console.error("거래 내역 로드 오류:", error);
-        alert("거래 내역을 불러올 수 없습니다.");
-        router.replace("/transaction/my");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTransaction();
-  }, [transactionId, router]);
-
   // 폼 유효성 검사
   useEffect(() => {
+    // 금액이 입력되었는지 확인
     setIsFormValid(amount.trim().length > 0);
   }, [amount]);
 
-  // 금액 입력 핸들러 (AddTransactionPageClient와 동일)
+  // 금액 입력 핸들러
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 숫자만 허용
     const value = e.target.value.replace(/[^\d]/g, "");
     setAmount(value);
   };
 
-  // 내용 입력 핸들러 (AddTransactionPageClient와 동일)
+  // 내용 입력 핸들러
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setContent(e.target.value);
   };
 
-  // 날짜 입력 핸들러 (AddTransactionPageClient와 동일)
+  // 날짜 입력 핸들러
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDate(e.target.value);
   };
 
-  // 카테고리 선택 핸들러 (AddTransactionPageClient와 동일)
+  // 카테고리 선택 핸들러
   const handleCategoryChange = (categoryId: string) => {
     setCategory(categoryId);
     setShowCategoryModal(false);
   };
 
-  // 거래 유형 변경 핸들러 (AddTransactionPageClient와 동일)
+  // 거래 유형 변경 핸들러
   const handleTransactionTypeChange = (type: "EXPENSE" | "INCOME") => {
     setTransactionType(type);
     setCategory(getDefaultCategory(type));
   };
 
-  // 저장 핸들러 (수정용)
+  // 저장 핸들러
   const handleSubmit = async () => {
+    // 이미 제출 중이면 무시
     if (isSubmitting) {
       console.log("이미 처리 중입니다.");
       return;
@@ -144,104 +241,118 @@ export default function UpdateTransactionPageClient() {
 
     if (!isFormValid) return;
 
-    console.log("거래 내역 수정 시작");
+    // 제출 시작
+    console.log("거래 내역 저장 시작");
     setIsSubmitting(true);
 
     try {
-      // 카테고리 ID 매핑 (AddTransactionPageClient와 동일)
+      // 카테고리 ID를 문자열에서 숫자로 변환
+      // 참고: 실제로는 API에서 카테고리 ID가 Long 타입이므로 숫자로 매핑해야 함
       const categoryIdMap = {
         // 지출 카테고리 매핑
         식비: 1,
         카페: 2,
-        // ... 나머지 매핑
+        술: 3,
+        마트: 4,
+        주거: 5,
+        통신: 6,
+        교통: 7,
+        쇼핑: 8,
+        의류: 9,
+        여행: 10,
+        운동: 11,
+        취미: 12,
+        반려동물: 13,
+        교육: 14,
+        외료: 15,
+        보험: 16,
+        선물: 17,
+        모임: 18,
+        저축: 19,
+        투자: 20,
+        대출: 21,
+        카드대금: 22,
+        기타: 23,
         // 수입 카테고리 매핑
         급여: 101,
         용돈: 102,
-        // ... 나머지 매핑
+        이체: 103,
+        금융수익: 104,
+        기타수입: 105,
       };
 
-      // 날짜 형식 변환
+      // 날짜 형식 변환 (YYYY/MM/DD -> ISO 문자열)
       const dateStr = date.replace(/\//g, "-");
       const transactionDateTime = new Date(dateStr);
+      // 시간을 현재 시간으로 설정 (선택사항)
       transactionDateTime.setHours(new Date().getHours());
       transactionDateTime.setMinutes(new Date().getMinutes());
       transactionDateTime.setSeconds(new Date().getSeconds());
 
-      // API 요청을 위한 데이터 구조화
+      // API 요청을 위한, 데이터 구조화
       const transactionData = {
-        categoryId: categoryIdMap[category] || 0,
-        amount: Number(amount),
-        content: content || null,
-        transactionDate: transactionDateTime.toISOString(),
-        transactionType: transactionType,
+        categoryId: categoryIdMap[category] || 0, // 카테고리 ID 매핑
+        amount: Number(amount), // 문자열을 숫자로 변환
+        content: content || null, // 내용이 없으면 null
+        transactionDate: transactionDateTime.toISOString(), // ISO 형식으로 변환 (YYYY-MM-DDTHH:mm:ss.sssZ)
+        transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
       };
 
       console.log("전송할 데이터:", transactionData);
 
-      // API 서비스로 내 거래 내역 수정 요청
-      const response = await updateMyTransaction(
-        Number(transactionId),
-        transactionData
-      );
+      // API 서비스로 내 거래 내역 저장 요청
+      const response = await addMyTransaction(transactionData);
 
-      console.log("내 거래 내역 수정 성공:", response);
+      console.log("내 거래 내역 저장 성공:", response);
 
       // 성공 시 내 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      console.error("내 거래 내역 수정 오류:", error);
-      alert(error.message || "내 거래 내역 수정 중 오류가 발생했습니다.");
+      console.error("내 거래 내역 저장 오류:", error);
+      alert(error.message || "내 거래 내역 저장 중 오류가 발생했습니다.");
+
+      // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);
     }
   };
 
-  // 삭제 핸들러
-  const handleDelete = async () => {
-    if (!confirm("정말로 이 거래 내역을 삭제하시겠습니까?")) {
-      return;
-    }
-
-    try {
-      await deleteMyTransaction(Number(transactionId));
-      console.log("내 거래 내역 삭제 성공");
-      router.push("/transaction/my");
-    } catch (error) {
-      console.error("내 거래 내역 삭제 오류:", error);
-      alert(error.message || "내 거래 내역 삭제 중 오류가 발생했습니다.");
-    }
-  };
-
-  // 포맷된 금액 표시 (AddTransactionPageClient와 동일)
+  // 포맷된 금액 표시
   const formattedAmount = () => {
     if (!amount) return "";
     return Number(amount).toLocaleString("ko-KR");
   };
 
-  // 거래 유형에 따른 카테고리 목록 가져오기 (AddTransactionPageClient와 동일)
+  // 거래 유형에 따른 카테고리 목록 가져오기
   const getCategoriesByType = () => {
     return transactionType === "EXPENSE" ? expenseCategories : incomeCategories;
   };
 
-  // 거래 유형에 따른 기본 카테고리 설정 (AddTransactionPageClient와 동일)
+  // 거래 유형에 따른 기본 카테고리 설정
   const getDefaultCategory = (type: "EXPENSE" | "INCOME") => {
-    return "기타";
+    return "기타"; // 지출과 수입 모두 "기타"
   };
 
-  // 선택된 카테고리 정보 가져오기 (AddTransactionPageClient와 동일)
+  // 선택된 카테고리 정보 가져오기
   const selectedCategory = getCategoriesByType().find(
     (cat) => cat.id === category
   );
 
-  // 날짜 포맷팅 함수 (AddTransactionPageClient와 동일)
+  // 날짜 포맷팅 함수 (YYYY-MM-DD를 YYYY/MM/DD로 변환)
   const formatDateWithSlash = (dateString) => {
     if (!dateString) return "";
+
+    // '-' 형식으로 들어온 날짜를 '/' 형식으로 변환
     const cleanDate = dateString.replace(/\//g, "-");
+
     try {
+      // 날짜 객체로 변환한 후 다시 포맷팅
       const dateObj = new Date(cleanDate);
-      if (isNaN(dateObj.getTime())) return dateString;
+      if (isNaN(dateObj.getTime())) return dateString; // 유효하지 않은 날짜인 경우
+
       const year = dateObj.getFullYear();
       const month = String(dateObj.getMonth() + 1).padStart(2, "0");
       const day = String(dateObj.getDate()).padStart(2, "0");
+
       return `${year}/${month}/${day}`;
     } catch (error) {
       console.error("날짜 포맷팅 오류:", error);
@@ -249,25 +360,13 @@ export default function UpdateTransactionPageClient() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-screen bg-white">
-        <TopBar />
-        <div className="flex items-center justify-center flex-1">
-          <div className="text-gray-500">로딩 중...</div>
-        </div>
-        <BottomBar />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-screen bg-white">
       <TopBar />
 
-      {/* 거래 내역 수정 제목 블록 */}
+      {/* 거래 내역 작성 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">거래 내역 수정</h1>
+        <h1 className="text-xl font-light">거래 내역 작성</h1>
       </div>
 
       {/* 거래 유형 선택 */}
@@ -316,6 +415,16 @@ export default function UpdateTransactionPageClient() {
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
           />
+          <button className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center">
+            <Image
+              src="/images/transaction/영수증_AI_등록.svg"
+              alt="영수증"
+              width={20}
+              height={20}
+              className="mr-1"
+            />
+            <span>영수증으로 작성하기</span>
+          </button>
         </div>
         {amountError && amountTouched && (
           <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
@@ -342,8 +451,8 @@ export default function UpdateTransactionPageClient() {
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
             placeholder="YYYY/MM/DD"
-            value={formatDateWithSlash(date)}
-            readOnly
+            value={formatDateWithSlash(date)} // 포맷팅 함수 사용
+            readOnly // 직접 편집을 방지
             onClick={() =>
               document.getElementById("hidden-date-input").showPicker()
             }
@@ -403,65 +512,60 @@ export default function UpdateTransactionPageClient() {
         </div>
       )}
 
-      {/* 수정/삭제 버튼 */}
+      {/* 저장 버튼 */}
       <div className="px-10 pb-7 mt-auto">
-        <div className="flex gap-3">
-          <button
-            className="flex-1 py-3 rounded-md font-medium transition-colors bg-red-500 hover:bg-red-600 text-white cursor-pointer"
-            onClick={handleDelete}
-          >
-            삭제
-          </button>
-          <button
-            className={`flex-1 py-3 rounded-md font-medium transition-colors ${
-              isFormValid && !isSubmitting
-                ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
-                : isSubmitting
-                ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
-                : "bg-gray-300 text-white cursor-not-allowed"
-            }`}
-            onClick={handleSubmit}
-            disabled={!isFormValid || isSubmitting}
-            style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
-          >
-            {isSubmitting ? (
-              <span className="flex items-center justify-center cursor-not-allowed">
-                <svg
-                  className="animate-spin h-5 w-5 mr-2"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                처리 중...
-              </span>
-            ) : (
-              "완료"
-            )}
-          </button>
-        </div>
+        <button
+          className={`w-full py-3 rounded-md font-medium transition-colors ${
+            isFormValid && !isSubmitting
+              ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
+              : isSubmitting
+              ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
+              : "bg-gray-300 text-white cursor-not-allowed"
+          }`}
+          onClick={handleSubmit}
+          disabled={!isFormValid || isSubmitting}
+          style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
+        >
+          {isSubmitting ? (
+            <span className="flex items-center justify-center cursor-not-allowed">
+              <svg
+                className="animate-spin h-5 w-5 mr-2"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              처리 중...
+            </span>
+          ) : (
+            "완료"
+          )}
+        </button>
       </div>
 
-      {/* 카테고리 선택 모달 (AddTransactionPageClient와 동일) */}
+      {/* 카테고리 선택 모달 */}
       {showCategoryModal && (
         <>
+          {/* 반투명 오버레이 */}
           <div
             className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-30 flex h-screen items-center justify-center z-50"
             onClick={() => setShowCategoryModal(false)}
           ></div>
+
+          {/* 카테고리 선택 모달 (완전 불투명) */}
           <div
             className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-[10px] p-2 w-[90%] shadow-lg z-50"
             onClick={(e) => e.stopPropagation()}

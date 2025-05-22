@@ -1,7 +1,7 @@
 // app/transaction/my/page.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import MyTransactionPageClient from "@/components/transaction/MyTransactionPageClient";
+import MyTransactionPageClient from "@/components/transaction/my/MyTransactionPageClient";
 
 // 서버 컴포넌트
 export default async function MyTransactionPage() {
