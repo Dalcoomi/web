@@ -396,7 +396,7 @@ export default function AddMyTransactionPageClient() {
       {/* 금액 입력 */}
       <div className="px-4 py-4">
         <label className="block font-medium text-lg mb-1">
-          금액<span className="text-[#FF005E]">*</span>
+          금액<span className="text-[#FF472F]">*</span>
         </label>
         <div className="relative">
           <input
