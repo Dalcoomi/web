@@ -44,13 +44,13 @@ export default function BottomBar() {
 
       {/* 그룹 버튼 */}
       <button
-        onClick={() => router.push("/transaction/group")}
+        onClick={() => router.push("/group")}
         className="flex flex-col items-center justify-center w-1/2 h-full hover:bg-gray-50 transition-colors cursor-pointer"
       >
         <div className="w-6 h-6">
           <Image
             src={
-              isActive("/transaction/group")
+              isActive("/group")
                 ? "/images/그룹_활성.svg"
                 : "/images/그룹_비활성.svg"
             }
@@ -62,7 +62,7 @@ export default function BottomBar() {
         </div>
         <span
           className={`text-xs ${
-            isActive("/transaction/group") ? "text-[#11ABFF]" : "text-[#D4D4D4]"
+            isActive("/group") ? "text-[#11ABFF]" : "text-[#D4D4D4]"
           }`}
         >
           그룹
