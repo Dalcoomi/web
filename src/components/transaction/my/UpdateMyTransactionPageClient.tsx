@@ -460,7 +460,7 @@ export default function UpdateTransactionPageClient() {
 
       {/* 금액 입력 */}
       <div className="px-4 py-4">
-        <label className="block font-medium text-lg mb-1">
+        <label className="block font-medium text-md mb-1">
           금액<span className="text-[#FF005E]">*</span>
         </label>
         <div className="relative">
@@ -488,7 +488,7 @@ export default function UpdateTransactionPageClient() {
 
       {/* 내용 입력 */}
       <div className="px-4">
-        <label className="block font-medium text-lg mb-1">내용</label>
+        <label className="block font-medium text-md mb-1">내용</label>
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
@@ -500,7 +500,7 @@ export default function UpdateTransactionPageClient() {
 
       {/* 날짜 입력 */}
       <div className="px-4 py-3">
-        <label className="block font-medium text-lg mb-1">날짜</label>
+        <label className="block font-medium text-md mb-1">날짜</label>
         <div className="relative">
           <input
             type="text"
@@ -534,7 +534,7 @@ export default function UpdateTransactionPageClient() {
 
       {/* 카테고리 선택 */}
       <div className="px-4 py-1">
-        <label className="block font-medium text-lg">카테고리</label>
+        <label className="block font-medium text-md">카테고리</label>
         <div className="flex">
           <button
             className="px-10 py-1 border-2 border-[#808080] rounded-[10px] text-sm text-[#808080] cursor-pointer"

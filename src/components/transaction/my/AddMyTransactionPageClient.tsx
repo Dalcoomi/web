@@ -303,6 +303,8 @@ export default function AddMyTransactionPageClient() {
       // API 서비스로 내 거래 내역 저장 요청
       const response = await addMyTransaction(transactionData);
 
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       console.log("내 거래 내역 저장 성공:", response);
 
       // 성공 시 내 거래 내역 조회 페이지로 이동
@@ -395,7 +397,7 @@ export default function AddMyTransactionPageClient() {
 
       {/* 금액 입력 */}
       <div className="px-4 py-4">
-        <label className="block font-medium text-lg mb-1">
+        <label className="block font-medium text-md mb-1">
           금액<span className="text-[#FF472F]">*</span>
         </label>
         <div className="relative">
@@ -415,7 +417,7 @@ export default function AddMyTransactionPageClient() {
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
           />
-          <button className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center">
+          {/* <button className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center">
             <Image
               src="/images/transaction/영수증_AI_등록.svg"
               alt="영수증"
@@ -424,7 +426,7 @@ export default function AddMyTransactionPageClient() {
               className="mr-1"
             />
             <span>영수증으로 작성하기</span>
-          </button>
+          </button> */}
         </div>
         {amountError && amountTouched && (
           <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
@@ -433,7 +435,7 @@ export default function AddMyTransactionPageClient() {
 
       {/* 내용 입력 */}
       <div className="px-4">
-        <label className="block font-medium text-lg mb-1">내용</label>
+        <label className="block font-medium text-md mb-1">내용</label>
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
@@ -445,7 +447,7 @@ export default function AddMyTransactionPageClient() {
 
       {/* 날짜 입력 */}
       <div className="px-4 py-3">
-        <label className="block font-medium text-lg mb-1">날짜</label>
+        <label className="block font-medium text-md mb-1">날짜</label>
         <div className="relative">
           <input
             type="text"
@@ -479,7 +481,7 @@ export default function AddMyTransactionPageClient() {
 
       {/* 카테고리 선택 */}
       <div className="px-4 py-1">
-        <label className="block font-medium text-lg">카테고리</label>
+        <label className="block font-medium text-md">카테고리</label>
         <div className="flex">
           <button
             className="px-10 py-1 border-2 border-[#808080] rounded-[10px] text-sm text-[#808080] cursor-pointer"
