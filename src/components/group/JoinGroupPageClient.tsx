@@ -114,7 +114,7 @@ export default function JoinGroupPageClient() {
       <div className="flex-1 px-4 py-6">
         {/* 초대 코드 입력 */}
         <div className="mb-6">
-          <label className="block font-medium text-md mb-1">
+          <label className="block font-medium text-md mb-3">
             초대 코드<span className="text-[#FF472F]">*</span>
           </label>
           <input

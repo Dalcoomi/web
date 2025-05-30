@@ -31,7 +31,7 @@ export interface MonthlyTransactionsResponse {
 
 // 내 거래 내역 추가 API
 export const addMyTransaction = async (transactionData: any) => {
-  return post("/api/transaction/my", transactionData);
+  return post("/api/transaction", transactionData);
 };
 
 // 내 전체 거래 내역 조회 API
@@ -40,9 +40,7 @@ export const getMyTransactions = async (
   month: number
 ): Promise<MonthlyTransactionsResponse> => {
   try {
-    const response = await get(
-      `/api/transaction/my?year=${year}&month=${month}`
-    );
+    const response = await get(`/api/transaction?year=${year}&month=${month}`);
     return response;
   } catch (error) {
     console.error("개인 거래 내역 조회 중 오류 발생:", error);

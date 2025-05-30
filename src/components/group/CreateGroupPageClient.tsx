@@ -139,7 +139,7 @@ export default function CreateGroupPageClient() {
                 ? "border-red-500 focus:border-red-500"
                 : "border-gray-300 focus:border-blue-500"
             }`}
-            placeholder="오사카 여행 경비 관리"
+            placeholder="여행 경비 관리"
             value={title}
             onChange={handleTitleChange}
             onBlur={(e) => {

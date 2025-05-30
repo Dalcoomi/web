@@ -292,6 +292,7 @@ export default function AddMyTransactionPageClient() {
       // API 요청을 위한, 데이터 구조화
       const transactionData = {
         categoryId: categoryIdMap[category] || 0, // 카테고리 ID 매핑
+        teamId: null,
         amount: Number(amount), // 문자열을 숫자로 변환
         content: content || null, // 내용이 없으면 null
         transactionDate: transactionDateTime.toISOString(), // ISO 형식으로 변환 (YYYY-MM-DDTHH:mm:ss.sssZ)
@@ -563,7 +564,7 @@ export default function AddMyTransactionPageClient() {
         <>
           {/* 반투명 오버레이 */}
           <div
-            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-30 flex h-screen items-center justify-center z-50"
+            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
             onClick={() => setShowCategoryModal(false)}
           ></div>
 

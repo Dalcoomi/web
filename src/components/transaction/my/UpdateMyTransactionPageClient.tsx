@@ -329,6 +329,7 @@ export default function UpdateTransactionPageClient() {
       // API 요청을 위한 데이터 구조화
       const transactionData = {
         categoryId: categoryIdMap[category] || 0,
+        teamId: null,
         amount: Number(amount),
         content: content || null,
         transactionDate: transactionDateTime.toISOString(),
