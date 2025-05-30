@@ -87,8 +87,8 @@ const refreshAccessToken = async (): Promise<boolean> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${refreshToken}`,
       },
-      body: JSON.stringify({ refreshToken }),
     });
 
     if (!response.ok) {
@@ -122,5 +122,9 @@ export const put = (endpoint: string, data?: any, options?: RequestInit) =>
     body: data ? JSON.stringify(data) : undefined,
   });
 
-export const del = (endpoint: string, options?: RequestInit) =>
-  apiClient(endpoint, { ...options, method: "DELETE" });
+export const del = (endpoint: string, data?: any, options?: RequestInit) =>
+  apiClient(endpoint, {
+    ...options,
+    method: "DELETE",
+    body: data ? JSON.stringify(data) : undefined,
+  });

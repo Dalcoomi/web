@@ -3,13 +3,15 @@ import { get, post, put, del } from "@/utils/apiClient";
 
 // 백엔드 응답에 맞춘 트랜잭션 타입 정의
 export interface Transaction {
-  transactionId: number;
-  creatorNickname: string;
-  categoryName: string;
-  transactionDate: string;
-  content: string;
+  transactionId: string;
   amount: number;
+  content: string;
+  transactionDate: string;
   transactionType: "INCOME" | "EXPENSE";
+  creatorNickname: string;
+  categoryId: number;
+  categoryName: string;
+  iconUrl: string;
 }
 
 // 트랜잭션 요약 타입
@@ -27,15 +29,18 @@ export interface MonthlyTransactionsResponse {
   transactions: Transaction[];
 }
 
+// 내 거래 내역 추가 API
+export const addMyTransaction = async (transactionData: any) => {
+  return post("/api/transaction", transactionData);
+};
+
 // 내 전체 거래 내역 조회 API
 export const getMyTransactions = async (
   year: number,
   month: number
 ): Promise<MonthlyTransactionsResponse> => {
   try {
-    const response = await get(
-      `/api/transaction/my?year=${year}&month=${month}`
-    );
+    const response = await get(`/api/transaction?year=${year}&month=${month}`);
     return response;
   } catch (error) {
     console.error("개인 거래 내역 조회 중 오류 발생:", error);
@@ -51,7 +56,7 @@ export const getMyTransactions = async (
 
 // 내 특정 거래 내역 조회 API
 export const getMyTransactionById = async (
-  id: number
+  id: string
 ): Promise<Transaction> => {
   try {
     const response = await get(`/api/transaction/${id}`);
@@ -62,20 +67,12 @@ export const getMyTransactionById = async (
   }
 };
 
-// 내 거래 내역 추가 API
-export const addMyTransaction = async (transactionData: any) => {
-  return post("/api/transaction/my", transactionData);
-};
-
 // 내 거래 내역 수정
-export const updateMyTransaction = async (
-  id: number,
-  data: any
-): Promise<Transaction> => {
+export const updateMyTransaction = async (id: string, data: any) => {
   return put(`/api/transaction/${id}`, data);
 };
 
 // 내 거래 내역 삭제
-export const deleteMyTransaction = async (id: number): Promise<void> => {
+export const deleteMyTransaction = async (id: string): Promise<void> => {
   return del(`/api/transaction/${id}`);
 };

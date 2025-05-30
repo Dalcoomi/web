@@ -1,9 +1,9 @@
-// app/transaction/add/page.tsx
+// app/group/[teamId]/page.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import AddMyTransactionPageClient from "@/components/transaction/my/AddMyTransactionPageClient";
+import GroupInfoPageClient from "@/components/group/GroupInfoPageClient";
 
-export default async function AddMyTransactionPage() {
+export default async function GroupInfoPage() {
   // 서버에서 인증 확인
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken");
@@ -12,5 +12,5 @@ export default async function AddMyTransactionPage() {
     redirect("/");
   }
 
-  return <AddMyTransactionPageClient />;
+  return <GroupInfoPageClient />;
 }

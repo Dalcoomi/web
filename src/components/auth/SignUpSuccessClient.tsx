@@ -123,7 +123,7 @@ export default function SignUpSuccessClient() {
       {/* 배경 이미지가 전체 화면을 채우도록 설정 */}
       <div className="absolute inset-0 w-full h-full flex items-center justify-center">
         <Image
-          src="/images/auth/signup-success.svg"
+          src="/images/auth/회원가입_완료.svg"
           alt="회원가입 완료"
           width={414}
           height={680}
