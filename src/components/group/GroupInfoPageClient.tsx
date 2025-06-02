@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getGroupInfo, leaveGroup, GroupInfo } from "@/services/groupService";
+import { getMember, Member } from "@/services/memberService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -13,6 +14,7 @@ export default function GroupInfoPageClient() {
   const params = useParams();
   const teamId = params.teamId as string;
 
+  const [memberInfo, setMemberInfo] = useState<Member | null>(null);
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -45,9 +47,28 @@ export default function GroupInfoPageClient() {
       }
     }, 100);
 
+    const timeoutId2 = setTimeout(async () => {
+      try {
+        setIsLoading(true);
+        console.log("회원 조회 요청");
+
+        const response = await getMember();
+
+        setMemberInfo(response);
+      } catch (error) {
+        console.error("회원 정보 로드 오류:", error);
+        alert("회원 정보를 불러올 수 없습니다.");
+
+        router.replace("/group");
+      } finally {
+        setIsLoading(false);
+      }
+    }, 100);
+
     // cleanup: 다음 effect 실행 전에 이전 timeout 취소
     return () => {
       clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
     };
   }, [teamId, router]);
 
@@ -142,11 +163,10 @@ export default function GroupInfoPageClient() {
     return nickname === groupInfo?.leaderNickname;
   };
 
-  // 현재 사용자가 그룹장인지 확인 (실제로는 현재 로그인한 사용자 정보 필요)
+  // 현재 사용자가 그룹장인지 확인
   const isCurrentUserLeader = () => {
-    // TODO: 현재 로그인한 사용자의 nickname을 가져와서 비교
-    // 임시로 그룹장 여부를 확인하는 로직 (실제 구현 시 수정 필요)
-    return groupInfo?.leaderNickname === "만제#8151"; // 실제 구현 시 수정
+    // 그룹장 여부를 확인하는 로직
+    return groupInfo?.leaderNickname === memberInfo?.nickname;
   };
 
   // 새 그룹장 후보자 목록 (현재 그룹장 제외)
