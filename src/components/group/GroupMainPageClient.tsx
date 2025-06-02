@@ -1,4 +1,4 @@
-// components/group/GroupPageClient.tsx
+// components/group/GroupMainPageClient.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -51,14 +51,14 @@ export default function GroupPageClient() {
   // 그룹 정보 페이지로 이동
   const handleGroupInfoClick = (e: React.MouseEvent, teamId: string) => {
     e.stopPropagation(); // 부모 클릭 이벤트 방지
-    router.push(`/group/${teamId}`);
+    router.push(`/group/info/${teamId}`);
   };
 
   // 멤버 수 색상 결정 (정원에 따라)
   const getMemberCountColor = (memberCount: number, memberLimit: number) => {
     const ratio = memberCount / memberLimit;
-    if (ratio >= 1) return "text-green-600"; // 정원 달성
-    if (ratio >= 0.8) return "text-orange-500"; // 80% 이상
+    if (ratio >= 1) return "text-green-500"; // 정원 달성
+    if (ratio >= 0.5) return "text-yellow-400"; // 80% 이상
     return "text-[#FF472F]"; // 그 외
   };
 
@@ -150,7 +150,7 @@ export default function GroupPageClient() {
                       {group.title}
                     </h3>
                     <p
-                      className={`text-sm font-medium px-1 ${getMemberCountColor(
+                      className={`text-sm font-medium px-1.5 ${getMemberCountColor(
                         group.memberCount,
                         group.memberLimit
                       )}`}

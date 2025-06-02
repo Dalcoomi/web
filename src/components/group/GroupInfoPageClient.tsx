@@ -3,26 +3,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { getGroupInfo, leaveGroup } from "@/services/groupService";
+import { getGroupInfo, leaveGroup, GroupInfo } from "@/services/groupService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
-
-// 그룹 정보 타입 (백엔드 응답에 맞게 수정)
-interface GroupInfo {
-  teamId: string;
-  title: string;
-  invitationCode: string;
-  memberLimit: number;
-  purpose: string;
-  leaderNickname: string;
-  members: GroupMember[];
-}
-
-interface GroupMember {
-  nickname: string;
-  profileImageUrl: string;
-}
 
 export default function GroupInfoPageClient() {
   const router = useRouter();
@@ -47,11 +31,14 @@ export default function GroupInfoPageClient() {
       try {
         setIsLoading(true);
         console.log(`그룹 정보 조회 요청: ${teamId}`);
+
         const response = await getGroupInfo(teamId);
+
         setGroupInfo(response);
       } catch (error) {
         console.error("그룹 정보 로드 오류:", error);
         alert("그룹 정보를 불러올 수 없습니다.");
+
         router.replace("/group");
       } finally {
         setIsLoading(false);
@@ -159,7 +146,7 @@ export default function GroupInfoPageClient() {
   const isCurrentUserLeader = () => {
     // TODO: 현재 로그인한 사용자의 nickname을 가져와서 비교
     // 임시로 그룹장 여부를 확인하는 로직 (실제 구현 시 수정 필요)
-    return groupInfo?.leaderNickname === "조만제 #3909"; // 실제 구현 시 수정
+    return groupInfo?.leaderNickname === "만제#8151"; // 실제 구현 시 수정
   };
 
   // 새 그룹장 후보자 목록 (현재 그룹장 제외)
@@ -359,7 +346,7 @@ export default function GroupInfoPageClient() {
                   <p className="text-lg">마지막 인원이 떠날 경우</p>
                   <p className="text-lg">그룹이 삭제됩니다.</p>
                   <br></br>
-                  <p className="text-lg">그래도 떠나시겠습니까?</p>
+                  <p className="text-lg text-red-500">그래도 떠나시겠습니까?</p>
                 </>
               ) : (
                 <>

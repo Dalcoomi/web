@@ -1,9 +1,9 @@
-// components/transaction/TransactionItem.tsx
+// components/transaction/my/MyTransactionItem.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
 
-interface TransactionItemProps {
+interface MyTransactionItemProps {
   date: string; // "MM.DD" 형식
   category: string;
   description: string;
@@ -11,20 +11,20 @@ interface TransactionItemProps {
   transactionId: string; // 거래 ID 추가
 }
 
-export default function TransactionItem({
+export default function MyTransactionItem({
   date,
   category,
   description,
   amount,
   transactionId,
-}: TransactionItemProps) {
+}: MyTransactionItemProps) {
   const router = useRouter();
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("ko-KR");
   };
 
-  const isIncome = amount > 0;
+  const isIncome = amount >= 0;
 
   // 텍스트 길이에 따른 자르기 함수
   const truncateText = (text: string, maxLength: number): string => {
@@ -67,17 +67,17 @@ export default function TransactionItem({
       onClick={handleClick}
     >
       {/* 날짜 (있을 때만 표시) */}
-      <div className="w-12 text-xs">{date}</div>
+      <div className="w-11 text-xs">{date}</div>
 
       {/* 카테고리 (5글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate max-w-[78px]">
+      <div className="flex-1 text-left text-sm truncate max-w-[80px]">
         <span className="block w-full" title={category}>
           {truncateText(category, 5)}
         </span>
       </div>
 
       {/* 내용 (8글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate">
+      <div className="flex-1 text-left text-sm truncate max-w-[120px]">
         <span className="block w-full" title={description}>
           {truncateText(description, 8)}
         </span>

@@ -14,13 +14,6 @@ export interface Transaction {
   iconUrl: string;
 }
 
-// 트랜잭션 요약 타입
-export interface TransactionSummary {
-  income: number;
-  expense: number;
-  total: number;
-}
-
 // 월별 트랜잭션 응답 타입
 export interface MonthlyTransactionsResponse {
   income: number;
@@ -29,21 +22,38 @@ export interface MonthlyTransactionsResponse {
   transactions: Transaction[];
 }
 
-// 내 거래 내역 추가 API
-export const addMyTransaction = async (transactionData: any) => {
+// 거래 내역 추가 API
+export const addTransaction = async (transactionData: any) => {
   return post("/api/transaction", transactionData);
 };
 
-// 내 전체 거래 내역 조회 API
-export const getMyTransactions = async (
-  year: number,
-  month: number
+// 전체 거래 내역 조회 API
+export const getTransactions = async (
+  teamIdOrYear: number,
+  yearOrMonth: number,
+  month?: number
 ): Promise<MonthlyTransactionsResponse> => {
   try {
-    const response = await get(`/api/transaction?year=${year}&month=${month}`);
+    let url: string;
+
+    if (month !== undefined) {
+      // 3개 매개변수가 모두 있는 경우: teamId, year, month
+      const teamId = teamIdOrYear;
+      const year = yearOrMonth;
+      url = `/api/transaction?teamId=${teamId}&year=${year}&month=${month}`;
+    } else {
+      // 2개 매개변수만 있는 경우: year, month (개인 거래)
+      const year = teamIdOrYear;
+      const monthParam = yearOrMonth;
+      url = `/api/transaction?year=${year}&month=${monthParam}`;
+    }
+
+    console.log(`거래 내역 조회 요청: ${url}`);
+    const response = await get(url);
+
     return response;
   } catch (error) {
-    console.error("개인 거래 내역 조회 중 오류 발생:", error);
+    console.error("거래 내역 조회 중 오류 발생:", error);
     // 기본값 반환
     return {
       income: 0,
@@ -54,12 +64,12 @@ export const getMyTransactions = async (
   }
 };
 
-// 내 특정 거래 내역 조회 API
-export const getMyTransactionById = async (
-  id: string
+// 특정 거래 내역 조회 API
+export const getTransactionById = async (
+  transactionId: string
 ): Promise<Transaction> => {
   try {
-    const response = await get(`/api/transaction/${id}`);
+    const response = await get(`/api/transaction/${transactionId}`);
     return response;
   } catch (error) {
     console.error("거래 내역 상세 조회 중 오류 발생:", error);
@@ -67,12 +77,14 @@ export const getMyTransactionById = async (
   }
 };
 
-// 내 거래 내역 수정
-export const updateMyTransaction = async (id: string, data: any) => {
-  return put(`/api/transaction/${id}`, data);
+// 거래 내역 수정
+export const updateTransaction = async (transactionId: string, data: any) => {
+  return put(`/api/transaction/${transactionId}`, data);
 };
 
-// 내 거래 내역 삭제
-export const deleteMyTransaction = async (id: string): Promise<void> => {
-  return del(`/api/transaction/${id}`);
+// 거래 내역 삭제
+export const deleteTransaction = async (
+  transactionId: string
+): Promise<void> => {
+  return del(`/api/transaction/${transactionId}`);
 };

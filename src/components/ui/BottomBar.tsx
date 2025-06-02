@@ -50,7 +50,7 @@ export default function BottomBar() {
         <div className="w-6 h-6">
           <Image
             src={
-              isActive("/group")
+              isActive("/group") || isActive("/transaction/group")
                 ? "/images/그룹_활성.svg"
                 : "/images/그룹_비활성.svg"
             }
@@ -62,7 +62,9 @@ export default function BottomBar() {
         </div>
         <span
           className={`text-xs ${
-            isActive("/group") ? "text-[#11ABFF]" : "text-[#D4D4D4]"
+            isActive("/group") || isActive("/transaction/group")
+              ? "text-[#11ABFF]"
+              : "text-[#D4D4D4]"
           }`}
         >
           그룹

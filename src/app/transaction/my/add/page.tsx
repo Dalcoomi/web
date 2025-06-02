@@ -1,4 +1,4 @@
-// app/transaction/add/page.tsx
+// app/transaction/my/add/page.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AddMyTransactionPageClient from "@/components/transaction/my/AddMyTransactionPageClient";

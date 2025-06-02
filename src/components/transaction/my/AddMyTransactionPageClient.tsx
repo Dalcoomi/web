@@ -1,9 +1,9 @@
-// components/transaction/AddTransactionPageClient.tsx
+// components/transaction/my/AddMyTransactionPageClient.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { addMyTransaction } from "@/services/transactionService";
+import { addTransaction } from "@/services/transactionService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -302,7 +302,7 @@ export default function AddMyTransactionPageClient() {
       console.log("전송할 데이터:", transactionData);
 
       // API 서비스로 내 거래 내역 저장 요청
-      const response = await addMyTransaction(transactionData);
+      const response = await addTransaction(transactionData);
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -369,7 +369,7 @@ export default function AddMyTransactionPageClient() {
 
       {/* 거래 내역 작성 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">거래 내역 작성</h1>
+        <h1 className="text-xl font-light">개인 거래 내역 작성</h1>
       </div>
 
       {/* 거래 유형 선택 */}
