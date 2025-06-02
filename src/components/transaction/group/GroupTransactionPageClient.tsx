@@ -1,20 +1,24 @@
-// components/transaction/my/MyTransactionPageClient.tsx
+// components/transaction/group/GroupTransactionPageClient.tsx
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
-import MyTransactionItem from "@/components/transaction/MyTransactionItem";
+import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
 import EmptyTransactionList from "@/components/transaction/EmptyTransactionList";
 import {
   getTransactions,
   MonthlyTransactionsResponse,
 } from "@/services/transactionService";
+import { getGroupInfo, GroupInfo } from "@/services/groupService";
 
 export default function MyTransactionPageClient() {
   const router = useRouter();
+  const params = useParams();
+  const teamId = params.teamId as string;
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [response, setResponse] = useState<MonthlyTransactionsResponse>({
@@ -23,6 +27,7 @@ export default function MyTransactionPageClient() {
     total: 0,
     transactions: [],
   });
+  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
   // 중복 호출 방지를 위한 ref
   const lastRequestRef = useRef<string>("");
@@ -35,7 +40,7 @@ export default function MyTransactionPageClient() {
 
   // 트랜잭션 데이터 로드
   const loadTransactions = useCallback(
-    async (year: number, month: number) => {
+    async (teamId: string, year: number, month: number) => {
       const requestKey = `${year}-${month}`;
 
       // 같은 요청이 진행 중이면 무시
@@ -53,9 +58,11 @@ export default function MyTransactionPageClient() {
       setIsLoading(true);
 
       try {
-        console.log(`거래 내역 조회 요청: ${year}년 ${month}월`);
+        console.log(
+          `그룹 거래 내역 조회 요청: 팀 ${teamId}, ${year}년 ${month}월`
+        );
 
-        const response = await getTransactions(year, month);
+        const response = await getTransactions(parseInt(teamId), year, month);
 
         setResponse(response);
       } catch (error) {
@@ -84,18 +91,48 @@ export default function MyTransactionPageClient() {
 
   // useEffect를 변경
   useEffect(() => {
+    if (!teamId) {
+      console.error("teamId가 없습니다.");
+      router.replace("/group"); // teamId가 없으면 그룹 목록으로 리다이렉트
+      return;
+    }
+
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
 
     // 약간의 디바운스 추가
     const timeoutId = setTimeout(() => {
-      loadTransactions(year, month);
+      loadTransactions(teamId, year, month);
+    }, 100);
+
+    const timeoutId2 = setTimeout(async () => {
+      if (!teamId) {
+        router.replace("/group");
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        console.log(`그룹 정보 조회 요청: ${teamId}`);
+
+        const response = await getGroupInfo(teamId);
+
+        setGroupInfo(response);
+      } catch (error) {
+        console.error("그룹 정보 로드 오류:", error);
+        alert("그룹 정보를 불러올 수 없습니다.");
+
+        router.replace("/group");
+      } finally {
+        setIsLoading(false);
+      }
     }, 100);
 
     return () => {
       clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
     };
-  }, [selectedDate, loadTransactions]);
+  }, [selectedDate, teamId, loadTransactions, router]);
 
   // 날짜를 "MM.DD" 형식으로 변환
   const formatDateToMMDD = (dateString: string): string => {
@@ -108,7 +145,7 @@ export default function MyTransactionPageClient() {
 
   // 새 거래 추가 버튼 클릭 핸들러
   const handleAddTransaction = () => {
-    router.push("/transaction/my/add");
+    router.push(`/transaction/group/${teamId}/add`);
   };
 
   const formatDateForDisplay = (date: Date): string => {
@@ -144,13 +181,14 @@ export default function MyTransactionPageClient() {
       <TopBar />
 
       {/* 거래 내역 작성 제목 블록 */}
-      {/* <div className="text-[#11ABFF] px-4 py-2 items-center">
-        <h1 className="text-xl font-light text-center">
-          {memberInfo?.nickname}의 가계부
-        </h1> */}
+      <div className="text-[#11ABFF] px-4 py-2 items-center">
+        <h1 className="text-md text-center font-light border-2 rounded-[10px]">
+          {groupInfo?.title}
+        </h1>
+      </div>
 
       {/* 파란색 박스 영역 */}
-      <div className="px-2 py-2">
+      <div className="px-2 py-2 pt-0">
         <div className="bg-[#EEF9FF] rounded-[10px] px-2 py-1.5">
           {/* 날짜 선택기 */}
           <div className="flex items-center mb-2">
@@ -239,11 +277,14 @@ export default function MyTransactionPageClient() {
       {/* 카테고리/내용/금액 헤더 */}
       <div className="mx-2  border-t-2 border-[#959595] rounded-t-[20px] overflow-hidden">
         <div className="flex py-2 px-7 bg-white">
-          <div className="flex-1 text-center text-sm font-light text-[#959595] -translate-x-1">
+          <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-2">
             카테고리
           </div>
-          <div className="flex-1 text-left text-sm font-light text-[#959595] -translate-x-0.5">
+          <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-2">
             내용
+          </div>
+          <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-1">
+            작성자
           </div>
           <div className="flex-1 text-right text-sm font-light text-[#959595]">
             금액
@@ -274,11 +315,12 @@ export default function MyTransactionPageClient() {
             const shouldShowDate = prevDate !== currentDate;
 
             return (
-              <MyTransactionItem
+              <GroupTransactionItem
                 key={index}
                 date={shouldShowDate ? currentDate : ""}
                 category={transaction.categoryName}
                 description={transaction.content}
+                creator={transaction.creatorNickname}
                 amount={
                   transaction.transactionType === "EXPENSE"
                     ? -transaction.amount

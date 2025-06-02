@@ -1,9 +1,9 @@
-// components/transaction/AddTransactionPageClient.tsx
+// components/transaction/my/AddMyTransactionPageClient.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { addMyTransaction } from "@/services/transactionService";
+import { addTransaction } from "@/services/transactionService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -302,7 +302,7 @@ export default function AddMyTransactionPageClient() {
       console.log("전송할 데이터:", transactionData);
 
       // API 서비스로 내 거래 내역 저장 요청
-      const response = await addMyTransaction(transactionData);
+      const response = await addTransaction(transactionData);
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -369,7 +369,7 @@ export default function AddMyTransactionPageClient() {
 
       {/* 거래 내역 작성 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">거래 내역 작성</h1>
+        <h1 className="text-xl font-light">개인 거래 내역 작성</h1>
       </div>
 
       {/* 거래 유형 선택 */}
@@ -418,7 +418,10 @@ export default function AddMyTransactionPageClient() {
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
           />
-          {/* <button className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center">
+          <button
+            onClick={() => alert("서비스 준비 중입니다.")}
+            className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center"
+          >
             <Image
               src="/images/transaction/영수증_AI_등록.svg"
               alt="영수증"
@@ -427,7 +430,7 @@ export default function AddMyTransactionPageClient() {
               className="mr-1"
             />
             <span>영수증으로 작성하기</span>
-          </button> */}
+          </button>
         </div>
         {amountError && amountTouched && (
           <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
