@@ -94,7 +94,10 @@ export default function TopBar({
 
       {/* 오른쪽 - 햄버거 메뉴 */}
       <div className="flex items-center">
-        <button className="flex cursor-pointer items-center justify-center">
+        <button
+          onClick={() => alert("서비스 준비 중입니다.")}
+          className="flex cursor-pointer items-center justify-center"
+        >
           <svg
             width="50"
             height="24"
