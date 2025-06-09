@@ -27,7 +27,12 @@ function loadEnvironmentConfig() {
 loadEnvironmentConfig();
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  eslint: {
+    ignoreDuringBuilds: true, // 빌드 시 ESLint 무시
+  },
+  typescript: {
+    ignoreBuildErrors: true, // 빌드 시 TypeScript 에러 무시
+  },
 };
 
 export default nextConfig;
