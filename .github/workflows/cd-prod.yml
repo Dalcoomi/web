@@ -56,10 +56,13 @@ jobs:
             node --version
 
             # 의존성 설치
-            npm ci --production
+            npm ci
 
             # PM2로 Next.js 시작 (3000 포트)
             pm2 restart dalcoomi-frontend || pm2 start npm --name "dalcoomi-frontend" -- start
+
+            # Nginx 설정 테스트 및 리로드
+            sudo nginx -t && sudo systemctl reload nginx
 
             # PM2 상태 확인
             pm2 status
