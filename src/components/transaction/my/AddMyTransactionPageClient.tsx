@@ -11,6 +11,7 @@ import BottomBar from "@/components/ui/BottomBar";
 
 export default function AddMyTransactionPageClient() {
   const router = useRouter();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [transactionType, setTransactionType] = useState<"EXPENSE" | "INCOME">(
@@ -33,18 +34,22 @@ export default function AddMyTransactionPageClient() {
   // 카테고리 로드
   const loadCategories = useCallback(async (type: "EXPENSE" | "INCOME") => {
     setIsLoadingCategories(true);
+
     try {
       const categoryList = await getMyCategories(type);
+
       setCategories(categoryList);
 
       // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
       if (categoryList.length > 0) {
         const defaultCategory =
           categoryList.find((cat) => cat.name === "기타") || categoryList[0];
+
         setCategoryId(defaultCategory.id);
       }
     } catch (error) {
       console.error("카테고리 로드 오류:", error);
+
       setCategories([]);
     } finally {
       setIsLoadingCategories(false);
