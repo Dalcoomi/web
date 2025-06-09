@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* 폰트 정의 */
+@font-face {
+  font-family: "Title_Light";
+  src: url("/fonts/Title_Light.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Title_Medium";
+  src: url("/fonts/Title_Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Title_Bold";
+  src: url("/fonts/Title_Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --font-title-light: "Title_Light", sans-serif;
+  --font-title-medium: "Title_Medium", sans-serif;
+  --font-title-bold: "Title_Bold", sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-title-medium), Arial, Helvetica, sans-serif;
+}
+
+.font-title-light {
+  font-family: var(--font-title-light);
+}
+
+.font-title-medium {
+  font-family: var(--font-title-medium);
+}
+
+.font-title-bold {
+  font-family: var(--font-title-bold);
+}

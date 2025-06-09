@@ -1,0 +1,65 @@
+name: Dalcoomi Frontend CD
+
+on:
+  workflow_run:
+    workflows: ["Dalcoomi Frontend CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SUBMODULE_PAT }}
+          submodules: "recursive"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup production environment
+        run: |
+          cp env-config/.env ./
+          cp env-config/.env.production ./.env.local
+
+      - name: Build for production
+        run: NODE_ENV=production npm run build
+
+      - name: Deploy to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_PROD_HOST }}
+          username: ${{ secrets.EC2_PROD_USER }}
+          key: ${{ secrets.EC2_PROD_PRIVATE_KEY }}
+          source: ".,!node_modules,!.git"
+          target: "/var/www/dalcoomi-frontend"
+
+      - name: Start application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_PROD_HOST }}
+          username: ${{ secrets.EC2_PROD_USER }}
+          key: ${{ secrets.EC2_PROD_PRIVATE_KEY }}
+          script: |
+            cd /var/www/dalcoomi-frontend
+
+            # Node.js 22 버전 확인
+            node --version
+
+            # 의존성 설치
+            npm ci --production
+
+            # PM2로 Next.js 시작 (3000 포트)
+            pm2 restart dalcoomi-frontend || pm2 start npm --name "dalcoomi-frontend" -- start
+
+            # PM2 상태 확인
+            pm2 status
