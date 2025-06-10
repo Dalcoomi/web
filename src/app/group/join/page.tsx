@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import JoinGroupPageClient from "@/components/group/JoinGroupPageClient";
 
+export const metadata = {
+  title: "그룹 참가",
+};
+
 export default async function JoinGroupPage() {
   // 서버에서 인증 확인
   const cookieStore = await cookies();

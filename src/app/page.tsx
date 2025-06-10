@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import LoginPageClient from "@/components/auth/LoginPageClient";
 
+export const metadata = {
+  title: "로그인 | 달쿠미",
+};
+
 export default async function RootPage() {
   // 서버에서 인증 확인
   const cookieStore = await cookies();
