@@ -1,4 +1,4 @@
-name: Dalcoomi Frontend CD FOR PROD
+name: Dalcoomi Frontend CD for Prod
 
 on:
   workflow_run:
@@ -91,7 +91,7 @@ jobs:
       - name: Github Actions IP 보안그룹 삭제
         if: always()
         run: |
-          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_FRONTEND_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_PROD_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
 
       - name: Deployment Status Notification
         if: always()
