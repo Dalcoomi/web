@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import GroupTransactionPageClient from "@/components/transaction/group/GroupTransactionPageClient";
 
+export const metadata = {
+  title: "그룹 거래 내역",
+};
+
 export default async function GroupTransactionPage() {
   // 서버에서 인증 확인
   const cookieStore = await cookies();

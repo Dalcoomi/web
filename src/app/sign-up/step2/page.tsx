@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import SignUpInfoClient from "@/components/auth/SignUpInfoClient";
 
+export const metadata = {
+  title: "회원가입",
+};
+
 export default async function SignUpInfoPage() {
   // 서버에서 인증 확인
   const cookieStore = await cookies();
