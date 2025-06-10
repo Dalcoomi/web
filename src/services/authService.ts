@@ -2,7 +2,7 @@
 import { post } from "@/utils/apiClient";
 
 // 로그인 API
-export const kakaoLogin = async (data: {
+export const socialLogin = async (data: {
   socialId: string;
   socialType: string;
 }) => {
