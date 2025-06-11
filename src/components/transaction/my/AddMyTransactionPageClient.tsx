@@ -191,13 +191,28 @@ export default function AddMyTransactionPageClient() {
     return dateString.replace(/-/g, "/");
   };
 
+  const openDatePicker = () => {
+    const hiddenInput = document.getElementById("hidden-date-input");
+    if (hiddenInput) {
+      try {
+        if (typeof hiddenInput.showPicker === "function") {
+          hiddenInput.showPicker();
+        } else {
+          hiddenInput.click();
+        }
+      } catch (error) {
+        hiddenInput.click();
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white">
       <TopBar />
 
       {/* 거래 내역 작성 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">개인 거래 내역 작성</h1>
+        <h1 className="text-xl font-light">내 거래 내역 작성</h1>
       </div>
 
       {/* 거래 유형 선택 */}
@@ -277,33 +292,34 @@ export default function AddMyTransactionPageClient() {
         />
       </div>
 
-      {/* 날짜 입력 - iOS 호환 버전 */}
+      {/* 날짜 입력 */}
       <div className="px-4 py-3">
         <label className="block font-medium text-black text-md mb-1">
           날짜
         </label>
         <div className="relative">
-          {/* 숨김 처리된 실제 date input을 위로 올려서 전체를 덮게 함 */}
-          <input
-            type="date"
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" // z-10으로 위에 배치
-            value={date.replace(/\//g, "-")}
-            onChange={handleDateChange}
-          />
-
-          {/* 표시용 input */}
           <input
             type="text"
-            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none cursor-pointer relative z-0"
+            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none cursor-pointer"
             placeholder="YYYY/MM/DD"
             value={formatDateWithSlash(date)}
             readOnly
-            tabIndex={-1} // 탭 포커스 방지
+            onClick={openDatePicker}
           />
-
-          {/* 달력 아이콘 */}
-          <div className="absolute right-3 bottom-2 pointer-events-none z-0">
-            📅
+          <input
+            id="hidden-date-input"
+            type="date"
+            className="opacity-0 absolute w-0 h-0"
+            value={date.replace(/\//g, "-")}
+            onChange={handleDateChange}
+          />
+          <div className="absolute right-3 bottom-2">
+            <button
+              onClick={openDatePicker}
+              className="bg-transparent border-0 p-0 cursor-pointer"
+            >
+              📅
+            </button>
           </div>
         </div>
       </div>
@@ -317,7 +333,7 @@ export default function AddMyTransactionPageClient() {
             onClick={() => setShowCategoryModal(true)}
             disabled={isLoadingCategories}
           >
-            {isLoadingCategories ? "로딩 중..." : "선택"}
+            선택
           </button>
         </div>
       </div>
