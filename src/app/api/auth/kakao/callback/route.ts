@@ -6,34 +6,51 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
 
+  // User-Agent로 요청이 팝업에서 온 것인지 확인
+  const userAgent = request.headers.get("user-agent") || "";
+  const isKakaoTalkBrowser = /KAKAOTALK/i.test(userAgent);
+
   // 코드가 없으면 에러 반환
   if (!code) {
-    return new Response(
-      `
-      <html>
-        <head>
-          <title>로그인 실패</title>
-          <script>
-            window.opener.postMessage({ type: 'kakaoLogin', success: false, error: '인증 코드가 없습니다.' }, window.opener.location.origin);
-            window.close();
-          </script>
-        </head>
-        <body>
-          <p>로그인 실패</p>
-        </body>
-      </html>
-      `,
-      {
-        status: 400,
-        headers: {
-          "Content-Type": "text/html",
-        },
-      }
-    );
+    const errorMessage = "인증 코드가 없습니다.";
+
+    if (isKakaoTalkBrowser) {
+      // 리다이렉트 방식 - 메인 페이지로 에러와 함께 리다이렉트
+      return Response.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/login?error=${encodeURIComponent(
+          errorMessage
+        )}`,
+        302
+      );
+    } else {
+      // 팝업 방식 - 기존 HTML 응답
+      return new Response(
+        `
+        <html>
+          <head>
+            <title>로그인 실패</title>
+            <script>
+              window.opener.postMessage({ type: 'kakaoLogin', success: false, error: '${errorMessage}' }, window.opener.location.origin);
+              window.close();
+            </script>
+          </head>
+          <body>
+            <p>로그인 실패</p>
+          </body>
+        </html>
+        `,
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "text/html",
+          },
+        }
+      );
+    }
   }
 
   try {
-    // 환경 변수에서 API 키 불러오기 (서버 컴포넌트에서는 NEXT_PUBLIC_ 접두사 없이도 접근 가능)
+    // 환경 변수에서 API 키 불러오기
     const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
     const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
@@ -91,68 +108,91 @@ export async function GET(request: NextRequest) {
       refreshToken: tokenData.refresh_token,
     };
 
-    // 3. HTML 응답으로 부모 창에 메시지 전송 후 창 닫기
-    return new Response(
-      `
-      <html>
-        <head>
-          <title>로그인 성공</title>
-          <script>
-            window.opener.postMessage(
-              { 
-                type: 'kakaoLogin', 
-                success: true, 
-                userData: ${JSON.stringify(userInfo)} 
-              }, 
-              window.opener.location.origin
-            );
-            window.close();
-          </script>
-        </head>
-        <body>
-          <p>로그인 성공! 창을 닫아주세요.</p>
-        </body>
-      </html>
-      `,
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "text/html",
-        },
-      }
-    );
+    // 3. 브라우저 타입에 따라 다른 응답 방식 사용
+    if (isKakaoTalkBrowser) {
+      // 리다이렉트 방식 - 메인 페이지로 사용자 데이터와 함께 리다이렉트
+      const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
+      return Response.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/login?kakao_login=success&user_data=${userInfoEncoded}`,
+        302
+      );
+    } else {
+      // 팝업 방식 - 기존 HTML 응답
+      return new Response(
+        `
+        <html>
+          <head>
+            <title>로그인 성공</title>
+            <script>
+              window.opener.postMessage(
+                { 
+                  type: 'kakaoLogin', 
+                  success: true, 
+                  userData: ${JSON.stringify(userInfo)} 
+                }, 
+                window.opener.location.origin
+              );
+              window.close();
+            </script>
+          </head>
+          <body>
+            <p>로그인 성공! 창을 닫아주세요.</p>
+          </body>
+        </html>
+        `,
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html",
+          },
+        }
+      );
+    }
   } catch (error) {
     console.error("카카오 로그인 처리 오류:", error);
 
-    // 오류 발생 시 부모 창에 메시지 전송 후 창 닫기
-    return new Response(
-      `
-      <html>
-        <head>
-          <title>로그인 실패</title>
-          <script>
-            window.opener.postMessage(
-              { 
-                type: 'kakaoLogin', 
-                success: false, 
-                error: '로그인 처리 중 오류가 발생했습니다.' 
-              }, 
-              window.opener.location.origin
-            );
-            window.close();
-          </script>
-        </head>
-        <body>
-          <p>로그인 실패</p>
-        </body>
-      </html>
-      `,
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "text/html",
-        },
-      }
-    );
+    const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
+
+    // 오류 발생 시 브라우저 타입에 따라 다른 응답
+    if (isKakaoTalkBrowser) {
+      // 리다이렉트 방식 - 메인 페이지로 에러와 함께 리다이렉트
+      return Response.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/login?error=${encodeURIComponent(
+          errorMessage
+        )}`,
+        302
+      );
+    } else {
+      // 팝업 방식 - 기존 HTML 응답
+      return new Response(
+        `
+        <html>
+          <head>
+            <title>로그인 실패</title>
+            <script>
+              window.opener.postMessage(
+                { 
+                  type: 'kakaoLogin', 
+                  success: false, 
+                  error: '${errorMessage}' 
+                }, 
+                window.opener.location.origin
+              );
+              window.close();
+            </script>
+          </head>
+          <body>
+            <p>로그인 실패</p>
+          </body>
+        </html>
+        `,
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "text/html",
+          },
+        }
+      );
+    }
   }
 }
