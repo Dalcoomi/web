@@ -6,7 +6,7 @@ import ClientProviders from "./providers";
 export const metadata = {
   title: {
     default: "달쿠미",
-    template: "%s | 달쿠미",
+    template: "달쿠미 | %s",
   },
 };
 

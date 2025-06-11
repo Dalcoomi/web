@@ -142,7 +142,9 @@ export default function AddMyTransactionPageClient() {
         teamId: null, // 개인 거래이므로 null
         amount: Number(amount), // 문자열을 숫자로 변환
         content: content || null, // 내용이 없으면 null
-        transactionDate: transactionDateTime.toISOString(), // ISO 형식으로 변환 (YYYY-MM-DDTHH:mm:ss.sssZ)
+        transactionDate: transactionDateTime
+          .toISOString()
+          .replace("Z", "+09:00"),
         transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
       };
 
@@ -274,39 +276,33 @@ export default function AddMyTransactionPageClient() {
         />
       </div>
 
-      {/* 날짜 입력 */}
+      {/* 날짜 입력 - iOS 호환 버전 */}
       <div className="px-4 py-3">
-        <label className="block font-medium text-md mb-1">날짜</label>
-        <div
-          className="relative cursor-pointer"
-          onClick={() =>
-            document.getElementById("hidden-date-input")?.showPicker()
-          }
-        >
+        <label className="block font-medium text-black text-md mb-1">
+          날짜
+        </label>
+        <div className="relative">
+          {/* 숨김 처리된 실제 date input을 위로 올려서 전체를 덮게 함 */}
           <input
-            type="text"
-            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none cursor-pointer"
-            placeholder="YYYY/MM/DD"
-            value={formatDateWithSlash(date)}
-            readOnly
-          />
-          <input
-            id="hidden-date-input"
             type="date"
-            className="opacity-0 absolute w-0 h-0"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" // z-10으로 위에 배치
             value={date.replace(/\//g, "-")}
             onChange={handleDateChange}
           />
-          <div className="absolute right-0 top-0 bottom-0 flex items-center pr-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); // 이벤트 버블링 방지
-                document.getElementById("hidden-date-input")?.showPicker();
-              }}
-              className="bg-transparent border-0 p-2 cursor-pointer"
-            >
-              📅
-            </button>
+
+          {/* 표시용 input */}
+          <input
+            type="text"
+            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none cursor-pointer relative z-0"
+            placeholder="YYYY/MM/DD"
+            value={formatDateWithSlash(date)}
+            readOnly
+            tabIndex={-1} // 탭 포커스 방지
+          />
+
+          {/* 달력 아이콘 */}
+          <div className="absolute right-3 bottom-2 pointer-events-none z-0">
+            📅
           </div>
         </div>
       </div>
