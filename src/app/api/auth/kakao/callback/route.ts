@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
       // 리다이렉트 방식 - 메인 페이지로 사용자 데이터와 함께 리다이렉트
       const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
       return Response.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/login?kakao_login=success&user_data=${userInfoEncoded}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}?kakao_login=success&user_data=${userInfoEncoded}`,
         302
       );
     } else {
