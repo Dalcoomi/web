@@ -20,7 +20,7 @@ export default function AddMyTransactionPageClient() {
     const month = String(seoulDate.getMonth() + 1).padStart(2, "0");
     const day = String(seoulDate.getDate()).padStart(2, "0");
 
-    return `${year}/${month}/${day}`;
+    return `${year}-${month}-${day}`;
   };
 
   const router = useRouter();
@@ -92,7 +92,7 @@ export default function AddMyTransactionPageClient() {
 
   // 날짜 입력 핸들러
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDate(e.target.value.replace(/-/g, "/"));
+    setDate(e.target.value);
   };
 
   // 카테고리 선택 핸들러
@@ -122,7 +122,7 @@ export default function AddMyTransactionPageClient() {
     setIsSubmitting(true);
 
     try {
-      const [year, month, day] = date.split("/").map(Number);
+      const [year, month, day] = date.split("-").map(Number);
 
       // Asia/Seoul 시간대로 현재 시간 생성
       const now = new Date();
@@ -178,34 +178,6 @@ export default function AddMyTransactionPageClient() {
   // 선택된 카테고리 정보 가져오기
   const selectedCategory = categories.find((cat) => cat.id === categoryId);
 
-  // 날짜 포맷팅 함수 (YYYY-MM-DD를 YYYY/MM/DD로 변환)
-  const formatDateWithSlash = (dateString: string) => {
-    if (!dateString) {
-      return getTodayInSeoul(); // Seoul 시간대 기준 오늘 날짜 반환
-    }
-
-    // 이미 '/' 형식이면 그대로 반환
-    if (dateString.includes("/")) return dateString;
-
-    // '-' 형식이면 '/' 형식으로 변환
-    return dateString.replace(/-/g, "/");
-  };
-
-  const openDatePicker = () => {
-    const hiddenInput = document.getElementById("hidden-date-input");
-    if (hiddenInput) {
-      try {
-        if (typeof hiddenInput.showPicker === "function") {
-          hiddenInput.showPicker();
-        } else {
-          hiddenInput.click();
-        }
-      } catch (error) {
-        hiddenInput.click();
-      }
-    }
-  };
-
   return (
     <div className="flex flex-col h-screen bg-white">
       <TopBar />
@@ -248,7 +220,7 @@ export default function AddMyTransactionPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="15,000"
+            placeholder="0"
             value={formattedAmount()}
             onChange={handleAmountChange}
             onBlur={(e) => {
@@ -286,41 +258,22 @@ export default function AddMyTransactionPageClient() {
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="파스타"
+          placeholder="내용을 입력해주세요."
           value={content}
           onChange={handleContentChange}
         />
       </div>
 
-      {/* 날짜 입력 */}
+      {/* 날짜 입력*/}
       <div className="px-4 py-3">
-        <label className="block font-medium text-black text-md mb-1">
-          날짜
-        </label>
-        <div className="relative">
+        <label className="block font-medium text-md mb-1">날짜</label>
+        <div className="date-input-wrapper">
           <input
-            type="text"
-            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none cursor-pointer"
-            placeholder="YYYY/MM/DD"
-            value={formatDateWithSlash(date)}
-            readOnly
-            onClick={openDatePicker}
-          />
-          <input
-            id="hidden-date-input"
             type="date"
-            className="opacity-0 absolute w-full h-full"
+            className="w-full p-2 border-b border-gray-300 hover:border-blue-500 focus:border-blue-500 text-sm outline-none transition-colors"
             value={date.replace(/\//g, "-")}
             onChange={handleDateChange}
           />
-          <div className="absolute right-3 bottom-2">
-            <button
-              onClick={openDatePicker}
-              className="bg-transparent border-0 p-0 cursor-pointer"
-            >
-              📅
-            </button>
-          </div>
         </div>
       </div>
 
@@ -341,7 +294,11 @@ export default function AddMyTransactionPageClient() {
       {/* 선택된 카테고리 아이콘 */}
       {selectedCategory && (
         <div className="flex justify-left px-4">
-          <div className="flex flex-col items-center">
+          <button
+            className="flex flex-col items-center cursor-pointer bg-transparent border-none p-0"
+            onClick={() => setShowCategoryModal(true)}
+            disabled={isLoadingCategories}
+          >
             <Image
               src={selectedCategory.iconUrl}
               alt={selectedCategory.name}
@@ -349,10 +306,8 @@ export default function AddMyTransactionPageClient() {
               height={48}
               className="rounded-lg"
             />
-            <span className="text-sm text-gray-600">
-              {selectedCategory.name}
-            </span>
-          </div>
+            <span className="text-sm">{selectedCategory.name}</span>
+          </button>
         </div>
       )}
 

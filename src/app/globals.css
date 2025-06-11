@@ -69,3 +69,7 @@ body {
 .emoji {
   font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
 }
+
+input[type="date"] {
+  position: relative;
+}
