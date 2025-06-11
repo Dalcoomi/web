@@ -49,7 +49,7 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: #000000;
   font-family: var(--font-title-medium), Arial, Helvetica, sans-serif;
 }
 

@@ -14,6 +14,19 @@ import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 
 export default function UpdateTransactionPageClient() {
+  const getTodayInSeoul = (): string => {
+    const today = new Date();
+    const seoulDate = new Date(
+      today.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+    );
+
+    const year = seoulDate.getFullYear();
+    const month = String(seoulDate.getMonth() + 1).padStart(2, "0");
+    const day = String(seoulDate.getDate()).padStart(2, "0");
+
+    return `${year}/${month}/${day}`;
+  };
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const transactionId = searchParams.get("id");
@@ -26,9 +39,7 @@ export default function UpdateTransactionPageClient() {
   );
   const [amount, setAmount] = useState<string>("");
   const [content, setContent] = useState<string>("");
-  const [date, setDate] = useState<string>(
-    new Date().toISOString().split("T")[0].replace(/-/g, "/")
-  );
+  const [date, setDate] = useState<string>(getTodayInSeoul());
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [amountError, setAmountError] = useState(false);
@@ -121,7 +132,7 @@ export default function UpdateTransactionPageClient() {
 
   // 날짜 입력 핸들러
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDate(e.target.value);
+    setDate(e.target.value.replace(/-/g, "/"));
   };
 
   // 카테고리 선택 핸들러
@@ -149,12 +160,19 @@ export default function UpdateTransactionPageClient() {
     setIsSubmitting(true);
 
     try {
-      // 날짜 형식 변환
-      const dateStr = date.replace(/\//g, "-");
-      const transactionDateTime = new Date(dateStr);
-      transactionDateTime.setHours(new Date().getHours());
-      transactionDateTime.setMinutes(new Date().getMinutes());
-      transactionDateTime.setSeconds(new Date().getSeconds());
+      const [year, month, day] = date.split("/").map(Number);
+
+      // Asia/Seoul 시간대로 현재 시간 생성
+      const now = new Date();
+      const seoulNow = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+      );
+
+      // 선택한 날짜에 Seoul 시간대의 현재 시간 적용
+      const transactionDateTime = new Date(year, month - 1, day);
+      transactionDateTime.setHours(seoulNow.getHours());
+      transactionDateTime.setMinutes(seoulNow.getMinutes());
+      transactionDateTime.setSeconds(seoulNow.getSeconds());
 
       // API 요청을 위한 데이터 구조화
       const transactionData = {
@@ -162,7 +180,10 @@ export default function UpdateTransactionPageClient() {
         teamId: null,
         amount: Number(amount),
         content: content || null,
-        transactionDate: transactionDateTime.toISOString(),
+        transactionDate:
+          transactionDateTime.toLocaleDateString("sv-SE") +
+          "T" +
+          transactionDateTime.toLocaleTimeString("sv-SE"),
         transactionType: transactionType,
       };
 
@@ -215,26 +236,16 @@ export default function UpdateTransactionPageClient() {
   const selectedCategory = categories.find((cat) => cat.id === categoryId);
 
   // 날짜 포맷팅 함수 (YYYY-MM-DD를 YYYY/MM/DD로 변환)
-  const formatDateWithSlash = (dateString) => {
-    if (!dateString) return "";
-
-    // '-' 형식으로 들어온 날짜를 '/' 형식으로 변환
-    const cleanDate = dateString.replace(/\//g, "-");
-
-    try {
-      // 날짜 객체로 변환한 후 다시 포맷팅
-      const dateObj = new Date(cleanDate);
-      if (isNaN(dateObj.getTime())) return dateString; // 유효하지 않은 날짜인 경우
-
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const day = String(dateObj.getDate()).padStart(2, "0");
-
-      return `${year}/${month}/${day}`;
-    } catch (error) {
-      console.error("날짜 포맷팅 오류:", error);
-      return dateString;
+  const formatDateWithSlash = (dateString: string) => {
+    if (!dateString) {
+      return getTodayInSeoul(); // Seoul 시간대 기준 오늘 날짜 반환
     }
+
+    // 이미 '/' 형식이면 그대로 반환
+    if (dateString.includes("/")) return dateString;
+
+    // '-' 형식이면 '/' 형식으로 변환
+    return dateString.replace(/-/g, "/");
   };
 
   if (isLoading) {
@@ -249,13 +260,28 @@ export default function UpdateTransactionPageClient() {
     );
   }
 
+  const openDatePicker = () => {
+    const hiddenInput = document.getElementById("hidden-date-input");
+    if (hiddenInput) {
+      try {
+        if (typeof hiddenInput.showPicker === "function") {
+          hiddenInput.showPicker();
+        } else {
+          hiddenInput.click();
+        }
+      } catch (error) {
+        hiddenInput.click();
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white">
       <TopBar />
 
       {/* 거래 내역 수정 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">개인 거래 내역 수정</h1>
+        <h1 className="text-xl font-light">내 거래 내역 수정</h1>
       </div>
 
       {/* 거래 유형 선택 */}
@@ -324,17 +350,17 @@ export default function UpdateTransactionPageClient() {
 
       {/* 날짜 입력 */}
       <div className="px-4 py-3">
-        <label className="block font-medium text-md mb-1">날짜</label>
+        <label className="block font-medium text-black text-md mb-1">
+          날짜
+        </label>
         <div className="relative">
           <input
             type="text"
-            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
+            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none cursor-pointer"
             placeholder="YYYY/MM/DD"
             value={formatDateWithSlash(date)}
             readOnly
-            onClick={() =>
-              document.getElementById("hidden-date-input")?.showPicker()
-            }
+            onClick={openDatePicker}
           />
           <input
             id="hidden-date-input"
@@ -345,9 +371,7 @@ export default function UpdateTransactionPageClient() {
           />
           <div className="absolute right-3 bottom-2">
             <button
-              onClick={() =>
-                document.getElementById("hidden-date-input")?.showPicker()
-              }
+              onClick={openDatePicker}
               className="bg-transparent border-0 p-0 cursor-pointer"
             >
               📅

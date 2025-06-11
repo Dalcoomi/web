@@ -256,7 +256,7 @@ export default function LoginPageClient() {
         />
       </div>
 
-      {/* 로그인 버튼们 */}
+      {/* 로그인 버튼 */}
       <div className="absolute w-full bottom-15 flex flex-col items-center space-y-4 z-10">
         {/* 네이버 로그인 버튼 */}
         <button
