@@ -10,6 +10,19 @@ import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 
 export default function AddMyTransactionPageClient() {
+  const getTodayInSeoul = (): string => {
+    const today = new Date();
+    const seoulDate = new Date(
+      today.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+    );
+
+    const year = seoulDate.getFullYear();
+    const month = String(seoulDate.getMonth() + 1).padStart(2, "0");
+    const day = String(seoulDate.getDate()).padStart(2, "0");
+
+    return `${year}/${month}/${day}`;
+  };
+
   const router = useRouter();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,14 +32,7 @@ export default function AddMyTransactionPageClient() {
   );
   const [amount, setAmount] = useState<string>("");
   const [content, setContent] = useState<string>("");
-  const [date, setDate] = useState<string>(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-
-    return `${year}/${month}/${day}`;
-  });
+  const [date, setDate] = useState<string>(getTodayInSeoul());
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [amountError, setAmountError] = useState(false);
@@ -86,7 +92,7 @@ export default function AddMyTransactionPageClient() {
 
   // 날짜 입력 핸들러
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDate(e.target.value);
+    setDate(e.target.value.replace(/-/g, "/"));
   };
 
   // 카테고리 선택 핸들러
@@ -116,15 +122,19 @@ export default function AddMyTransactionPageClient() {
     setIsSubmitting(true);
 
     try {
-      // 날짜를 로컬 시간대 기준으로 정확히 생성
       const [year, month, day] = date.split("/").map(Number);
-      const transactionDateTime = new Date(year, month - 1, day); // month는 0부터 시작
 
-      // 현재 시간으로 설정
+      // Asia/Seoul 시간대로 현재 시간 생성
       const now = new Date();
-      transactionDateTime.setHours(now.getHours());
-      transactionDateTime.setMinutes(now.getMinutes());
-      transactionDateTime.setSeconds(now.getSeconds());
+      const seoulNow = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+      );
+
+      // 선택한 날짜에 Seoul 시간대의 현재 시간 적용
+      const transactionDateTime = new Date(year, month - 1, day);
+      transactionDateTime.setHours(seoulNow.getHours());
+      transactionDateTime.setMinutes(seoulNow.getMinutes());
+      transactionDateTime.setSeconds(seoulNow.getSeconds());
 
       // API 요청을 위한, 데이터 구조화
       const transactionData = {
@@ -168,32 +178,14 @@ export default function AddMyTransactionPageClient() {
   // 날짜 포맷팅 함수 (YYYY-MM-DD를 YYYY/MM/DD로 변환)
   const formatDateWithSlash = (dateString: string) => {
     if (!dateString) {
-      // 오늘 날짜를 로컬 시간대로 반환
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, "0");
-      const day = String(today.getDate()).padStart(2, "0");
-
-      return `${year}/${month}/${day}`;
+      return getTodayInSeoul(); // Seoul 시간대 기준 오늘 날짜 반환
     }
 
-    // '-' 형식으로 들어온 날짜를 '/' 형식으로 변환
-    const cleanDate = dateString.replace(/\//g, "-");
+    // 이미 '/' 형식이면 그대로 반환
+    if (dateString.includes("/")) return dateString;
 
-    try {
-      // 날짜 객체로 변환한 후 다시 포맷팅
-      const dateObj = new Date(cleanDate);
-      if (isNaN(dateObj.getTime())) return dateString; // 유효하지 않은 날짜인 경우
-
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const day = String(dateObj.getDate()).padStart(2, "0");
-
-      return `${year}/${month}/${day}`;
-    } catch (error) {
-      console.error("날짜 포맷팅 오류:", error);
-      return dateString;
-    }
+    // '-' 형식이면 '/' 형식으로 변환
+    return dateString.replace(/-/g, "/");
   };
 
   return (
@@ -285,16 +277,18 @@ export default function AddMyTransactionPageClient() {
       {/* 날짜 입력 */}
       <div className="px-4 py-3">
         <label className="block font-medium text-md mb-1">날짜</label>
-        <div className="relative">
+        <div
+          className="relative cursor-pointer"
+          onClick={() =>
+            document.getElementById("hidden-date-input")?.showPicker()
+          }
+        >
           <input
             type="text"
-            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
+            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none cursor-pointer"
             placeholder="YYYY/MM/DD"
-            value={formatDateWithSlash(date)} // 포맷팅 함수 사용
-            readOnly // 직접 편집을 방지
-            onClick={() =>
-              document.getElementById("hidden-date-input")?.showPicker()
-            }
+            value={formatDateWithSlash(date)}
+            readOnly
           />
           <input
             id="hidden-date-input"
@@ -303,12 +297,13 @@ export default function AddMyTransactionPageClient() {
             value={date.replace(/\//g, "-")}
             onChange={handleDateChange}
           />
-          <div className="absolute right-3 bottom-2">
+          <div className="absolute right-0 top-0 bottom-0 flex items-center pr-2">
             <button
-              onClick={() =>
-                document.getElementById("hidden-date-input")?.showPicker()
-              }
-              className="bg-transparent border-0 p-0 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation(); // 이벤트 버블링 방지
+                document.getElementById("hidden-date-input")?.showPicker();
+              }}
+              className="bg-transparent border-0 p-2 cursor-pointer"
             >
               📅
             </button>
