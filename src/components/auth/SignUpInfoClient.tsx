@@ -325,7 +325,7 @@ export default function SignUpInfoClient() {
               {socialData.email}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              {socialData.socialType === "KAKAO" ? "카카오" : "소셜"} 계정으로
+              {socialData.socialType === "KAKAO" ? "카카오" : "네이버"} 계정으로
               가입합니다
             </p>
           </div>

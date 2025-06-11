@@ -1,3 +1,5 @@
+// next.config.ts
+
 import type { NextConfig } from "next";
 import path from "path";
 import dotenv from "dotenv";
@@ -32,6 +34,14 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true, // 빌드 시 TypeScript 에러 무시
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "dalcoomi.s3.ap-northeast-2.amazonaws.com",
+      },
+    ],
   },
 };
 
