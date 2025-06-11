@@ -397,14 +397,13 @@ export default function UpdateTransactionPageClient() {
       {selectedCategory && (
         <div className="flex justify-left px-4">
           <div className="flex flex-col items-center">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-gray-200">
-              <Image
-                src={selectedCategory.iconUrl}
-                alt={selectedCategory.name}
-                width={24}
-                height={24}
-              />
-            </div>
+            <Image
+              src={selectedCategory.iconUrl}
+              alt={selectedCategory.name}
+              width={48}
+              height={48}
+              className="rounded-lg"
+            />
             <span className="text-sm text-gray-600">
               {selectedCategory.name}
             </span>
@@ -490,14 +489,12 @@ export default function UpdateTransactionPageClient() {
                     className="flex flex-col items-center cursor-pointer"
                     onClick={() => handleCategoryChange(category.id)}
                   >
-                    <div className="w-10 h-10 rounded-[15px] flex items-center justify-center bg-gray-200">
-                      <Image
-                        src={category.iconUrl}
-                        alt={category.name}
-                        width={24}
-                        height={24}
-                      />
-                    </div>
+                    <Image
+                      src={category.iconUrl}
+                      alt={category.name}
+                      width={40}
+                      height={40}
+                    />
                     <span className="text-xs text-center">{category.name}</span>
                   </div>
                 ))}
