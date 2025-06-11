@@ -142,9 +142,10 @@ export default function AddMyTransactionPageClient() {
         teamId: null, // 개인 거래이므로 null
         amount: Number(amount), // 문자열을 숫자로 변환
         content: content || null, // 내용이 없으면 null
-        transactionDate: transactionDateTime
-          .toISOString()
-          .replace("Z", "+09:00"),
+        transactionDate:
+          transactionDateTime.toLocaleDateString("sv-SE") +
+          "T" +
+          transactionDateTime.toLocaleTimeString("sv-SE"),
         transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
       };
 
