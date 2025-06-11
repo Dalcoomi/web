@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap");
 
 /* 폰트 정의 */
 @font-face {
@@ -51,7 +50,8 @@
 body {
   background: var(--background);
   color: #000000;
-  font-family: var(--font-title-medium), Arial, Helvetica, sans-serif;
+  font-family: var(--font-title-medium), "Apple Color Emoji", "Segoe UI Emoji",
+    Arial, Helvetica, sans-serif;
 }
 
 .font-title-light {
@@ -67,6 +67,5 @@ body {
 }
 
 .emoji {
-  font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji",
-    sans-serif;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
 }
