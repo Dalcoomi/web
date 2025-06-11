@@ -9,7 +9,7 @@ export default function SignUpSuccessClient() {
   const router = useRouter();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(3);
+  const [timeLeft, setTimeLeft] = useState(2);
   const [loginProcessed, setLoginProcessed] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -89,14 +89,14 @@ export default function SignUpSuccessClient() {
 
     // 3초 후 페이지 이동
     timeoutRef.current = setTimeout(() => {
-      console.log("3초 후 이동 시작");
+      console.log("2초 후 이동 시작");
 
       // 모든 세션 데이터 제거
       clearAllSessionData();
 
       // 내 거래 페이지로 이동
       router.push("/transaction/my");
-    }, 3000);
+    }, 2000);
 
     // 클린업
     return () => {

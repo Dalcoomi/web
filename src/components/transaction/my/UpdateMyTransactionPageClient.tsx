@@ -24,7 +24,7 @@ export default function UpdateTransactionPageClient() {
     const month = String(seoulDate.getMonth() + 1).padStart(2, "0");
     const day = String(seoulDate.getDate()).padStart(2, "0");
 
-    return `${year}/${month}/${day}`;
+    return `${year}-${month}-${day}`;
   };
 
   const router = useRouter();
@@ -48,32 +48,67 @@ export default function UpdateTransactionPageClient() {
   // 카테고리 관련 상태
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [originalCategoryId, setOriginalCategoryId] = useState<number | null>(
+    null
+  );
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // 카테고리 로드
-  const loadCategories = useCallback(async (type: "EXPENSE" | "INCOME") => {
-    setIsLoadingCategories(true);
-    try {
-      const categoryList = await getMyCategories(type);
-      setCategories(categoryList);
+  const loadCategories = useCallback(
+    async (type: "EXPENSE" | "INCOME", preserveCategoryId?: number) => {
+      setIsLoadingCategories(true);
 
-      // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
-      if (categoryList.length > 0) {
-        const defaultCategory =
-          categoryList.find((cat) => cat.name === "기타") || categoryList[0];
-        setCategoryId(defaultCategory.id);
+      try {
+        const categoryList = await getMyCategories(type);
+
+        setCategories(categoryList);
+
+        // 카테고리 ID 설정 로직
+        if (preserveCategoryId) {
+          // 특정 카테고리 ID를 보존해야 하는 경우 (기존 거래 수정 시)
+          const targetCategory = categoryList.find(
+            (cat) => cat.id === preserveCategoryId
+          );
+
+          if (targetCategory) {
+            setCategoryId(preserveCategoryId);
+          } else {
+            // 해당 카테고리가 없으면 기본 카테고리 설정
+            const defaultCategory =
+              categoryList.find((cat) => cat.name === "기타") ||
+              categoryList[0];
+            setCategoryId(defaultCategory?.id || null);
+          }
+        } else {
+          // 새로 카테고리를 선택하는 경우
+          if (categoryList.length > 0) {
+            const defaultCategory =
+              categoryList.find((cat) => cat.name === "기타") ||
+              categoryList[0];
+            setCategoryId(defaultCategory.id);
+          }
+        }
+      } catch (error) {
+        console.error("카테고리 로드 오류:", error);
+
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
       }
-    } catch (error) {
-      console.error("카테고리 로드 오류:", error);
-      setCategories([]);
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   // 초기 카테고리 로드
   useEffect(() => {
+    if (isInitialLoad) {
+      // 초기 로드 시에는 아무것도 하지 않음 (기존 거래 데이터 로드 후 처리)
+      return;
+    }
+
+    // 거래 유형 변경 시에만 카테고리 로드
     loadCategories(transactionType);
-  }, [loadCategories, transactionType]);
+  }, [loadCategories, transactionType, isInitialLoad]);
 
   // 기존 거래 내역 로드
   useEffect(() => {
@@ -94,12 +129,19 @@ export default function UpdateTransactionPageClient() {
         setAmount(transaction.amount.toString());
         setContent(transaction.content || "");
         setDate(
-          new Date(transaction.transactionDate)
-            .toISOString()
-            .split("T")[0]
-            .replace(/-/g, "/")
+          new Date(transaction.transactionDate).toISOString().split("T")[0]
         );
+        setOriginalCategoryId(transaction.categoryId);
         setCategoryId(transaction.categoryId);
+
+        // 해당 거래 유형의 카테고리 로드 (기존 카테고리 ID 보존)
+        await loadCategories(
+          transaction.transactionType,
+          transaction.categoryId
+        );
+
+        // 초기 로드 완료
+        setIsInitialLoad(false);
       } catch (error) {
         console.error("거래 내역 로드 오류:", error);
 
@@ -112,7 +154,7 @@ export default function UpdateTransactionPageClient() {
     };
 
     loadTransaction();
-  }, [transactionId, router]);
+  }, [transactionId, router, loadCategories]);
 
   // 폼 유효성 검사
   useEffect(() => {
@@ -132,7 +174,7 @@ export default function UpdateTransactionPageClient() {
 
   // 날짜 입력 핸들러
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDate(e.target.value.replace(/-/g, "/"));
+    setDate(e.target.value);
   };
 
   // 카테고리 선택 핸들러
@@ -144,7 +186,8 @@ export default function UpdateTransactionPageClient() {
   // 거래 유형 변경 핸들러
   const handleTransactionTypeChange = (type: "EXPENSE" | "INCOME") => {
     setTransactionType(type);
-    loadCategories(type); // 거래 유형 변경 시 카테고리 다시 로드
+    // 거래 유형 변경 시 카테고리 새로 로드 (기존 선택 초기화)
+    loadCategories(type);
   };
 
   // 저장 핸들러 (수정용)
@@ -160,7 +203,7 @@ export default function UpdateTransactionPageClient() {
     setIsSubmitting(true);
 
     try {
-      const [year, month, day] = date.split("/").map(Number);
+      const [year, month, day] = date.split("-").map(Number);
 
       // Asia/Seoul 시간대로 현재 시간 생성
       const now = new Date();
@@ -235,19 +278,6 @@ export default function UpdateTransactionPageClient() {
   // 선택된 카테고리 정보 가져오기
   const selectedCategory = categories.find((cat) => cat.id === categoryId);
 
-  // 날짜 포맷팅 함수 (YYYY-MM-DD를 YYYY/MM/DD로 변환)
-  const formatDateWithSlash = (dateString: string) => {
-    if (!dateString) {
-      return getTodayInSeoul(); // Seoul 시간대 기준 오늘 날짜 반환
-    }
-
-    // 이미 '/' 형식이면 그대로 반환
-    if (dateString.includes("/")) return dateString;
-
-    // '-' 형식이면 '/' 형식으로 변환
-    return dateString.replace(/-/g, "/");
-  };
-
   if (isLoading) {
     return (
       <div className="flex flex-col h-screen bg-white">
@@ -259,21 +289,6 @@ export default function UpdateTransactionPageClient() {
       </div>
     );
   }
-
-  const openDatePicker = () => {
-    const hiddenInput = document.getElementById("hidden-date-input");
-    if (hiddenInput) {
-      try {
-        if (typeof hiddenInput.showPicker === "function") {
-          hiddenInput.showPicker();
-        } else {
-          hiddenInput.click();
-        }
-      } catch (error) {
-        hiddenInput.click();
-      }
-    }
-  };
 
   return (
     <div className="flex flex-col h-screen bg-white">
@@ -317,7 +332,7 @@ export default function UpdateTransactionPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="15,000"
+            placeholder="0"
             value={formattedAmount()}
             onChange={handleAmountChange}
             onBlur={(e) => {
@@ -342,41 +357,22 @@ export default function UpdateTransactionPageClient() {
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="파스타"
+          placeholder="내용을 입력해주세요."
           value={content}
           onChange={handleContentChange}
         />
       </div>
 
-      {/* 날짜 입력 */}
+      {/* 날짜 입력*/}
       <div className="px-4 py-3">
-        <label className="block font-medium text-black text-md mb-1">
-          날짜
-        </label>
-        <div className="relative">
+        <label className="block font-medium text-md mb-1">날짜</label>
+        <div className="date-input-wrapper">
           <input
-            type="text"
-            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none cursor-pointer"
-            placeholder="YYYY/MM/DD"
-            value={formatDateWithSlash(date)}
-            readOnly
-            onClick={openDatePicker}
-          />
-          <input
-            id="hidden-date-input"
             type="date"
-            className="opacity-0 absolute w-0 h-0"
+            className="w-full p-2 border-b border-gray-300 hover:border-blue-500 focus:border-blue-500 text-sm outline-none transition-colors"
             value={date.replace(/\//g, "-")}
             onChange={handleDateChange}
           />
-          <div className="absolute right-3 bottom-2">
-            <button
-              onClick={openDatePicker}
-              className="bg-transparent border-0 p-0 cursor-pointer"
-            >
-              📅
-            </button>
-          </div>
         </div>
       </div>
 
@@ -396,7 +392,11 @@ export default function UpdateTransactionPageClient() {
       {/* 선택된 카테고리 아이콘 */}
       {selectedCategory && (
         <div className="flex justify-left px-4">
-          <div className="flex flex-col items-center">
+          <button
+            className="flex flex-col items-center cursor-pointer bg-transparent border-none p-0"
+            onClick={() => setShowCategoryModal(true)}
+            disabled={isLoadingCategories}
+          >
             <Image
               src={selectedCategory.iconUrl}
               alt={selectedCategory.name}
@@ -404,10 +404,8 @@ export default function UpdateTransactionPageClient() {
               height={48}
               className="rounded-lg"
             />
-            <span className="text-sm text-gray-600">
-              {selectedCategory.name}
-            </span>
-          </div>
+            <span className="text-sm">{selectedCategory.name}</span>
+          </button>
         </div>
       )}
 
