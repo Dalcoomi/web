@@ -16,6 +16,7 @@ export default function LoginPageClient() {
   // 카카오톡 인앱 브라우저 감지 함수
   const isKakaoTalkBrowser = () => {
     const userAgent = navigator.userAgent;
+
     return /KAKAOTALK/i.test(userAgent);
   };
 
@@ -57,6 +58,7 @@ export default function LoginPageClient() {
       // 카카오톡 인앱 브라우저에서는 리다이렉트 방식 사용
       const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
       window.location.href = kakaoAuthUrl;
+
       return;
     }
 
@@ -149,6 +151,7 @@ export default function LoginPageClient() {
       // 카카오톡 인앱 브라우저에서는 리다이렉트 방식 사용
       const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
       window.location.href = naverAuthUrl;
+
       return;
     }
 
@@ -292,17 +295,6 @@ export default function LoginPageClient() {
           priority
         />
       </div>
-
-      {/* 카카오톡 인앱 브라우저 안내 */}
-      {isKakaoTalkBrowser() && (
-        <div className="absolute top-4 left-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded z-10">
-          <p className="text-sm">
-            카카오톡 앱에서 접속하셨네요!
-            <br />
-            로그인 시 현재 페이지에서 진행됩니다.
-          </p>
-        </div>
-      )}
 
       {/* 로그인 버튼 */}
       <div className="absolute w-full bottom-15 flex flex-col items-center space-y-4 z-10">

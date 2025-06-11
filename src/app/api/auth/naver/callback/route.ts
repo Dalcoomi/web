@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
       // 리다이렉트 방식
       const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
       return Response.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/login?naver_login=success&user_data=${userInfoEncoded}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}?naver_login=success&user_data=${userInfoEncoded}`,
         302
       );
     } else {
