@@ -19,9 +19,14 @@ export default function AddMyTransactionPageClient() {
   );
   const [amount, setAmount] = useState<string>("");
   const [content, setContent] = useState<string>("");
-  const [date, setDate] = useState<string>(
-    new Date().toISOString().split("T")[0].replace(/-/g, "/")
-  );
+  const [date, setDate] = useState<string>(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}/${month}/${day}`;
+  });
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [amountError, setAmountError] = useState(false);
@@ -111,13 +116,15 @@ export default function AddMyTransactionPageClient() {
     setIsSubmitting(true);
 
     try {
-      // 날짜 형식 변환 (YYYY/MM/DD -> ISO 문자열)
-      const dateStr = date.replace(/\//g, "-");
-      const transactionDateTime = new Date(dateStr);
-      // 시간을 현재 시간으로 설정 (선택사항)
-      transactionDateTime.setHours(new Date().getHours());
-      transactionDateTime.setMinutes(new Date().getMinutes());
-      transactionDateTime.setSeconds(new Date().getSeconds());
+      // 날짜를 로컬 시간대 기준으로 정확히 생성
+      const [year, month, day] = date.split("/").map(Number);
+      const transactionDateTime = new Date(year, month - 1, day); // month는 0부터 시작
+
+      // 현재 시간으로 설정
+      const now = new Date();
+      transactionDateTime.setHours(now.getHours());
+      transactionDateTime.setMinutes(now.getMinutes());
+      transactionDateTime.setSeconds(now.getSeconds());
 
       // API 요청을 위한, 데이터 구조화
       const transactionData = {
@@ -160,7 +167,15 @@ export default function AddMyTransactionPageClient() {
 
   // 날짜 포맷팅 함수 (YYYY-MM-DD를 YYYY/MM/DD로 변환)
   const formatDateWithSlash = (dateString: string) => {
-    if (!dateString) return "";
+    if (!dateString) {
+      // 오늘 날짜를 로컬 시간대로 반환
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+
+      return `${year}/${month}/${day}`;
+    }
 
     // '-' 형식으로 들어온 날짜를 '/' 형식으로 변환
     const cleanDate = dateString.replace(/\//g, "-");
