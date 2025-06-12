@@ -273,10 +273,10 @@ export default function AddMyTransactionPageClient() {
       {/* 날짜 입력*/}
       <div className="px-4 py-3">
         <label className="block font-medium text-md mb-1">날짜</label>
-        <div className="date-input-wrapper w-28">
+        <div className="date-input-wrapper">
           <input
             type="date"
-            className="w-full px-3 py-1.5 border-1 rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
+            className="w-[30%] px-2 py-1 border rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
             value={date.replace(/\//g, "-")}
             onChange={handleDateChange}
           />
