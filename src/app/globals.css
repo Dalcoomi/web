@@ -80,4 +80,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   height: 100%;
   opacity: 0;
   z-index: 2;
+  cursor: pointer;
+}
+
+input[type="date"] {
+  position: relative;
+  cursor: pointer;
 }

@@ -48,9 +48,6 @@ export default function UpdateTransactionPageClient() {
   // 카테고리 관련 상태
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-  const [originalCategoryId, setOriginalCategoryId] = useState<number | null>(
-    null
-  );
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // 카테고리 로드
@@ -101,12 +98,9 @@ export default function UpdateTransactionPageClient() {
 
   // 초기 카테고리 로드
   useEffect(() => {
-    if (isInitialLoad) {
-      // 초기 로드 시에는 아무것도 하지 않음 (기존 거래 데이터 로드 후 처리)
-      return;
-    }
+    if (isInitialLoad) return; // 초기 로드 중에는 실행하지 않음
 
-    // 거래 유형 변경 시에만 카테고리 로드
+    // 거래 유형이 변경되었을 때만 실행
     loadCategories(transactionType);
   }, [loadCategories, transactionType, isInitialLoad]);
 
@@ -131,10 +125,9 @@ export default function UpdateTransactionPageClient() {
         setDate(
           new Date(transaction.transactionDate).toISOString().split("T")[0]
         );
-        setOriginalCategoryId(transaction.categoryId);
+
         setCategoryId(transaction.categoryId);
 
-        // 해당 거래 유형의 카테고리 로드 (기존 카테고리 ID 보존)
         await loadCategories(
           transaction.transactionType,
           transaction.categoryId
@@ -409,6 +402,47 @@ export default function UpdateTransactionPageClient() {
         </div>
       )}
 
+      {/* 카테고리 선택 모달 */}
+      {showCategoryModal && (
+        <>
+          {/* 반투명 오버레이 */}
+          <div
+            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
+            onClick={() => setShowCategoryModal(false)}
+          ></div>
+
+          {/* 카테고리 선택 모달 (완전 불투명) */}
+          <div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-[10px] p-4 w-[90%] shadow-lg z-50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isLoadingCategories ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="text-gray-500">카테고리 로딩 중...</div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-5 gap-5">
+                {categories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="flex flex-col items-center cursor-pointer"
+                    onClick={() => handleCategoryChange(category.id)}
+                  >
+                    <Image
+                      src={category.iconUrl}
+                      alt={category.name}
+                      width={40}
+                      height={40}
+                    />
+                    <span className="text-xs text-center">{category.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       {/* 수정/삭제 버튼 */}
       <div className="px-10 pb-7 mt-auto">
         <div className="flex gap-3">
@@ -460,47 +494,6 @@ export default function UpdateTransactionPageClient() {
           </button>
         </div>
       </div>
-
-      {/* 카테고리 선택 모달 */}
-      {showCategoryModal && (
-        <>
-          {/* 반투명 오버레이 */}
-          <div
-            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
-            onClick={() => setShowCategoryModal(false)}
-          ></div>
-
-          {/* 카테고리 선택 모달 (완전 불투명) */}
-          <div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-[10px] p-4 w-[90%] shadow-lg z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {isLoadingCategories ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="text-gray-500">카테고리 로딩 중...</div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-5 gap-5">
-                {categories.map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex flex-col items-center cursor-pointer"
-                    onClick={() => handleCategoryChange(category.id)}
-                  >
-                    <Image
-                      src={category.iconUrl}
-                      alt={category.name}
-                      width={40}
-                      height={40}
-                    />
-                    <span className="text-xs text-center">{category.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
 
       <BottomBar />
     </div>
