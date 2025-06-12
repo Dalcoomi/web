@@ -52,6 +52,7 @@ export default function AddGroupTransactionPageClient() {
       if (!teamId) return;
 
       setIsLoadingCategories(true);
+
       try {
         const categoryList = await getTeamCategories(parseInt(teamId), type);
         setCategories(categoryList);
@@ -307,10 +308,10 @@ export default function AddGroupTransactionPageClient() {
       {/* 날짜 입력*/}
       <div className="px-4 py-3">
         <label className="block font-medium text-md mb-1">날짜</label>
-        <div className="date-input-wrapper">
+        <div className="date-input-wrapper w-28">
           <input
             type="date"
-            className="w-full p-2 border-b border-gray-300 hover:border-blue-500 focus:border-blue-500 text-sm outline-none transition-colors"
+            className="w-full px-3 py-1.5 border-1 rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
             value={date.replace(/\//g, "-")}
             onChange={handleDateChange}
           />
@@ -320,15 +321,6 @@ export default function AddGroupTransactionPageClient() {
       {/* 카테고리 선택 */}
       <div className="px-4 py-1">
         <label className="block font-medium text-md">카테고리</label>
-        <div className="flex">
-          <button
-            className="px-10 py-1 border-2 border-[#808080] rounded-[10px] text-sm text-[#808080] cursor-pointer"
-            onClick={() => setShowCategoryModal(true)}
-            disabled={isLoadingCategories}
-          >
-            선택
-          </button>
-        </div>
       </div>
 
       {/* 선택된 카테고리 아이콘 */}

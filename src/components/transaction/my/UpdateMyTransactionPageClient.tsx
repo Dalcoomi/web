@@ -1,13 +1,14 @@
 // components/transaction/my/UpdateMyTransactionPageClient.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   getTransactionById,
   updateTransaction,
   deleteTransaction,
 } from "@/services/transactionService";
+import { Transaction } from "@/services/transactionService";
 import { getMyCategories, Category } from "@/services/categoryService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
@@ -48,61 +49,8 @@ export default function UpdateTransactionPageClient() {
   // 카테고리 관련 상태
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  // 카테고리 로드
-  const loadCategories = useCallback(
-    async (type: "EXPENSE" | "INCOME", preserveCategoryId?: number) => {
-      setIsLoadingCategories(true);
-
-      try {
-        const categoryList = await getMyCategories(type);
-
-        setCategories(categoryList);
-
-        // 카테고리 ID 설정 로직
-        if (preserveCategoryId) {
-          // 특정 카테고리 ID를 보존해야 하는 경우 (기존 거래 수정 시)
-          const targetCategory = categoryList.find(
-            (cat) => cat.id === preserveCategoryId
-          );
-
-          if (targetCategory) {
-            setCategoryId(preserveCategoryId);
-          } else {
-            // 해당 카테고리가 없으면 기본 카테고리 설정
-            const defaultCategory =
-              categoryList.find((cat) => cat.name === "기타") ||
-              categoryList[0];
-            setCategoryId(defaultCategory?.id || null);
-          }
-        } else {
-          // 새로 카테고리를 선택하는 경우
-          if (categoryList.length > 0) {
-            const defaultCategory =
-              categoryList.find((cat) => cat.name === "기타") ||
-              categoryList[0];
-            setCategoryId(defaultCategory.id);
-          }
-        }
-      } catch (error) {
-        console.error("카테고리 로드 오류:", error);
-
-        setCategories([]);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    },
-    []
-  );
-
-  // 초기 카테고리 로드
-  useEffect(() => {
-    if (isInitialLoad) return; // 초기 로드 중에는 실행하지 않음
-
-    // 거래 유형이 변경되었을 때만 실행
-    loadCategories(transactionType);
-  }, [loadCategories, transactionType, isInitialLoad]);
+  const [originalTransaction, setOriginalTransaction] =
+    useState<Transaction | null>(null);
 
   // 기존 거래 내역 로드
   useEffect(() => {
@@ -118,6 +66,9 @@ export default function UpdateTransactionPageClient() {
 
         const transaction = await getTransactionById(transactionId);
 
+        // 원본 거래 데이터 저장
+        setOriginalTransaction(transaction);
+
         // 기존 데이터로 폼 초기화
         setTransactionType(transaction.transactionType);
         setAmount(transaction.amount.toString());
@@ -125,16 +76,12 @@ export default function UpdateTransactionPageClient() {
         setDate(
           new Date(transaction.transactionDate).toISOString().split("T")[0]
         );
-
         setCategoryId(transaction.categoryId);
 
-        await loadCategories(
-          transaction.transactionType,
-          transaction.categoryId
-        );
-
-        // 초기 로드 완료
-        setIsInitialLoad(false);
+        setIsLoadingCategories(true);
+        const categoryList = await getMyCategories(transaction.transactionType);
+        setCategories(categoryList);
+        setIsLoadingCategories(false);
       } catch (error) {
         console.error("거래 내역 로드 오류:", error);
 
@@ -146,8 +93,14 @@ export default function UpdateTransactionPageClient() {
       }
     };
 
-    loadTransaction();
-  }, [transactionId, router, loadCategories]);
+    const timeoutId = setTimeout(() => {
+      loadTransaction();
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [transactionId, router]);
 
   // 폼 유효성 검사
   useEffect(() => {
@@ -177,10 +130,32 @@ export default function UpdateTransactionPageClient() {
   };
 
   // 거래 유형 변경 핸들러
-  const handleTransactionTypeChange = (type: "EXPENSE" | "INCOME") => {
+  const handleTransactionTypeChange = async (type: "EXPENSE" | "INCOME") => {
     setTransactionType(type);
-    // 거래 유형 변경 시 카테고리 새로 로드 (기존 선택 초기화)
-    loadCategories(type);
+
+    setIsLoadingCategories(true);
+    try {
+      const categoryList = await getMyCategories(type);
+      setCategories(categoryList);
+
+      // 원래 거래 유형으로 돌아왔는지 확인
+      if (originalTransaction && type === originalTransaction.transactionType) {
+        // 원래 거래 유형이면 원래 카테고리 복원
+        setCategoryId(originalTransaction.categoryId);
+      } else {
+        // 첫 번째 카테고리를 기본값으로 설정
+        if (categoryList.length > 0) {
+          const defaultCategory =
+            categoryList.find((cat) => cat.name === "기타") || categoryList[0];
+
+          setCategoryId(defaultCategory.id);
+        }
+      }
+    } catch (error) {
+      console.error("카테고리 로드 오류:", error);
+    } finally {
+      setIsLoadingCategories(false);
+    }
   };
 
   // 저장 핸들러 (수정용)
@@ -359,10 +334,10 @@ export default function UpdateTransactionPageClient() {
       {/* 날짜 입력*/}
       <div className="px-4 py-3">
         <label className="block font-medium text-md mb-1">날짜</label>
-        <div className="date-input-wrapper">
+        <div className="date-input-wrapper w-28">
           <input
             type="date"
-            className="w-full p-2 border-b border-gray-300 hover:border-blue-500 focus:border-blue-500 text-sm outline-none transition-colors"
+            className="w-full px-3 py-1.5 border-1 rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
             value={date.replace(/\//g, "-")}
             onChange={handleDateChange}
           />
@@ -372,14 +347,6 @@ export default function UpdateTransactionPageClient() {
       {/* 카테고리 선택 */}
       <div className="px-4 py-1">
         <label className="block font-medium text-md">카테고리</label>
-        <div className="flex">
-          <button
-            className="px-10 py-1 border-2 border-[#808080] rounded-[10px] text-sm text-[#808080] cursor-pointer"
-            onClick={() => setShowCategoryModal(true)}
-          >
-            선택
-          </button>
-        </div>
       </div>
 
       {/* 선택된 카테고리 아이콘 */}
