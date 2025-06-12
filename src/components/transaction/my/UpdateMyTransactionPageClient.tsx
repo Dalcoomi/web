@@ -337,7 +337,7 @@ export default function UpdateTransactionPageClient() {
         <div className="date-input-wrapper">
           <input
             type="date"
-            className="w-[30%] px-2 py-1 border rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
+            className="px-2 py-1 border rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
             value={date.replace(/\//g, "-")}
             onChange={handleDateChange}
           />
