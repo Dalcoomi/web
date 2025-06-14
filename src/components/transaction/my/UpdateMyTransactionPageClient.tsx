@@ -14,7 +14,7 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 
-export default function UpdateTransactionPageClient() {
+export default function UpdateMyTransactionPageClient() {
   const getTodayInSeoul = (): string => {
     const today = new Date();
     const seoulDate = new Date(

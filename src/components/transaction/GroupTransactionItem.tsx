@@ -4,6 +4,7 @@
 import { useRouter } from "next/navigation";
 
 interface GroupTransactionItemProps {
+  teamId: string;
   date: string; // "MM.DD" 형식
   category: string;
   description: string;
@@ -13,6 +14,7 @@ interface GroupTransactionItemProps {
 }
 
 export default function GroupTransactionItem({
+  teamId,
   date,
   category,
   description,
@@ -59,14 +61,14 @@ export default function GroupTransactionItem({
   // 클릭 핸들러 - 수정 페이지로 이동
   const handleClick = () => {
     if (transactionId) {
-      router.push(`/transaction/group/update?id=${transactionId}`);
+      router.push(`/transaction/group/${teamId}/update?id=${transactionId}`);
     }
   };
 
   return (
     <div
       className="flex items-center py-1 px-4 bg-white cursor-pointer hover:bg-gray-100 transition-colors"
-      // onClick={handleClick}
+      onClick={handleClick}
     >
       {/* 날짜 (있을 때만 표시) */}
       <div className="w-11 text-xs">{date}</div>

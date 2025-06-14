@@ -1,16 +1,21 @@
-// components/transaction/group/AddGroupTransactionPageClient.tsx
+// components/transaction/group/UpdateGroupTransactionPageClient.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { addTransaction } from "@/services/transactionService";
-import { getTeamCategories, Category } from "@/services/categoryService";
+import { useState, useEffect } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
+import {
+  getTransactionById,
+  updateTransaction,
+  deleteTransaction,
+} from "@/services/transactionService";
+import { Transaction } from "@/services/transactionService";
+import { getMyCategories, Category } from "@/services/categoryService";
 import { getGroupInfo, GroupInfo } from "@/services/groupService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 
-export default function AddGroupTransactionPageClient() {
+export default function UpdateGroupTransactionPageClient() {
   const getTodayInSeoul = (): string => {
     const today = new Date();
     const seoulDate = new Date(
@@ -26,8 +31,12 @@ export default function AddGroupTransactionPageClient() {
 
   const router = useRouter();
   const params = useParams();
-  const teamId = params.teamId as string; // URL에서 teamId 추출
+  const searchParams = useSearchParams();
 
+  const teamId = params.teamId as string;
+  const transactionId = searchParams.get("id");
+
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [transactionType, setTransactionType] = useState<"EXPENSE" | "INCOME">(
@@ -45,35 +54,10 @@ export default function AddGroupTransactionPageClient() {
   // 카테고리 관련 상태
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [originalTransaction, setOriginalTransaction] =
+    useState<Transaction | null>(null);
 
-  // 카테고리 로드
-  const loadCategories = useCallback(
-    async (type: "EXPENSE" | "INCOME") => {
-      if (!teamId) return;
-
-      setIsLoadingCategories(true);
-
-      try {
-        const categoryList = await getTeamCategories(parseInt(teamId), type);
-        setCategories(categoryList);
-
-        // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
-        if (categoryList.length > 0) {
-          const defaultCategory =
-            categoryList.find((cat) => cat.name === "기타") || categoryList[0];
-          setCategoryId(defaultCategory.id);
-        }
-      } catch (error) {
-        console.error("카테고리 로드 오류:", error);
-        setCategories([]);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    },
-    [teamId]
-  );
-
-  // teamId 유효성 검사 및 그룹 정보 로드
+  // 기존 거래 내역 로드
   useEffect(() => {
     if (!teamId) {
       console.error("teamId가 없습니다.");
@@ -81,7 +65,46 @@ export default function AddGroupTransactionPageClient() {
       return;
     }
 
-    const timeoutId = setTimeout(async () => {
+    const loadTransaction = async () => {
+      if (!transactionId) {
+        router.replace(`/transaction/group/${teamId}`);
+
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+
+        const transaction = await getTransactionById(transactionId, teamId);
+
+        // 원본 거래 데이터 저장
+        setOriginalTransaction(transaction);
+
+        // 기존 데이터로 폼 초기화
+        setTransactionType(transaction.transactionType);
+        setAmount(transaction.amount.toString());
+        setContent(transaction.content || "");
+        setDate(
+          new Date(transaction.transactionDate).toISOString().split("T")[0]
+        );
+        setCategoryId(transaction.categoryId);
+
+        setIsLoadingCategories(true);
+        const categoryList = await getMyCategories(transaction.transactionType);
+        setCategories(categoryList);
+        setIsLoadingCategories(false);
+      } catch (error) {
+        console.error("거래 내역 로드 오류:", error);
+
+        alert("거래 내역을 불러올 수 없습니다.");
+
+        router.replace(`/transaction/group/${teamId}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const timeoutId1 = setTimeout(async () => {
       try {
         const response = await getGroupInfo(teamId);
 
@@ -93,31 +116,23 @@ export default function AddGroupTransactionPageClient() {
       }
     }, 100);
 
-    const timeoutId2 = setTimeout(async () => {
-      try {
-        loadCategories(transactionType);
-      } catch (error) {
-        console.error("카테고리 로드 오류:", error);
-        alert("카테고리를 불러올 수 없습니다.");
-        router.replace("/group");
-      }
+    const timeoutId2 = setTimeout(() => {
+      loadTransaction();
     }, 100);
 
     return () => {
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
     };
-  }, [teamId, router, loadCategories, transactionType]);
+  }, [transactionId, router, teamId]);
 
   // 폼 유효성 검사
   useEffect(() => {
-    // 금액이 입력되었는지 확인
     setIsFormValid(amount.trim().length > 0);
   }, [amount]);
 
   // 금액 입력 핸들러
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // 숫자만 허용
     const value = e.target.value.replace(/[^\d]/g, "");
     setAmount(value);
   };
@@ -139,23 +154,44 @@ export default function AddGroupTransactionPageClient() {
   };
 
   // 거래 유형 변경 핸들러
-  const handleTransactionTypeChange = (type: "EXPENSE" | "INCOME") => {
+  const handleTransactionTypeChange = async (type: "EXPENSE" | "INCOME") => {
     setTransactionType(type);
-    loadCategories(type); // 거래 유형 변경 시 카테고리 다시 로드
+
+    setIsLoadingCategories(true);
+    try {
+      const categoryList = await getMyCategories(type);
+      setCategories(categoryList);
+
+      // 원래 거래 유형으로 돌아왔는지 확인
+      if (originalTransaction && type === originalTransaction.transactionType) {
+        // 원래 거래 유형이면 원래 카테고리 복원
+        setCategoryId(originalTransaction.categoryId);
+      } else {
+        // 첫 번째 카테고리를 기본값으로 설정
+        if (categoryList.length > 0) {
+          const defaultCategory =
+            categoryList.find((cat) => cat.name === "기타") || categoryList[0];
+
+          setCategoryId(defaultCategory.id);
+        }
+      }
+    } catch (error) {
+      console.error("카테고리 로드 오류:", error);
+    } finally {
+      setIsLoadingCategories(false);
+    }
   };
 
-  // 저장 핸들러
+  // 저장 핸들러 (수정용)
   const handleSubmit = async () => {
-    // 이미 제출 중이면 무시
-    if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
+    if (isSubmitting || !transactionId) {
+      console.log("이미 처리 중이거나 거래 ID가 없습니다.");
       return;
     }
 
-    if (!isFormValid || !teamId || !categoryId) return;
+    if (!isFormValid || !categoryId) return;
 
-    // 제출 시작
-    console.log("그룹 거래 내역 저장 시작");
+    console.log("거래 내역 수정 시작");
     setIsSubmitting(true);
 
     try {
@@ -173,32 +209,51 @@ export default function AddGroupTransactionPageClient() {
       transactionDateTime.setMinutes(seoulNow.getMinutes());
       transactionDateTime.setSeconds(seoulNow.getSeconds());
 
-      // API 요청을 위한, 데이터 구조화
+      // API 요청을 위한 데이터 구조화
       const transactionData = {
-        categoryId: categoryId, // API에서 가져온 카테고리 ID 사용
-        teamId: parseInt(teamId), // teamId를 숫자로 변환하여 포함
-        amount: Number(amount), // 문자열을 숫자로 변환
-        content: content || null, // 내용이 없으면 null
+        categoryId: categoryId,
+        teamId: null,
+        amount: Number(amount),
+        content: content || null,
         transactionDate:
           transactionDateTime.toLocaleDateString("sv-SE") +
           "T" +
           transactionDateTime.toLocaleTimeString("sv-SE"),
-        transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
+        transactionType: transactionType,
       };
 
-      // API 서비스로 그룹 거래 내역 저장 요청
-      await addTransaction(transactionData);
+      // API 서비스로 내 거래 내역 수정 요청
+      await updateTransaction(transactionId, transactionData);
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // 성공 시 그룹 거래 내역 조회 페이지로 이동
+      // 성공 시 내 거래 내역 조회 페이지로 이동
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      console.error("그룹 거래 내역 저장 오류:", error);
-      alert(error.message || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
-
-      // 에러 발생 시에만 다시 활성화
+      console.error("그룹 거래 내역 수정 오류:", error);
+      alert(error.message || "그룹 거래 내역 수정 중 오류가 발생했습니다.");
       setIsSubmitting(false);
+    }
+  };
+
+  // 삭제 핸들러
+  const handleDelete = async () => {
+    if (!transactionId) {
+      console.error("거래 ID가 없습니다.");
+      return;
+    }
+
+    if (!confirm("정말로 이 거래 내역을 삭제하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      await deleteTransaction(transactionId);
+
+      console.log("그룹 거래 내역 삭제 성공");
+
+      router.push(`/transaction/group/${teamId}`);
+    } catch (error) {
+      console.error("그룹 거래 내역 삭제 오류:", error);
+      alert(error.message || "그룹 거래 내역 삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -211,14 +266,26 @@ export default function AddGroupTransactionPageClient() {
   // 선택된 카테고리 정보 가져오기
   const selectedCategory = categories.find((cat) => cat.id === categoryId);
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-screen bg-white">
+        <TopBar />
+        <div className="flex items-center justify-center flex-1">
+          <div className="text-gray-500">로딩 중...</div>
+        </div>
+        <BottomBar />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-white">
       <TopBar />
 
-      {/* 거래 내역 작성 제목 블록 */}
+      {/* 거래 내역 수정 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 items-center">
         <h1 className="text-xl font-light">
-          [{groupInfo?.title}] 거래 내역 작성
+          [{groupInfo?.title}] 거래 내역 수정
         </h1>
       </div>
 
@@ -246,10 +313,20 @@ export default function AddGroupTransactionPageClient() {
         </button>
       </div>
 
+      {/* 작성자 정보 */}
+      {originalTransaction?.creatorNickname && (
+        <div className="px-4 py-3 border-b border-gray-100">
+          <span className="text-sm text-gray-600">작성자: </span>
+          <span className="text-sm font-medium text-gray-800">
+            {originalTransaction.creatorNickname}
+          </span>
+        </div>
+      )}
+
       {/* 금액 입력 */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-3">
         <label className="block font-medium text-md mb-1">
-          금액<span className="text-[#FF472F]">*</span>
+          금액<span className="text-[#FF005E]">*</span>
         </label>
         <div className="relative">
           <input
@@ -268,19 +345,6 @@ export default function AddGroupTransactionPageClient() {
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
           />
-          <button
-            onClick={() => alert("서비스 준비 중입니다.")}
-            className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center"
-          >
-            <Image
-              src="/images/transaction/영수증_AI_등록.svg"
-              alt="영수증"
-              width={20}
-              height={20}
-              className="mr-1"
-            />
-            <span>영수증으로 작성하기</span>
-          </button>
         </div>
         {amountError && amountTouched && (
           <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
@@ -337,50 +401,6 @@ export default function AddGroupTransactionPageClient() {
         </div>
       )}
 
-      {/* 저장 버튼 */}
-      <div className="px-10 pb-7 mt-auto">
-        <button
-          className={`w-full py-3 rounded-md font-medium transition-colors ${
-            isFormValid && !isSubmitting && categoryId
-              ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
-              : isSubmitting
-              ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
-              : "bg-gray-300 text-white cursor-not-allowed"
-          }`}
-          onClick={handleSubmit}
-          disabled={!isFormValid || isSubmitting || !categoryId}
-          style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
-        >
-          {isSubmitting ? (
-            <span className="flex items-center justify-center cursor-not-allowed">
-              <svg
-                className="animate-spin h-5 w-5 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              처리 중...
-            </span>
-          ) : (
-            "완료"
-          )}
-        </button>
-      </div>
-
       {/* 카테고리 선택 모달 */}
       {showCategoryModal && (
         <>
@@ -421,6 +441,58 @@ export default function AddGroupTransactionPageClient() {
           </div>
         </>
       )}
+
+      {/* 수정/삭제 버튼 */}
+      <div className="px-10 pb-7 mt-auto">
+        <div className="flex gap-3">
+          <button
+            className="flex-1 py-3 rounded-md font-medium transition-colors bg-red-500 hover:bg-red-600 text-white cursor-pointer"
+            onClick={handleDelete}
+          >
+            삭제
+          </button>
+          <button
+            className={`flex-1 py-3 rounded-md font-medium transition-colors ${
+              isFormValid && !isSubmitting
+                ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
+                : isSubmitting
+                ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
+                : "bg-gray-300 text-white cursor-not-allowed"
+            }`}
+            onClick={handleSubmit}
+            disabled={!isFormValid || isSubmitting}
+            style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center cursor-not-allowed">
+                <svg
+                  className="animate-spin h-5 w-5 mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                처리 중...
+              </span>
+            ) : (
+              "수정 완료"
+            )}
+          </button>
+        </div>
+      </div>
 
       <BottomBar />
     </div>

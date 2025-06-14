@@ -48,7 +48,6 @@ export const getTransactions = async (
       url = `/api/transaction?year=${year}&month=${monthParam}`;
     }
 
-    console.log(`거래 내역 조회 요청: ${url}`);
     const response = await get(url);
 
     return response;
@@ -66,10 +65,20 @@ export const getTransactions = async (
 
 // 특정 거래 내역 조회 API
 export const getTransactionById = async (
-  transactionId: string
+  transactionId: string,
+  teamId?: string
 ): Promise<Transaction> => {
   try {
-    const response = await get(`/api/transaction/${transactionId}`);
+    let url: string;
+
+    if (teamId === undefined) {
+      url = `/api/transaction/${transactionId}`;
+    } else {
+      url = `/api/transaction/${transactionId}?teamId=${teamId}`;
+    }
+
+    const response = await get(url);
+
     return response;
   } catch (error) {
     console.error("거래 내역 상세 조회 중 오류 발생:", error);
