@@ -224,7 +224,7 @@ export default function AddGroupTransactionPageClient() {
       {/* 거래 내역 작성 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 items-center">
         <h1 className="text-xl font-light">
-          [{groupInfo?.title || "로딩 중..."}] 거래 내역 작성
+          [{groupInfo?.title}] 거래 내역 작성
         </h1>
       </div>
 
