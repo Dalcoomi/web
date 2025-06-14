@@ -317,6 +317,7 @@ export default function MyTransactionPageClient() {
             return (
               <GroupTransactionItem
                 key={index}
+                teamId={teamId}
                 date={shouldShowDate ? currentDate : ""}
                 category={transaction.categoryName}
                 description={transaction.content}
