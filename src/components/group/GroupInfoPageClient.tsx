@@ -144,16 +144,10 @@ export default function GroupInfoPageClient() {
   // 멤버 아이콘 색상 (순서대로)
   const getMemberIconColor = (index: number) => {
     const colors = [
-      "#FFD700", // 노란색
-      "#87CEEB", // 하늘색
-      "#FFB6C1", // 연분홍
-      "#98FB98", // 연녹색
-      "#DDA0DD", // 연보라
-      "#F0E68C", // 카키색
-      "#FFA07A", // 연주황
-      "#B0E0E6", // 파우더블루
-      "#F5DEB3", // 밀색
-      "#D3D3D3", // 연회색
+      "#F9F90C", // 노란색
+      "#94A7EF", // 보라색
+      "#FCC9EC", // 연분홍
+      "#45D076", // 연녹색
     ];
     return colors[index % colors.length];
   };
@@ -263,11 +257,25 @@ export default function GroupInfoPageClient() {
                 className="flex items-center space-x-3 p-1"
               >
                 {/* 멤버 아이콘 */}
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-light"
-                  style={{ backgroundColor: getMemberIconColor(index) }}
-                >
-                  {member.nickname.charAt(0).toUpperCase()}
+                <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                  {member.profileImageUrl ? (
+                    <Image
+                      src={member.profileImageUrl}
+                      alt={member.nickname}
+                      width={24}
+                      height={24}
+                      className="w-full h-full"
+                      quality={100}
+                      unoptimized={true}
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center text-white text-sm font-light"
+                      style={{ backgroundColor: getMemberIconColor(index) }}
+                    >
+                      {member.nickname.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
 
                 {/* 멤버 정보 */}
@@ -391,13 +399,27 @@ export default function GroupInfoPageClient() {
                       }`}
                     >
                       {/* 멤버 아이콘 */}
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-light"
-                        style={{
-                          backgroundColor: getMemberIconColor(index + 1),
-                        }}
-                      >
-                        {member.nickname.charAt(0).toUpperCase()}
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                        {member.profileImageUrl ? (
+                          <Image
+                            src={member.profileImageUrl}
+                            alt={member.nickname}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                            quality={100}
+                            unoptimized={true}
+                          />
+                        ) : (
+                          <div
+                            className="w-full h-full flex items-center justify-center text-white text-sm font-light"
+                            style={{
+                              backgroundColor: getMemberIconColor(index),
+                            }}
+                          >
+                            {member.nickname.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
 
                       {/* 멤버 정보 */}
