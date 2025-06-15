@@ -365,6 +365,8 @@ export default function UpdateMyTransactionPageClient() {
               width={48}
               height={48}
               className="rounded-lg"
+              quality={100}
+              unoptimized={true}
             />
             <span className="text-sm">{selectedCategory.name}</span>
           </button>
@@ -402,6 +404,8 @@ export default function UpdateMyTransactionPageClient() {
                       alt={category.name}
                       width={40}
                       height={40}
+                      quality={100}
+                      unoptimized={true}
                     />
                     <span className="text-xs text-center">{category.name}</span>
                   </div>
