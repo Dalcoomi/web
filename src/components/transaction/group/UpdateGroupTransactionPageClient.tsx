@@ -85,7 +85,9 @@ export default function UpdateGroupTransactionPageClient() {
         setAmount(transaction.amount.toString());
         setContent(transaction.content || "");
         setDate(
-          new Date(transaction.transactionDate).toISOString().split("T")[0]
+          new Date(transaction.transactionDate)
+            .toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+            .split("T")[0]
         );
         setCategoryId(transaction.categoryId);
 
