@@ -268,7 +268,7 @@ export default function AddGroupTransactionPageClient() {
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
           />
-          <button
+          {/* <button
             onClick={() => alert("서비스 준비 중입니다.")}
             className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center"
           >
@@ -280,7 +280,7 @@ export default function AddGroupTransactionPageClient() {
               className="mr-1"
             />
             <span>영수증으로 작성하기</span>
-          </button>
+          </button> */}
         </div>
         {amountError && amountTouched && (
           <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
