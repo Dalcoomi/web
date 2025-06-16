@@ -59,7 +59,7 @@ export default function AddMyTransactionPageClient() {
         setCategoryId(defaultCategory.id);
       }
     } catch (error) {
-      console.error("카테고리 로드 오류:", error);
+      alert(error);
 
       setCategories([]);
     } finally {
@@ -117,14 +117,12 @@ export default function AddMyTransactionPageClient() {
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
     if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
       return;
     }
 
     if (!isFormValid || !categoryId) return;
 
     // 제출 시작
-    console.log("거래 내역 저장 시작");
     setIsSubmitting(true);
 
     try {
@@ -155,20 +153,15 @@ export default function AddMyTransactionPageClient() {
         transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
       };
 
-      console.log("전송할 데이터:", transactionData);
-
       // API 서비스로 내 거래 내역 저장 요청
-      const response = await addTransaction(transactionData);
+      await addTransaction(transactionData);
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      console.log("내 거래 내역 저장 성공:", response);
 
       // 성공 시 내 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      console.error("내 거래 내역 저장 오류:", error);
-      alert(error.message || "내 거래 내역 저장 중 오류가 발생했습니다.");
+      alert(error || "내 거래 내역 저장 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);

@@ -64,7 +64,8 @@ export default function AddGroupTransactionPageClient() {
           setCategoryId(defaultCategory.id);
         }
       } catch (error) {
-        console.error("카테고리 로드 오류:", error);
+        alert(error);
+
         setCategories([]);
       } finally {
         setIsLoadingCategories(false);
@@ -76,7 +77,6 @@ export default function AddGroupTransactionPageClient() {
   // teamId 유효성 검사 및 그룹 정보 로드
   useEffect(() => {
     if (!teamId) {
-      console.error("teamId가 없습니다.");
       router.replace("/group"); // teamId가 없으면 그룹 목록으로 리다이렉트
       return;
     }
@@ -87,8 +87,7 @@ export default function AddGroupTransactionPageClient() {
 
         setGroupInfo(response);
       } catch (error) {
-        console.error("그룹 정보 로드 오류:", error);
-        alert("그룹 정보를 불러올 수 없습니다.");
+        alert(error || "그룹 정보를 불러올 수 없습니다.");
         router.replace("/group");
       }
     }, 100);
@@ -97,8 +96,7 @@ export default function AddGroupTransactionPageClient() {
       try {
         loadCategories(transactionType);
       } catch (error) {
-        console.error("카테고리 로드 오류:", error);
-        alert("카테고리를 불러올 수 없습니다.");
+        alert(error || "카테고리를 불러올 수 없습니다.");
         router.replace("/group");
       }
     }, 100);
@@ -148,14 +146,12 @@ export default function AddGroupTransactionPageClient() {
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
     if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
       return;
     }
 
     if (!isFormValid || !teamId || !categoryId) return;
 
     // 제출 시작
-    console.log("그룹 거래 내역 저장 시작");
     setIsSubmitting(true);
 
     try {
@@ -194,8 +190,7 @@ export default function AddGroupTransactionPageClient() {
       // 성공 시 그룹 거래 내역 조회 페이지로 이동
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      console.error("그룹 거래 내역 저장 오류:", error);
-      alert(error.message || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
+      alert(error || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);

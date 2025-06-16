@@ -30,7 +30,6 @@ export default function SignUpInfoClient() {
     // step1 완료 여부 확인
     const step1Completed = sessionStorage.getItem("signupStep1Completed");
     if (!step1Completed) {
-      console.log("Step1이 완료되지 않았습니다. Step1으로 이동합니다.");
       router.replace("/sign-up/step1");
       return;
     }
@@ -38,7 +37,6 @@ export default function SignUpInfoClient() {
     // 소셜 로그인 데이터 가져오기
     const socialDataJson = sessionStorage.getItem("socialLoginData");
     if (!socialDataJson) {
-      console.log("소셜 로그인 데이터가 없습니다. 로그인 페이지로 이동합니다.");
       router.replace("/");
       return;
     }
@@ -58,7 +56,6 @@ export default function SignUpInfoClient() {
       // 모든 초기화가 완료된 후에 로딩 상태 해제
       setIsLoading(false);
     } catch (error) {
-      console.error("소셜 로그인 데이터 파싱 오류:", error);
       router.replace("/");
     }
   }, [router]);
@@ -182,7 +179,6 @@ export default function SignUpInfoClient() {
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
     if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
       return;
     }
 
@@ -223,7 +219,6 @@ export default function SignUpInfoClient() {
     if (!isValid) return;
 
     // 제출 시작
-    console.log("회원가입 제출 시작");
     setIsSubmitting(true);
 
     try {
@@ -257,8 +252,6 @@ export default function SignUpInfoClient() {
       // API 서비스로 회원가입 요청
       const response = await signUp(signUpData);
 
-      console.log("회원가입 성공:", response);
-
       // 로그인 토큰을 success 페이지로 전달하기 위해 sessionStorage에 저장
       sessionStorage.setItem("signupResponse", JSON.stringify(response));
 
@@ -268,7 +261,6 @@ export default function SignUpInfoClient() {
       // 성공 페이지로 이동
       router.push("/sign-up/success");
     } catch (error) {
-      console.error("회원가입 오류:", error);
       alert(error.message || "회원가입 처리 중 오류가 발생했습니다.");
 
       if (error.message.includes("약관 동의")) {

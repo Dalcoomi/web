@@ -52,7 +52,8 @@ export const getTransactions = async (
 
     return response;
   } catch (error) {
-    console.error("거래 내역 조회 중 오류 발생:", error);
+    alert(error);
+
     // 기본값 반환
     return {
       income: 0,
@@ -81,7 +82,6 @@ export const getTransactionById = async (
 
     return response;
   } catch (error) {
-    console.error("거래 내역 상세 조회 중 오류 발생:", error);
     throw error;
   }
 };

@@ -35,7 +35,6 @@ export default function SignUpSuccessClient() {
       // 회원가입 완료 여부 확인
       const step2Completed = sessionStorage.getItem("signupStep2Completed");
       if (!step2Completed) {
-        console.log("회원가입이 완료되지 않았습니다. 첫 단계로 이동합니다.");
         router.replace("/sign-up/step1");
         return;
       }
@@ -43,7 +42,6 @@ export default function SignUpSuccessClient() {
       // 회원가입 응답 데이터 확인
       const signupResponseJson = sessionStorage.getItem("signupResponse");
       if (!signupResponseJson) {
-        console.log("회원가입 데이터가 없습니다. 첫 단계로 이동합니다.");
         router.replace("/sign-up/step1");
         return;
       }
@@ -51,14 +49,13 @@ export default function SignUpSuccessClient() {
       // 로그인 처리
       try {
         const response = JSON.parse(signupResponseJson);
+
         if (response.accessToken) {
           // 토큰 저장 및 로그인 상태 업데이트
           login(response.accessToken, response.refreshToken);
           setLoginProcessed(true);
         }
-      } catch (error) {
-        console.error("토큰 처리 중 오류 발생:", error);
-      }
+      } catch (error) {}
 
       // 나머지 세션 데이터 정리
       clearSessionData();
@@ -89,8 +86,6 @@ export default function SignUpSuccessClient() {
 
     // 3초 후 페이지 이동
     timeoutRef.current = setTimeout(() => {
-      console.log("2초 후 이동 시작");
-
       // 모든 세션 데이터 제거
       clearAllSessionData();
 

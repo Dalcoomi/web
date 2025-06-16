@@ -97,16 +97,13 @@ export default function LoginPageClient() {
     const checkPopup = setInterval(() => {
       if (!popup || popup.closed) {
         clearInterval(checkPopup);
-        console.log("카카오 로그인 창이 닫혔습니다.");
+
         window.removeEventListener("message", receiveKakaoMessage, false);
       }
     }, 500);
 
     // 30초 후 자동으로 팝업 체크 중단
     setTimeout(() => {
-      if (popup && !popup.closed) {
-        console.log("카카오 로그인 타임아웃");
-      }
       clearInterval(checkPopup);
       window.removeEventListener("message", receiveKakaoMessage, false);
     }, 30000);
@@ -120,13 +117,9 @@ export default function LoginPageClient() {
 
       if (event.data.type === "kakaoLogin") {
         if (event.data.success) {
-          console.log("카카오 로그인 성공:", event.data.userData);
           sendToBackend(event.data.userData, "KAKAO");
         } else {
-          if (event.data.cancelled) {
-            console.log("사용자가 카카오 로그인을 취소했습니다.");
-          } else {
-            console.error("카카오 로그인 실패:", event.data.error);
+          if (!event.data.cancelled) {
             alert(`로그인 실패: ${event.data.error}`);
           }
         }
@@ -190,15 +183,11 @@ export default function LoginPageClient() {
     const checkPopup = setInterval(() => {
       if (!popup || popup.closed) {
         clearInterval(checkPopup);
-        console.log("네이버 로그인 창이 닫혔습니다.");
         window.removeEventListener("message", receiveNaverMessage, false);
       }
     }, 500);
 
     setTimeout(() => {
-      if (popup && !popup.closed) {
-        console.log("네이버 로그인 타임아웃");
-      }
       clearInterval(checkPopup);
       window.removeEventListener("message", receiveNaverMessage, false);
     }, 30000);
@@ -210,13 +199,9 @@ export default function LoginPageClient() {
 
       if (event.data.type === "naverLogin") {
         if (event.data.success) {
-          console.log("네이버 로그인 성공:", event.data.userData);
           sendToBackend(event.data.userData, "NAVER");
         } else {
-          if (event.data.cancelled) {
-            console.log("사용자가 네이버 로그인을 취소했습니다.");
-          } else {
-            console.error("네이버 로그인 실패:", event.data.error);
+          if (!event.data.cancelled) {
             alert(`로그인 실패: ${event.data.error}`);
           }
         }
@@ -246,7 +231,6 @@ export default function LoginPageClient() {
 
       try {
         const response = await socialLogin(requestData);
-        console.log("로그인 성공:", response);
 
         login(response.accessToken, response.refreshToken);
         router.push("/transaction/my");
@@ -274,7 +258,6 @@ export default function LoginPageClient() {
         }
       }
     } catch (error) {
-      console.error("백엔드 요청 오류:", error);
       alert(
         "로그인 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요."
       );

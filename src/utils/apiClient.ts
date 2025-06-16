@@ -71,7 +71,6 @@ export const apiClient = async (
 
     return await response.text();
   } catch (error) {
-    console.error("API 호출 오류:", error);
     throw error;
   }
 };
@@ -96,10 +95,13 @@ const refreshAccessToken = async (): Promise<boolean> => {
     }
 
     const data = await response.json();
+
     saveTokens(data.accessToken, data.refreshToken);
+
     return true;
   } catch (error) {
-    console.error("토큰 리프레시 오류:", error);
+    alert(error);
+
     return false;
   }
 };

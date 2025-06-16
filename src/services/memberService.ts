@@ -16,7 +16,6 @@ export const getMember = async (): Promise<Member> => {
 
     return response;
   } catch (error) {
-    console.error("회원 조회 중 오류 발생:", error);
     throw error;
   }
 };

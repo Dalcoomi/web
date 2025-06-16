@@ -45,7 +45,6 @@ export default function MyTransactionPageClient() {
         isRequestInProgressRef.current &&
         lastRequestRef.current === requestKey
       ) {
-        console.log("동일한 요청이 진행 중입니다. 무시합니다.");
         return;
       }
 
@@ -55,14 +54,10 @@ export default function MyTransactionPageClient() {
       setIsLoading(true);
 
       try {
-        console.log(`거래 내역 조회 요청: ${year}년 ${month}월`);
-
         const response = await getTransactions(year, month);
 
         setResponse(response);
       } catch (error) {
-        console.error("거래 내역 로드 중 오류 발생:", error);
-
         // 401 에러면 루트(로그인)로 리다이렉트
         if (error instanceof Error && error.message.includes("401")) {
           router.replace("/");

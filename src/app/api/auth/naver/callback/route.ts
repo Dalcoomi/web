@@ -66,11 +66,8 @@ export async function GET(request: NextRequest) {
     const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET;
 
     if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
-      console.error("네이버 API 키가 설정되지 않았습니다.");
       throw new Error("API 키가 설정되지 않았습니다.");
     }
-
-    console.log("네이버 인증 코드 받음:", code.substring(0, 10) + "...");
 
     // 1. 받은 code로 네이버 토큰 요청
     const tokenResponse = await fetch("https://nid.naver.com/oauth2.0/token", {
@@ -88,7 +85,6 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-      console.error("토큰 요청 실패:", tokenData);
       throw new Error("토큰 요청 실패");
     }
 
@@ -102,7 +98,6 @@ export async function GET(request: NextRequest) {
     const userData = await userResponse.json();
 
     if (!userResponse.ok) {
-      console.error("사용자 정보 요청 실패:", userData);
       throw new Error("사용자 정보 요청 실패");
     }
 
@@ -157,8 +152,6 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error("네이버 로그인 처리 오류:", error);
-
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
 
     if (isKakaoTalkBrowser) {

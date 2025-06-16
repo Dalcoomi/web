@@ -80,14 +80,12 @@ export default function CreateGroupPageClient() {
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
     if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
       return;
     }
 
     if (!isFormValid) return;
 
     // 제출 시작
-    console.log("그룹 생성 시작");
     setIsSubmitting(true);
 
     try {
@@ -98,17 +96,12 @@ export default function CreateGroupPageClient() {
         purpose: purpose.trim() || null,
       };
 
-      console.log("전송할 데이터:", groupData);
-
       const response = await createGroup(groupData);
-
-      console.log("그룹 생성 성공", response);
 
       // 성공 시 초대 코드와 함께 성공 페이지로 이동
       const inviteCode = response;
       router.push(`/group/create/success?code=${inviteCode}`);
     } catch (error) {
-      console.error("그룹 생성 오류:", error);
       alert(error.message || "그룹 생성 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화

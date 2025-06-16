@@ -46,7 +46,7 @@ export const getGroups = async (): Promise<GetMyTeamsResponse> => {
 
     return response;
   } catch (error) {
-    console.error("그룹 리스트 조회 중 오류 발생:", error);
+    alert(error);
 
     return {
       groups: [],
@@ -61,7 +61,6 @@ export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
 
     return response;
   } catch (error) {
-    console.error("그룹 정보 조회 중 오류 발생:", error);
     throw error;
   }
 };
@@ -79,7 +78,8 @@ export const leaveGroup = async (
 
     await del(`/api/team/leave`, requestBody);
   } catch (error) {
-    console.error("그룹 나가기 중 오류 발생:", error);
+    alert(error);
+
     throw error;
   }
 };

@@ -30,7 +30,7 @@ export function useAuth() {
         const authStatus = isAuthenticated();
         setIsLoggedIn(authStatus);
       } catch (error) {
-        console.error("Auth check error:", error);
+        alert(error);
         setIsLoggedIn(false);
       } finally {
         setIsLoading(false);

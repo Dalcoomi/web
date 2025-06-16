@@ -32,14 +32,12 @@ export default function GroupInfoPageClient() {
 
       try {
         setIsLoading(true);
-        console.log(`그룹 정보 조회 요청: ${teamId}`);
 
         const response = await getGroupInfo(teamId);
 
         setGroupInfo(response);
       } catch (error) {
-        console.error("그룹 정보 로드 오류:", error);
-        alert("그룹 정보를 불러올 수 없습니다.");
+        alert(error || "그룹 정보를 불러올 수 없습니다.");
 
         router.replace("/group");
       } finally {
@@ -50,14 +48,12 @@ export default function GroupInfoPageClient() {
     const timeoutId2 = setTimeout(async () => {
       try {
         setIsLoading(true);
-        console.log("회원 조회 요청");
 
         const response = await getMember();
 
         setMemberInfo(response);
       } catch (error) {
-        console.error("회원 정보 로드 오류:", error);
-        alert("회원 정보를 불러올 수 없습니다.");
+        alert(error || "회원 정보를 불러올 수 없습니다.");
 
         router.replace("/group");
       } finally {
@@ -83,8 +79,7 @@ export default function GroupInfoPageClient() {
       await navigator.clipboard.writeText(groupInfo.invitationCode);
       alert("초대 코드가 복사되었습니다!");
     } catch (error) {
-      console.error("복사 실패:", error);
-      alert("복사에 실패했습니다. 다시 시도해 주세요.");
+      alert(error || "복사에 실패했습니다. 다시 시도해 주세요.");
     }
   };
 
@@ -129,8 +124,7 @@ export default function GroupInfoPageClient() {
       alert("그룹을 떠났습니다.");
       router.replace("/group");
     } catch (error) {
-      console.error("그룹 떠나기 오류:", error);
-      alert(error.message || "그룹 떠나기 중 오류가 발생했습니다.");
+      alert(error || "그룹 떠나기 중 오류가 발생했습니다.");
     }
   };
 

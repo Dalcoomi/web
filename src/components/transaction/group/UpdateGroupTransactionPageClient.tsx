@@ -60,7 +60,6 @@ export default function UpdateGroupTransactionPageClient() {
   // 기존 거래 내역 로드
   useEffect(() => {
     if (!teamId) {
-      console.error("teamId가 없습니다.");
       router.replace("/group"); // teamId가 없으면 그룹 목록으로 리다이렉트
       return;
     }
@@ -96,9 +95,7 @@ export default function UpdateGroupTransactionPageClient() {
         setCategories(categoryList);
         setIsLoadingCategories(false);
       } catch (error) {
-        console.error("거래 내역 로드 오류:", error);
-
-        alert("거래 내역을 불러올 수 없습니다.");
+        alert(error || "거래 내역을 불러올 수 없습니다.");
 
         router.replace(`/transaction/group/${teamId}`);
       } finally {
@@ -112,8 +109,7 @@ export default function UpdateGroupTransactionPageClient() {
 
         setGroupInfo(response);
       } catch (error) {
-        console.error("그룹 정보 로드 오류:", error);
-        alert("그룹 정보를 불러올 수 없습니다.");
+        alert(error || "그룹 정보를 불러올 수 없습니다.");
         router.replace("/group");
       }
     }, 100);
@@ -178,7 +174,7 @@ export default function UpdateGroupTransactionPageClient() {
         }
       }
     } catch (error) {
-      console.error("카테고리 로드 오류:", error);
+      alert(error);
     } finally {
       setIsLoadingCategories(false);
     }
@@ -187,13 +183,11 @@ export default function UpdateGroupTransactionPageClient() {
   // 저장 핸들러 (수정용)
   const handleSubmit = async () => {
     if (isSubmitting || !transactionId) {
-      console.log("이미 처리 중이거나 거래 ID가 없습니다.");
       return;
     }
 
     if (!isFormValid || !categoryId) return;
 
-    console.log("거래 내역 수정 시작");
     setIsSubmitting(true);
 
     try {
@@ -230,8 +224,7 @@ export default function UpdateGroupTransactionPageClient() {
       // 성공 시 내 거래 내역 조회 페이지로 이동
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      console.error("그룹 거래 내역 수정 오류:", error);
-      alert(error.message || "그룹 거래 내역 수정 중 오류가 발생했습니다.");
+      alert(error || "그룹 거래 내역 수정 중 오류가 발생했습니다.");
       setIsSubmitting(false);
     }
   };
@@ -239,7 +232,6 @@ export default function UpdateGroupTransactionPageClient() {
   // 삭제 핸들러
   const handleDelete = async () => {
     if (!transactionId) {
-      console.error("거래 ID가 없습니다.");
       return;
     }
 
@@ -250,12 +242,9 @@ export default function UpdateGroupTransactionPageClient() {
     try {
       await deleteTransaction(transactionId);
 
-      console.log("그룹 거래 내역 삭제 성공");
-
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      console.error("그룹 거래 내역 삭제 오류:", error);
-      alert(error.message || "그룹 거래 내역 삭제 중 오류가 발생했습니다.");
+      alert(error || "그룹 거래 내역 삭제 중 오류가 발생했습니다.");
     }
   };
 
