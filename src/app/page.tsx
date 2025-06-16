@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import LoginPageClient from "@/components/auth/LoginPageClient";
 
 export const metadata = {
-  title: "달쿠미",
+  title: "달쿠미 | 개인&그룹 가계부",
 };
 
 export default async function RootPage() {
