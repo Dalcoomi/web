@@ -31,18 +31,18 @@ export interface GroupMember {
 
 // 그룹 생성 API
 export const createGroup = async (groupData: any) => {
-  return post("/api/team", groupData);
+  return post("/api/teams", groupData);
 };
 
 // 그룹 참가 API
 export const joinGroup = async (invitationCode: string) => {
-  return post(`/api/team/join/${invitationCode}`, {});
+  return post(`/api/teams/join/${invitationCode}`, {});
 };
 
 // 내 그룹 리스트 조회 API
 export const getGroups = async (): Promise<GetMyTeamsResponse> => {
   try {
-    const response = await get("/api/team");
+    const response = await get("/api/teams");
 
     return response;
   } catch (error) {
@@ -57,7 +57,7 @@ export const getGroups = async (): Promise<GetMyTeamsResponse> => {
 // 그룹 정보 조회 API
 export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
   try {
-    const response = await get(`/api/team/${teamId}`);
+    const response = await get(`/api/teams/${teamId}`);
 
     return response;
   } catch (error) {
@@ -76,7 +76,7 @@ export const leaveGroup = async (
       nextLeaderNickname: nextLeaderNickname || null,
     };
 
-    await del(`/api/team/leave`, requestBody);
+    await del(`/api/teams/leave`, requestBody);
   } catch (error) {
     alert(error);
 

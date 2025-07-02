@@ -20,7 +20,7 @@ export const getMyCategories = async (
 ): Promise<Category[]> => {
   try {
     const response: GetCategoriesResponse = await get(
-      `/api/category/my?transactionType=${transactionType}`
+      `/api/categories?transactionType=${transactionType}`
     );
 
     return response.categories;
@@ -39,7 +39,7 @@ export const getTeamCategories = async (
 ): Promise<Category[]> => {
   try {
     const response: GetCategoriesResponse = await get(
-      `/api/category/team?teamId=${teamId}&transactionType=${transactionType}`
+      `/api/categories?teamId=${teamId}&transactionType=${transactionType}`
     );
 
     return response.categories;

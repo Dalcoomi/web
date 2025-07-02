@@ -16,5 +16,5 @@ export const logout = async () => {
 
 // 회원가입 API
 export const signUp = async (signUpData: any) => {
-  return post("/api/member/sign-up", signUpData);
+  return post("/api/members/sign-up", signUpData);
 };

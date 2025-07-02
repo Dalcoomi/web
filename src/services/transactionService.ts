@@ -24,7 +24,7 @@ export interface MonthlyTransactionsResponse {
 
 // 거래 내역 추가 API
 export const addTransaction = async (transactionData: any) => {
-  return post("/api/transaction", transactionData);
+  return post("/api/transactions", transactionData);
 };
 
 // 전체 거래 내역 조회 API
@@ -40,12 +40,12 @@ export const getTransactions = async (
       // 3개 매개변수가 모두 있는 경우: teamId, year, month
       const teamId = teamIdOrYear;
       const year = yearOrMonth;
-      url = `/api/transaction?teamId=${teamId}&year=${year}&month=${month}`;
+      url = `/api/transactions?teamId=${teamId}&year=${year}&month=${month}`;
     } else {
       // 2개 매개변수만 있는 경우: year, month (개인 거래)
       const year = teamIdOrYear;
       const monthParam = yearOrMonth;
-      url = `/api/transaction?year=${year}&month=${monthParam}`;
+      url = `/api/transactions?year=${year}&month=${monthParam}`;
     }
 
     const response = await get(url);
@@ -73,9 +73,9 @@ export const getTransactionById = async (
     let url: string;
 
     if (teamId === undefined) {
-      url = `/api/transaction/${transactionId}`;
+      url = `/api/transactions/${transactionId}`;
     } else {
-      url = `/api/transaction/${transactionId}?teamId=${teamId}`;
+      url = `/api/transactions/${transactionId}?teamId=${teamId}`;
     }
 
     const response = await get(url);
@@ -88,12 +88,12 @@ export const getTransactionById = async (
 
 // 거래 내역 수정
 export const updateTransaction = async (transactionId: string, data: any) => {
-  return put(`/api/transaction/${transactionId}`, data);
+  return put(`/api/transactions/${transactionId}`, data);
 };
 
 // 거래 내역 삭제
 export const deleteTransaction = async (
   transactionId: string
 ): Promise<void> => {
-  return del(`/api/transaction/${transactionId}`);
+  return del(`/api/transactions/${transactionId}`);
 };

@@ -12,7 +12,7 @@ export interface Member {
 // 회원 조회
 export const getMember = async (): Promise<Member> => {
   try {
-    const response = await get("/api/member");
+    const response = await get("/api/members");
 
     return response;
   } catch (error) {
