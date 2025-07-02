@@ -4,34 +4,42 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
+  const refreshToken = request.cookies.get("refreshToken")?.value;
   const path = request.nextUrl.pathname;
 
   // 정적 자원 제외
-  if (path.includes("/_next") || path.includes("/api") || path.includes(".")) {
+  if (
+    path.includes("/_next") ||
+    path.includes("/api") ||
+    path.match(/\.(ico|png|jpg|jpeg|gif|svg|css|js|woff|woff2|ttf|eot)$/)
+  ) {
     return NextResponse.next();
   }
 
-  // 공개 페이지 (인증 불필요)
-  const publicPaths = ["/", "/about", "/features", "/privacy", "/terms"];
-
-  // 인증 선택적 페이지 (로그인 상태면 내 거래 페이지로)
+  const publicPaths = ["/"];
   const authOptionalPaths = ["/sign-up"];
-
-  // 인증 필수 페이지
-  const protectedPaths = ["/transaction", "/profile", "/settings"];
+  const protectedPaths = ["/transaction", "/group"];
 
   const isPublicPath = publicPaths.some((p) => path === p);
   const isAuthOptionalPath = authOptionalPaths.some((p) => path.startsWith(p));
   const isProtectedPath = protectedPaths.some((p) => path.startsWith(p));
 
-  // 보호된 경로에 미인증 접근
-  if (isProtectedPath && !accessToken) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // 🔥 보호된 경로 접근 시 리프레시 토큰만 확인
+  if (isProtectedPath) {
+    if (!refreshToken) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return NextResponse.next();
   }
 
-  // 로그인한 사용자가 회원가입 페이지 접근
+  // 🔥 회원가입 페이지: 액세스 토큰이 있을 때만 리다이렉트
   if (isAuthOptionalPath && accessToken) {
     return NextResponse.redirect(new URL("/transaction/my", request.url));
+  }
+
+  // 🔥 메인 페이지: 리다이렉트 하지 않음 (무한 루프 방지)
+  if (isPublicPath) {
+    return NextResponse.next();
   }
 
   return NextResponse.next();
