@@ -289,7 +289,7 @@ export default function UpdateMyTransactionPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="0"
+            placeholder="금액을 입력해주세요"
             value={formattedAmount()}
             onChange={handleAmountChange}
             onBlur={(e) => {
@@ -304,7 +304,7 @@ export default function UpdateMyTransactionPageClient() {
           />
         </div>
         {amountError && amountTouched && (
-          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
+          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요</p>
         )}
       </div>
 
@@ -314,7 +314,7 @@ export default function UpdateMyTransactionPageClient() {
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해주세요."
+          placeholder="내용을 입력해주세요"
           value={content}
           onChange={handleContentChange}
         />

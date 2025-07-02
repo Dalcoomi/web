@@ -1,15 +1,16 @@
-// components/transaction/my/AddMyTransactionPageClient.tsx
+// components/transaction/group/AddWritingGroupTransactionPageClient.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { addTransaction } from "@/services/transactionService";
-import { getMyCategories, Category } from "@/services/categoryService";
+import { getTeamCategories, Category } from "@/services/categoryService";
+import { getGroupInfo, GroupInfo } from "@/services/groupService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 
-export default function AddMyTransactionPageClient() {
+export default function AddWritingGroupTransactionPageClient() {
   const getTodayInSeoul = (): string => {
     const today = new Date();
     const seoulDate = new Date(
@@ -24,6 +25,8 @@ export default function AddMyTransactionPageClient() {
   };
 
   const router = useRouter();
+  const params = useParams();
+  const teamId = params.teamId as string; // URL에서 teamId 추출
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
@@ -37,46 +40,72 @@ export default function AddMyTransactionPageClient() {
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [amountError, setAmountError] = useState(false);
   const [amountTouched, setAmountTouched] = useState(false);
+  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
   // 카테고리 관련 상태
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
   // 카테고리 로드
-  const loadCategories = useCallback(async (type: "EXPENSE" | "INCOME") => {
-    setIsLoadingCategories(true);
+  const loadCategories = useCallback(
+    async (type: "EXPENSE" | "INCOME") => {
+      if (!teamId) return;
 
-    try {
-      const categoryList = await getMyCategories(type);
+      setIsLoadingCategories(true);
 
-      setCategories(categoryList);
+      try {
+        const categoryList = await getTeamCategories(parseInt(teamId), type);
+        setCategories(categoryList);
 
-      // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
-      if (categoryList.length > 0) {
-        const defaultCategory =
-          categoryList.find((cat) => cat.name === "기타") || categoryList[0];
+        // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
+        if (categoryList.length > 0) {
+          const defaultCategory =
+            categoryList.find((cat) => cat.name === "기타") || categoryList[0];
+          setCategoryId(defaultCategory.id);
+        }
+      } catch (error) {
+        alert(error);
 
-        setCategoryId(defaultCategory.id);
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
       }
-    } catch (error) {
-      alert(error);
+    },
+    [teamId]
+  );
 
-      setCategories([]);
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  }, []);
-
-  // 초기 카테고리 로드
+  // teamId 유효성 검사 및 그룹 정보 로드
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadCategories(transactionType);
+    if (!teamId) {
+      router.replace("/group"); // teamId가 없으면 그룹 목록으로 리다이렉트
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await getGroupInfo(teamId);
+
+        setGroupInfo(response);
+      } catch (error) {
+        alert(error || "그룹 정보를 불러올 수 없습니다.");
+        router.replace("/group");
+      }
+    }, 100);
+
+    const timeoutId2 = setTimeout(async () => {
+      try {
+        loadCategories(transactionType);
+      } catch (error) {
+        alert(error || "카테고리를 불러올 수 없습니다.");
+        router.replace("/group");
+      }
     }, 100);
 
     return () => {
       clearTimeout(timeoutId);
+      clearTimeout(timeoutId2);
     };
-  }, [loadCategories, transactionType]);
+  }, [teamId, router, loadCategories, transactionType]);
 
   // 폼 유효성 검사
   useEffect(() => {
@@ -120,7 +149,7 @@ export default function AddMyTransactionPageClient() {
       return;
     }
 
-    if (!isFormValid || !categoryId) return;
+    if (!isFormValid || !teamId || !categoryId) return;
 
     // 제출 시작
     setIsSubmitting(true);
@@ -143,7 +172,7 @@ export default function AddMyTransactionPageClient() {
       // API 요청을 위한, 데이터 구조화
       const transactionData = {
         categoryId: categoryId, // API에서 가져온 카테고리 ID 사용
-        teamId: null, // 개인 거래이므로 null
+        teamId: parseInt(teamId), // teamId를 숫자로 변환하여 포함
         amount: Number(amount), // 문자열을 숫자로 변환
         content: content || null, // 내용이 없으면 null
         transactionDate:
@@ -153,15 +182,15 @@ export default function AddMyTransactionPageClient() {
         transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
       };
 
-      // API 서비스로 내 거래 내역 저장 요청
+      // API 서비스로 그룹 거래 내역 저장 요청
       await addTransaction(transactionData);
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // 성공 시 내 거래 내역 조회 페이지로 이동
-      router.push("/transaction/my");
+      // 성공 시 그룹 거래 내역 조회 페이지로 이동
+      router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      alert(error || "내 거래 내역 저장 중 오류가 발생했습니다.");
+      alert(error || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);
@@ -182,8 +211,10 @@ export default function AddMyTransactionPageClient() {
       <TopBar />
 
       {/* 거래 내역 작성 제목 블록 */}
-      <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">내 거래 내역 작성</h1>
+      <div className="bg-[#11ABFF] text-white px-4 py-2 items-center">
+        <h1 className="text-xl font-light">
+          [{groupInfo?.title}] 거래 내역 작성
+        </h1>
       </div>
 
       {/* 거래 유형 선택 */}
@@ -219,7 +250,7 @@ export default function AddMyTransactionPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="0"
+            placeholder="금액을 입력해주세요"
             value={formattedAmount()}
             onChange={handleAmountChange}
             onBlur={(e) => {
@@ -232,22 +263,9 @@ export default function AddMyTransactionPageClient() {
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
           />
-          {/* <button
-            onClick={() => alert("서비스 준비 중입니다.")}
-            className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center"
-          >
-            <Image
-              src="/images/transaction/영수증_AI_등록.svg"
-              alt="영수증"
-              width={20}
-              height={20}
-              className="mr-1"
-            />
-            <span>영수증으로 작성하기</span>
-          </button> */}
         </div>
         {amountError && amountTouched && (
-          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
+          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요</p>
         )}
       </div>
 
@@ -257,7 +275,7 @@ export default function AddMyTransactionPageClient() {
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해주세요."
+          placeholder="내용을 입력해주세요"
           value={content}
           onChange={handleContentChange}
         />

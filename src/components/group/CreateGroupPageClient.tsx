@@ -132,7 +132,7 @@ export default function CreateGroupPageClient() {
                 ? "border-red-500 focus:border-red-500"
                 : "border-gray-300 focus:border-blue-500"
             }`}
-            placeholder="여행 경비 관리"
+            placeholder="그룹명을 입력해주세요"
             value={title}
             onChange={handleTitleChange}
             onBlur={(e) => {
@@ -146,7 +146,7 @@ export default function CreateGroupPageClient() {
           />
           {groupNameError && groupNameTouched && (
             <p className="text-red-500 text-xs mt-1 ml-2">
-              그룹명을 입력해 주세요.
+              그룹명을 입력해주세요
             </p>
           )}
         </div>
@@ -164,7 +164,7 @@ export default function CreateGroupPageClient() {
                 ? "border-red-500 focus:border-red-500"
                 : "border-gray-300 focus:border-blue-500"
             }`}
-            placeholder="3"
+            placeholder="인원 수를 입력해주세요"
             value={memberLimit}
             onChange={handleMemberLimitChange}
             onBlur={(e) => {
@@ -188,7 +188,7 @@ export default function CreateGroupPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 focus:outline-none text-sm transition-colors"
-            placeholder="정해진 경비 안에서만 여행하기"
+            placeholder="목표를 입력해주세요"
             value={purpose}
             onChange={handlePurposeChange}
           />
