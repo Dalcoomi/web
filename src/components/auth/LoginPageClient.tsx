@@ -311,13 +311,6 @@ export default function LoginPageClient() {
           />
         </button>
       </div>
-
-      {/* 로딩 오버레이 */}
-      {isLoading && (
-        <div className="absolute inset-0 bg-opacity-50 flex items-center justify-center z-20">
-          <div className="text-lg text-white">로그인 중...</div>
-        </div>
-      )}
     </div>
   );
 }
