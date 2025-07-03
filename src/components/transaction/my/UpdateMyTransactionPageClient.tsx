@@ -196,13 +196,13 @@ export default function UpdateMyTransactionPageClient() {
         transactionType: transactionType,
       };
 
-      // API 서비스로 내 거래 내역 수정 요청
+      // API 서비스로 개인 거래 내역 수정 요청
       await updateTransaction(transactionId, transactionData);
 
-      // 성공 시 내 거래 내역 조회 페이지로 이동
+      // 성공 시 개인 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      alert(error || "내 거래 내역 수정 중 오류가 발생했습니다.");
+      alert(error || "개인 거래 내역 수정 중 오류가 발생했습니다.");
       setIsSubmitting(false);
     }
   };
@@ -222,7 +222,7 @@ export default function UpdateMyTransactionPageClient() {
 
       router.push("/transaction/my");
     } catch (error) {
-      alert(error || "내 거래 내역 삭제 중 오류가 발생했습니다.");
+      alert(error || "개인 거래 내역 삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -253,7 +253,7 @@ export default function UpdateMyTransactionPageClient() {
 
       {/* 거래 내역 수정 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">내 거래 내역 수정</h1>
+        <h1 className="text-xl font-light">개인 거래 내역 수정</h1>
       </div>
 
       {/* 거래 유형 선택 */}

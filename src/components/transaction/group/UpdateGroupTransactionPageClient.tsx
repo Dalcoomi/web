@@ -218,10 +218,10 @@ export default function UpdateGroupTransactionPageClient() {
         transactionType: transactionType,
       };
 
-      // API 서비스로 내 거래 내역 수정 요청
+      // API 서비스로 거래 내역 수정 요청
       await updateTransaction(transactionId, transactionData);
 
-      // 성공 시 내 거래 내역 조회 페이지로 이동
+      // 성공 시 거래 내역 조회 페이지로 이동
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
       alert(error || "그룹 거래 내역 수정 중 오류가 발생했습니다.");

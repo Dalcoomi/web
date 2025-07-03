@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import MyTransactionPageClient from "@/components/transaction/my/MyTransactionPageClient";
 
 export const metadata = {
-  title: "내 거래 내역",
+  title: "개인 거래 내역",
 };
 
 // 서버 컴포넌트

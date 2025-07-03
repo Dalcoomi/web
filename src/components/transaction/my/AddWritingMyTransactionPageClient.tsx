@@ -153,15 +153,15 @@ export default function AddWritingMyTransactionPageClient() {
         transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
       };
 
-      // API 서비스로 내 거래 내역 저장 요청
+      // API 서비스로 개인 거래 내역 저장 요청
       await addTransaction(transactionData);
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // 성공 시 내 거래 내역 조회 페이지로 이동
+      // 성공 시 개인 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      alert(error || "내 거래 내역 저장 중 오류가 발생했습니다.");
+      alert(error || "개인 거래 내역 저장 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);
@@ -183,7 +183,7 @@ export default function AddWritingMyTransactionPageClient() {
 
       {/* 거래 내역 작성 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">내 거래 내역 작성</h1>
+        <h1 className="text-xl font-light">개인 거래 내역 작성</h1>
       </div>
 
       {/* 거래 유형 선택 */}

@@ -12,7 +12,7 @@ export default async function RootPage() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken");
 
-  // 이미 로그인된 경우 내 거래 페이지로 리다이렉트
+  // 이미 로그인된 경우 개인 거래 페이지로 리다이렉트
   if (accessToken) {
     redirect("/transaction/my");
   }

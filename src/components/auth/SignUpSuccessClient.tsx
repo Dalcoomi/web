@@ -89,7 +89,7 @@ export default function SignUpSuccessClient() {
       // 모든 세션 데이터 제거
       clearAllSessionData();
 
-      // 내 거래 페이지로 이동
+      // 개인 거래 페이지로 이동
       router.push("/transaction/my");
     }, 2000);
 

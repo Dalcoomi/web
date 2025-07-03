@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import UpdateMyTransactionPageClient from "@/components/transaction/my/UpdateMyTransactionPageClient";
 
 export const metadata = {
-  title: "내 거래 내역 수정",
+  title: "개인 거래 내역 수정",
 };
 
 export default async function UpdateMyTransactionPage() {

@@ -22,9 +22,87 @@ export interface MonthlyTransactionsResponse {
   transactions: Transaction[];
 }
 
+// 🔥 영수증 업로드 관련 타입 정의
+export interface UploadReceiptResponseItem {
+  transactionDate: string; // LocalDate는 문자열로 전송됨
+  categoryName: string;
+  content: string;
+  amount: number;
+}
+
+export interface UploadReceiptResponse {
+  taskId: string; // 🔥 taskId 추가
+  transactions: UploadReceiptResponseItem[];
+}
+
+// 🔥 벌크 거래 내역 생성 관련 타입 정의
+export interface TransactionRequest {
+  categoryId: number;
+  teamId?: number | null;
+  amount: number;
+  content: string | null;
+  transactionDate: string;
+  transactionType: "INCOME" | "EXPENSE";
+}
+
+export interface BulkTransactionRequest {
+  taskId: string;
+  transactions: TransactionRequest[];
+}
+
 // 거래 내역 추가 API
 export const addTransaction = async (transactionData: any) => {
   return post("/api/transactions", transactionData);
+};
+
+// 🔥 벌크 거래 내역 추가 API
+export const addBulkTransactions = async (bulkData: BulkTransactionRequest) => {
+  return post("/api/transactions/bulk", bulkData);
+};
+
+// 🔥 영수증 업로드 API
+export const uploadReceipt = async (
+  file: File,
+  teamId?: number | null
+): Promise<UploadReceiptResponse> => {
+  try {
+    // FormData 생성
+    const formData = new FormData();
+    formData.append("receipt", file);
+
+    // teamId가 있으면 추가, 없으면 빈 문자열 (개인 거래)
+    formData.append("teamId", teamId ? teamId.toString() : "");
+
+    // apiClient를 사용하되, 특별한 처리가 필요한 경우
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+    // 토큰 가져오기 (apiClient에서 사용하는 방식과 동일)
+    const { getAccessToken } = await import("@/utils/tokenManager");
+    const accessToken = getAccessToken();
+
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(`${API_URL}/api/transactions/upload-receipt`, {
+      method: "POST",
+      body: formData,
+      headers, // Content-Type은 FormData 사용 시 자동 설정
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message ||
+          `HTTP ${response.status}: 영수증 업로드에 실패했습니다.`
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    throw error;
+  }
 };
 
 // 전체 거래 내역 조회 API
