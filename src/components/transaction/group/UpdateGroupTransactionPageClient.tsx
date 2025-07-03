@@ -9,7 +9,8 @@ import {
   deleteTransaction,
 } from "@/services/transactionService";
 import { Transaction } from "@/services/transactionService";
-import { getMyCategories, Category } from "@/services/categoryService";
+import { getTeamCategories, Category } from "@/services/categoryService";
+import { getMember, Member } from "@/services/memberService";
 import { getGroupInfo, GroupInfo } from "@/services/groupService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
@@ -49,6 +50,7 @@ export default function UpdateGroupTransactionPageClient() {
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [amountError, setAmountError] = useState(false);
   const [amountTouched, setAmountTouched] = useState(false);
+  const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
   // 카테고리 관련 상태
@@ -91,7 +93,10 @@ export default function UpdateGroupTransactionPageClient() {
         setCategoryId(transaction.categoryId);
 
         setIsLoadingCategories(true);
-        const categoryList = await getMyCategories(transaction.transactionType);
+        const categoryList = await getTeamCategories(
+          parseInt(teamId),
+          transaction.transactionType
+        );
         setCategories(categoryList);
         setIsLoadingCategories(false);
       } catch (error) {
@@ -118,9 +123,20 @@ export default function UpdateGroupTransactionPageClient() {
       loadTransaction();
     }, 100);
 
+    const timeoutId3 = setTimeout(async () => {
+      try {
+        const userInfo = await getMember();
+        setCurrentUser(userInfo);
+      } catch (error) {
+        alert(error || "사용자 정보를 불러올 수 없습니다.");
+        router.replace(`/transaction/group/${teamId}`);
+      }
+    }, 100);
+
     return () => {
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
+      clearTimeout(timeoutId3);
     };
   }, [transactionId, router, teamId]);
 
@@ -157,7 +173,7 @@ export default function UpdateGroupTransactionPageClient() {
 
     setIsLoadingCategories(true);
     try {
-      const categoryList = await getMyCategories(type);
+      const categoryList = await getTeamCategories(parseInt(teamId), type);
       setCategories(categoryList);
 
       // 원래 거래 유형으로 돌아왔는지 확인
@@ -437,57 +453,59 @@ export default function UpdateGroupTransactionPageClient() {
         </>
       )}
 
-      {/* 수정/삭제 버튼 */}
-      <div className="px-10 pb-7 mt-auto">
-        <div className="flex gap-3">
-          <button
-            className="flex-1 py-3 rounded-md font-medium transition-colors bg-red-500 hover:bg-red-600 text-white cursor-pointer"
-            onClick={handleDelete}
-          >
-            삭제
-          </button>
-          <button
-            className={`flex-1 py-3 rounded-md font-medium transition-colors ${
-              isFormValid && !isSubmitting
-                ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
-                : isSubmitting
-                ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
-                : "bg-gray-300 text-white cursor-not-allowed"
-            }`}
-            onClick={handleSubmit}
-            disabled={!isFormValid || isSubmitting}
-            style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
-          >
-            {isSubmitting ? (
-              <span className="flex items-center justify-center cursor-not-allowed">
-                <svg
-                  className="animate-spin h-5 w-5 mr-2"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                처리 중...
-              </span>
-            ) : (
-              "수정 완료"
-            )}
-          </button>
+      {/* 현재 사용자가 작성자인 경우만 수정/삭제 버튼 표시 */}
+      {currentUser?.nickname === originalTransaction?.creatorNickname && (
+        <div className="px-10 pb-7 mt-auto">
+          <div className="flex gap-3">
+            <button
+              className="flex-1 py-3 rounded-md font-medium transition-colors bg-red-500 hover:bg-red-600 text-white cursor-pointer"
+              onClick={handleDelete}
+            >
+              삭제
+            </button>
+            <button
+              className={`flex-1 py-3 rounded-md font-medium transition-colors ${
+                isFormValid && !isSubmitting
+                  ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
+                  : isSubmitting
+                  ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
+                  : "bg-gray-300 text-white cursor-not-allowed"
+              }`}
+              onClick={handleSubmit}
+              disabled={!isFormValid || isSubmitting}
+              style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center justify-center cursor-not-allowed">
+                  <svg
+                    className="animate-spin h-5 w-5 mr-2"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  처리 중...
+                </span>
+              ) : (
+                "수정 완료"
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <BottomBar />
     </div>
