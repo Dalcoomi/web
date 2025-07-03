@@ -273,6 +273,10 @@ export default function UpdateGroupTransactionPageClient() {
   // 선택된 카테고리 정보 가져오기
   const selectedCategory = categories.find((cat) => cat.id === categoryId);
 
+  // 현재 사용자가 작성자인지 확인
+  const isOwner =
+    currentUser?.nickname === originalTransaction?.creatorNickname;
+
   if (isLoading) {
     return (
       <div className="flex flex-col h-screen bg-white">
@@ -289,126 +293,192 @@ export default function UpdateGroupTransactionPageClient() {
     <div className="flex flex-col h-screen bg-white">
       <TopBar />
 
-      {/* 거래 내역 수정 제목 블록 */}
-      <div className="bg-[#11ABFF] text-white px-4 py-2 items-center">
-        <h1 className="text-xl font-light">
-          [{groupInfo?.title}] 거래 내역 수정
-        </h1>
-      </div>
-
-      {/* 거래 유형 선택 */}
-      <div className="flex px-6 pt-3">
-        <button
-          className={`flex-1 cursor-pointer py-2 rounded-[10px] mr-7 ${
-            transactionType === "EXPENSE"
-              ? "bg-[#FF005E] text-white"
-              : "bg-[#D4D4D4] text-white"
-          }`}
-          onClick={() => handleTransactionTypeChange("EXPENSE")}
-        >
-          지출
-        </button>
-        <button
-          className={`flex-1 cursor-pointer py-2 rounded-[10px] ${
-            transactionType === "INCOME"
-              ? "bg-[#0E5EFF] text-white"
-              : "bg-[#D4D4D4] text-white"
-          }`}
-          onClick={() => handleTransactionTypeChange("INCOME")}
-        >
-          수입
-        </button>
-      </div>
-
-      {/* 작성자 정보 */}
-      {originalTransaction?.creatorNickname && (
-        <div className="px-4 py-3 border-b border-gray-100">
-          <span className="text-sm text-gray-600">작성자: </span>
-          <span className="text-sm font-medium text-gray-800">
-            {originalTransaction.creatorNickname}
-          </span>
+      {/* 메인 컨텐츠 영역 - flex-1으로 남은 공간 차지 */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* 거래 내역 수정 제목 블록 */}
+        <div className="bg-[#11ABFF] text-white px-4 py-2 items-center">
+          <h1 className="text-xl font-light">
+            [{groupInfo?.title}] 거래 내역 수정
+          </h1>
         </div>
-      )}
 
-      {/* 금액 입력 */}
-      <div className="px-4 py-3">
-        <label className="block font-medium text-md mb-1">
-          금액<span className="text-[#FF005E]">*</span>
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="금액을 입력해주세요"
-            value={formattedAmount()}
-            onChange={handleAmountChange}
-            onBlur={(e) => {
-              if (e.target.value.trim() === "") {
-                setAmountError(true);
-              } else {
-                setAmountError(false);
-              }
-            }}
-            onFocus={() => setAmountTouched(true)}
-            inputMode="numeric"
-          />
-        </div>
-        {amountError && amountTouched && (
-          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요</p>
-        )}
-      </div>
+        {/* 스크롤 가능한 콘텐츠 영역 */}
+        <div className="flex-1 overflow-y-auto">
+          {/* 거래 유형 선택 */}
+          <div className="flex px-6 pt-3">
+            <button
+              className={`flex-1 cursor-pointer py-2 rounded-[10px] mr-7 ${
+                transactionType === "EXPENSE"
+                  ? "bg-[#FF005E] text-white"
+                  : "bg-[#D4D4D4] text-white"
+              }`}
+              onClick={() => handleTransactionTypeChange("EXPENSE")}
+            >
+              지출
+            </button>
+            <button
+              className={`flex-1 cursor-pointer py-2 rounded-[10px] ${
+                transactionType === "INCOME"
+                  ? "bg-[#0E5EFF] text-white"
+                  : "bg-[#D4D4D4] text-white"
+              }`}
+              onClick={() => handleTransactionTypeChange("INCOME")}
+            >
+              수입
+            </button>
+          </div>
 
-      {/* 내용 입력 */}
-      <div className="px-4">
-        <label className="block font-medium text-md mb-1">내용</label>
-        <input
-          type="text"
-          className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해주세요"
-          value={content}
-          onChange={handleContentChange}
-        />
-      </div>
+          {/* 작성자 정보 */}
+          {originalTransaction?.creatorNickname && (
+            <div className="px-4 py-3 border-b border-gray-100">
+              <span className="text-sm text-gray-600">작성자: </span>
+              <span className="text-sm font-medium text-gray-800">
+                {originalTransaction.creatorNickname}
+              </span>
+            </div>
+          )}
 
-      {/* 날짜 입력*/}
-      <div className="px-4 py-3">
-        <label className="block font-medium text-md mb-1">날짜</label>
-        <div className="date-input-wrapper">
-          <input
-            type="date"
-            className="px-2 py-1 border rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
-            value={date.replace(/\//g, "-")}
-            onChange={handleDateChange}
-          />
-        </div>
-      </div>
+          {/* 금액 입력 */}
+          <div className="px-4 py-3">
+            <label className="block font-medium text-md mb-1">
+              금액<span className="text-[#FF005E]">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
+                placeholder="금액을 입력해주세요"
+                value={formattedAmount()}
+                onChange={handleAmountChange}
+                onBlur={(e) => {
+                  if (e.target.value.trim() === "") {
+                    setAmountError(true);
+                  } else {
+                    setAmountError(false);
+                  }
+                }}
+                onFocus={() => setAmountTouched(true)}
+                inputMode="numeric"
+                disabled={!isOwner}
+              />
+            </div>
+            {amountError && amountTouched && (
+              <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요</p>
+            )}
+          </div>
 
-      {/* 카테고리 선택 */}
-      <div className="px-4 py-1">
-        <label className="block font-medium text-md">카테고리</label>
-      </div>
-
-      {/* 선택된 카테고리 아이콘 */}
-      {selectedCategory && (
-        <div className="flex justify-left px-4">
-          <button
-            className="flex flex-col items-center cursor-pointer bg-transparent border-none p-0"
-            onClick={() => setShowCategoryModal(true)}
-            disabled={isLoadingCategories}
-          >
-            <Image
-              src={selectedCategory.iconUrl}
-              alt={selectedCategory.name}
-              width={48}
-              height={48}
-              className="rounded-lg"
-              quality={100}
-              unoptimized={true}
+          {/* 내용 입력 */}
+          <div className="px-4">
+            <label className="block font-medium text-md mb-1">내용</label>
+            <input
+              type="text"
+              className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
+              placeholder="내용을 입력해주세요"
+              value={content}
+              onChange={handleContentChange}
+              disabled={!isOwner}
             />
-            <span className="text-sm">{selectedCategory.name}</span>
-          </button>
+          </div>
+
+          {/* 날짜 입력*/}
+          <div className="px-4 py-3">
+            <label className="block font-medium text-md mb-1">날짜</label>
+            <div className="date-input-wrapper">
+              <input
+                type="date"
+                className="px-2 py-1 border rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
+                value={date.replace(/\//g, "-")}
+                onChange={handleDateChange}
+                disabled={!isOwner}
+              />
+            </div>
+          </div>
+
+          {/* 카테고리 선택 */}
+          <div className="px-4 py-1">
+            <label className="block font-medium text-md">카테고리</label>
+          </div>
+
+          {/* 선택된 카테고리 아이콘 */}
+          {selectedCategory && (
+            <div className="flex justify-left px-4 pb-4">
+              <button
+                className="flex flex-col items-center cursor-pointer bg-transparent border-none p-0"
+                onClick={() => isOwner && setShowCategoryModal(true)}
+                disabled={isLoadingCategories || !isOwner}
+              >
+                <Image
+                  src={selectedCategory.iconUrl}
+                  alt={selectedCategory.name}
+                  width={48}
+                  height={48}
+                  className="rounded-lg"
+                  quality={100}
+                  unoptimized={true}
+                />
+                <span className="text-sm">{selectedCategory.name}</span>
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* 하단 고정 버튼 영역 */}
+        <div className="flex-shrink-0 bg-white">
+          {/* 현재 사용자가 작성자인 경우만 수정/삭제 버튼 표시 */}
+          {isOwner && (
+            <div className="px-10 py-7">
+              <div className="flex gap-3">
+                <button
+                  className="flex-1 py-3 rounded-md font-medium transition-colors bg-red-500 hover:bg-red-600 text-white cursor-pointer"
+                  onClick={handleDelete}
+                >
+                  삭제
+                </button>
+                <button
+                  className={`flex-1 py-3 rounded-md font-medium transition-colors ${
+                    isFormValid && !isSubmitting
+                      ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
+                      : isSubmitting
+                      ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
+                      : "bg-gray-300 text-white cursor-not-allowed"
+                  }`}
+                  onClick={handleSubmit}
+                  disabled={!isFormValid || isSubmitting}
+                  style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center cursor-not-allowed">
+                      <svg
+                        className="animate-spin h-5 w-5 mr-2"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      처리 중...
+                    </span>
+                  ) : (
+                    "수정 완료"
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* 카테고리 선택 모달 */}
       {showCategoryModal && (
@@ -453,60 +523,7 @@ export default function UpdateGroupTransactionPageClient() {
         </>
       )}
 
-      {/* 현재 사용자가 작성자인 경우만 수정/삭제 버튼 표시 */}
-      {currentUser?.nickname === originalTransaction?.creatorNickname && (
-        <div className="px-10 pb-7 mt-auto">
-          <div className="flex gap-3">
-            <button
-              className="flex-1 py-3 rounded-md font-medium transition-colors bg-red-500 hover:bg-red-600 text-white cursor-pointer"
-              onClick={handleDelete}
-            >
-              삭제
-            </button>
-            <button
-              className={`flex-1 py-3 rounded-md font-medium transition-colors ${
-                isFormValid && !isSubmitting
-                  ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
-                  : isSubmitting
-                  ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
-                  : "bg-gray-300 text-white cursor-not-allowed"
-              }`}
-              onClick={handleSubmit}
-              disabled={!isFormValid || isSubmitting}
-              style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center cursor-not-allowed">
-                  <svg
-                    className="animate-spin h-5 w-5 mr-2"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  처리 중...
-                </span>
-              ) : (
-                "수정 완료"
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* BottomBar - 최하단 고정 */}
       <BottomBar />
     </div>
   );
