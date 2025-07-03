@@ -113,6 +113,7 @@ export default function MyTransactionPageClient() {
   };
 
   const handleReceiptTransaction = () => {
+    alert("서비스 준비 중입니다.");
     router.push("/transaction/my/add/receipt");
   };
 

@@ -145,7 +145,8 @@ export default function MyTransactionPageClient() {
   };
 
   const handleReceiptTransaction = () => {
-    router.push(`/transaction/group/${teamId}/add/receipt`);
+    alert("서비스 준비 중입니다.");
+    // router.push(`/transaction/group/${teamId}/add/receipt`);
   };
 
   // 모달 닫기
