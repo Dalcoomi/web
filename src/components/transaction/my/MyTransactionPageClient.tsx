@@ -28,6 +28,8 @@ export default function MyTransactionPageClient() {
   const lastRequestRef = useRef<string>("");
   const isRequestInProgressRef = useRef<boolean>(false);
 
+  const [showAddPageModal, setShowAddPageModal] = useState<boolean>(false);
+
   // 날짜 변경 핸들러
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -43,7 +45,6 @@ export default function MyTransactionPageClient() {
         isRequestInProgressRef.current &&
         lastRequestRef.current === requestKey
       ) {
-        console.log("동일한 요청이 진행 중입니다. 무시합니다.");
         return;
       }
 
@@ -53,14 +54,10 @@ export default function MyTransactionPageClient() {
       setIsLoading(true);
 
       try {
-        console.log(`거래 내역 조회 요청: ${year}년 ${month}월`);
-
         const response = await getTransactions(year, month);
 
         setResponse(response);
       } catch (error) {
-        console.error("거래 내역 로드 중 오류 발생:", error);
-
         // 401 에러면 루트(로그인)로 리다이렉트
         if (error instanceof Error && error.message.includes("401")) {
           router.replace("/");
@@ -107,8 +104,21 @@ export default function MyTransactionPageClient() {
   };
 
   // 새 거래 추가 버튼 클릭 핸들러
-  const handleAddTransaction = () => {
-    router.push("/transaction/my/add");
+  const handleAddTransactionClick = () => {
+    setShowAddPageModal(true);
+  };
+
+  const handleWritingTransaction = () => {
+    router.push("/transaction/my/add/writing");
+  };
+
+  const handleReceiptTransaction = () => {
+    router.push("/transaction/my/add/receipt");
+  };
+
+  // 모달 닫기
+  const handleCloseModal = () => {
+    setShowAddPageModal(false);
   };
 
   const formatDateForDisplay = (date: Date): string => {
@@ -186,7 +196,7 @@ export default function MyTransactionPageClient() {
 
             {/* 새 거래 추가 버튼 */}
             <button
-              onClick={handleAddTransaction}
+              onClick={handleAddTransactionClick}
               className="ml-auto border-none cursor-pointer"
             >
               <Image
@@ -198,6 +208,41 @@ export default function MyTransactionPageClient() {
               />
             </button>
           </div>
+
+          {/* 거래 내역 추가 페이지 모달 */}
+          {showAddPageModal && (
+            <>
+              {/* 배경 오버레이 */}
+              <div
+                className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
+                onClick={handleCloseModal}
+              ></div>
+
+              {/* 모달 컨텐츠 */}
+              <div
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] p-2 w-[80%] z-50"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* 버튼들 */}
+                <div className="flex">
+                  <button
+                    onClick={handleWritingTransaction}
+                    className="flex-1 mx-10 mb-4 mt-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px]  hover:bg-blue-100 cursor-pointer transition-colors"
+                  >
+                    직접 작성하기
+                  </button>
+                </div>
+                <div className="flex">
+                  <button
+                    onClick={handleReceiptTransaction}
+                    className="flex-1 mx-10 mb-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px]  hover:bg-blue-100 cursor-pointer transition-colors"
+                  >
+                    영수증으로 작성하기 (AI)
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* 수입/지출 태그 */}
           <div className="grid grid-cols-2 mb-2">

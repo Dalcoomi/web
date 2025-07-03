@@ -20,12 +20,13 @@ export const getMyCategories = async (
 ): Promise<Category[]> => {
   try {
     const response: GetCategoriesResponse = await get(
-      `/api/category/my?transactionType=${transactionType}`
+      `/api/categories?transactionType=${transactionType}`
     );
 
     return response.categories;
   } catch (error) {
-    console.error("카테고리 조회 중 오류 발생:", error);
+    alert(error);
+
     // 에러 발생 시 빈 배열 반환
     return [];
   }
@@ -38,12 +39,13 @@ export const getTeamCategories = async (
 ): Promise<Category[]> => {
   try {
     const response: GetCategoriesResponse = await get(
-      `/api/category/team?teamId=${teamId}&transactionType=${transactionType}`
+      `/api/categories?teamId=${teamId}&transactionType=${transactionType}`
     );
 
     return response.categories;
   } catch (error) {
-    console.error("그룹 카테고리 조회 중 오류 발생:", error);
+    alert(error);
+
     // 에러 발생 시 빈 배열 반환
     return [];
   }

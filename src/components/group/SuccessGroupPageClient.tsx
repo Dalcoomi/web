@@ -34,8 +34,7 @@ export default function SuccessGroupPageClient() {
       await navigator.clipboard.writeText(inviteCode);
       alert("초대 코드가 복사되었습니다!");
     } catch (error) {
-      console.error("복사 실패:", error);
-      alert("복사에 실패했습니다. 다시 시도해 주세요.");
+      alert(error || "복사에 실패했습니다. 다시 시도해 주세요.");
     }
   };
 

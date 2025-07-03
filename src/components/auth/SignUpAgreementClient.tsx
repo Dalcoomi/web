@@ -20,9 +20,6 @@ export default function SignUpAgreementClient() {
     const checkData = () => {
       const socialLoginData = sessionStorage.getItem("socialLoginData");
       if (!socialLoginData) {
-        console.error(
-          "소셜 로그인 데이터가 없습니다. 로그인 페이지로 이동합니다."
-        );
         router.replace("/");
         return;
       }
@@ -57,15 +54,11 @@ export default function SignUpAgreementClient() {
 
   // 다음 단계로 이동
   const handleNext = () => {
-    console.log("handleNext 실행됨, 약관 상태:", agreements);
-
     if (agreements.service && agreements.privacy) {
       try {
         // 중복 실행 방지
         if (isNavigating) return;
         setIsNavigating(true);
-
-        console.log("모든 약관에 동의함");
 
         // 세션 스토리지에 백업
         sessionStorage.setItem(
@@ -77,15 +70,10 @@ export default function SignUpAgreementClient() {
         );
         sessionStorage.setItem("signupStep1Completed", "true");
 
-        console.log("Step2로 이동 시도");
-
         router.push("/sign-up/step2");
       } catch (error) {
-        console.error("페이지 이동 중 오류 발생:", error);
         setIsNavigating(false);
       }
-    } else {
-      console.log("약관 동의가 완료되지 않음");
     }
   };
 

@@ -22,9 +22,87 @@ export interface MonthlyTransactionsResponse {
   transactions: Transaction[];
 }
 
+// 🔥 영수증 업로드 관련 타입 정의
+export interface UploadReceiptResponseItem {
+  transactionDate: string; // LocalDate는 문자열로 전송됨
+  categoryName: string;
+  content: string;
+  amount: number;
+}
+
+export interface UploadReceiptResponse {
+  taskId: string; // 🔥 taskId 추가
+  transactions: UploadReceiptResponseItem[];
+}
+
+// 🔥 벌크 거래 내역 생성 관련 타입 정의
+export interface TransactionRequest {
+  categoryId: number;
+  teamId?: number | null;
+  amount: number;
+  content: string | null;
+  transactionDate: string;
+  transactionType: "INCOME" | "EXPENSE";
+}
+
+export interface BulkTransactionRequest {
+  taskId: string;
+  transactions: TransactionRequest[];
+}
+
 // 거래 내역 추가 API
 export const addTransaction = async (transactionData: any) => {
-  return post("/api/transaction", transactionData);
+  return post("/api/transactions", transactionData);
+};
+
+// 🔥 벌크 거래 내역 추가 API
+export const addBulkTransactions = async (bulkData: BulkTransactionRequest) => {
+  return post("/api/transactions/bulk", bulkData);
+};
+
+// 🔥 영수증 업로드 API
+export const uploadReceipt = async (
+  file: File,
+  teamId?: number | null
+): Promise<UploadReceiptResponse> => {
+  try {
+    // FormData 생성
+    const formData = new FormData();
+    formData.append("receipt", file);
+
+    // teamId가 있으면 추가, 없으면 빈 문자열 (개인 거래)
+    formData.append("teamId", teamId ? teamId.toString() : "");
+
+    // apiClient를 사용하되, 특별한 처리가 필요한 경우
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+    // 토큰 가져오기 (apiClient에서 사용하는 방식과 동일)
+    const { getAccessToken } = await import("@/utils/tokenManager");
+    const accessToken = getAccessToken();
+
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(`${API_URL}/api/transactions/upload-receipt`, {
+      method: "POST",
+      body: formData,
+      headers, // Content-Type은 FormData 사용 시 자동 설정
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message ||
+          `HTTP ${response.status}: 영수증 업로드에 실패했습니다.`
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    throw error;
+  }
 };
 
 // 전체 거래 내역 조회 API
@@ -40,19 +118,20 @@ export const getTransactions = async (
       // 3개 매개변수가 모두 있는 경우: teamId, year, month
       const teamId = teamIdOrYear;
       const year = yearOrMonth;
-      url = `/api/transaction?teamId=${teamId}&year=${year}&month=${month}`;
+      url = `/api/transactions?teamId=${teamId}&year=${year}&month=${month}`;
     } else {
       // 2개 매개변수만 있는 경우: year, month (개인 거래)
       const year = teamIdOrYear;
       const monthParam = yearOrMonth;
-      url = `/api/transaction?year=${year}&month=${monthParam}`;
+      url = `/api/transactions?year=${year}&month=${monthParam}`;
     }
 
     const response = await get(url);
 
     return response;
   } catch (error) {
-    console.error("거래 내역 조회 중 오류 발생:", error);
+    alert(error);
+
     // 기본값 반환
     return {
       income: 0,
@@ -72,28 +151,27 @@ export const getTransactionById = async (
     let url: string;
 
     if (teamId === undefined) {
-      url = `/api/transaction/${transactionId}`;
+      url = `/api/transactions/${transactionId}`;
     } else {
-      url = `/api/transaction/${transactionId}?teamId=${teamId}`;
+      url = `/api/transactions/${transactionId}?teamId=${teamId}`;
     }
 
     const response = await get(url);
 
     return response;
   } catch (error) {
-    console.error("거래 내역 상세 조회 중 오류 발생:", error);
     throw error;
   }
 };
 
 // 거래 내역 수정
 export const updateTransaction = async (transactionId: string, data: any) => {
-  return put(`/api/transaction/${transactionId}`, data);
+  return put(`/api/transactions/${transactionId}`, data);
 };
 
 // 거래 내역 삭제
 export const deleteTransaction = async (
   transactionId: string
 ): Promise<void> => {
-  return del(`/api/transaction/${transactionId}`);
+  return del(`/api/transactions/${transactionId}`);
 };

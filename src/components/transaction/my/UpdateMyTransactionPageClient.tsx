@@ -85,9 +85,7 @@ export default function UpdateMyTransactionPageClient() {
         setCategories(categoryList);
         setIsLoadingCategories(false);
       } catch (error) {
-        console.error("거래 내역 로드 오류:", error);
-
-        alert("거래 내역을 불러올 수 없습니다.");
+        alert(error || "거래 내역을 불러올 수 없습니다.");
 
         router.replace("/transaction/my");
       } finally {
@@ -154,7 +152,7 @@ export default function UpdateMyTransactionPageClient() {
         }
       }
     } catch (error) {
-      console.error("카테고리 로드 오류:", error);
+      alert(error);
     } finally {
       setIsLoadingCategories(false);
     }
@@ -163,13 +161,11 @@ export default function UpdateMyTransactionPageClient() {
   // 저장 핸들러 (수정용)
   const handleSubmit = async () => {
     if (isSubmitting || !transactionId) {
-      console.log("이미 처리 중이거나 거래 ID가 없습니다.");
       return;
     }
 
     if (!isFormValid || !categoryId) return;
 
-    console.log("거래 내역 수정 시작");
     setIsSubmitting(true);
 
     try {
@@ -200,18 +196,13 @@ export default function UpdateMyTransactionPageClient() {
         transactionType: transactionType,
       };
 
-      console.log("전송할 데이터:", transactionData);
+      // API 서비스로 개인 거래 내역 수정 요청
+      await updateTransaction(transactionId, transactionData);
 
-      // API 서비스로 내 거래 내역 수정 요청
-      const response = await updateTransaction(transactionId, transactionData);
-
-      console.log("내 거래 내역 수정 성공:", response);
-
-      // 성공 시 내 거래 내역 조회 페이지로 이동
+      // 성공 시 개인 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      console.error("내 거래 내역 수정 오류:", error);
-      alert(error.message || "내 거래 내역 수정 중 오류가 발생했습니다.");
+      alert(error || "개인 거래 내역 수정 중 오류가 발생했습니다.");
       setIsSubmitting(false);
     }
   };
@@ -219,7 +210,6 @@ export default function UpdateMyTransactionPageClient() {
   // 삭제 핸들러
   const handleDelete = async () => {
     if (!transactionId) {
-      console.error("거래 ID가 없습니다.");
       return;
     }
 
@@ -230,12 +220,9 @@ export default function UpdateMyTransactionPageClient() {
     try {
       await deleteTransaction(transactionId);
 
-      console.log("내 거래 내역 삭제 성공");
-
       router.push("/transaction/my");
     } catch (error) {
-      console.error("내 거래 내역 삭제 오류:", error);
-      alert(error.message || "내 거래 내역 삭제 중 오류가 발생했습니다.");
+      alert(error || "개인 거래 내역 삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -266,7 +253,7 @@ export default function UpdateMyTransactionPageClient() {
 
       {/* 거래 내역 수정 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">내 거래 내역 수정</h1>
+        <h1 className="text-xl font-light">개인 거래 내역 수정</h1>
       </div>
 
       {/* 거래 유형 선택 */}
@@ -302,7 +289,7 @@ export default function UpdateMyTransactionPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="0"
+            placeholder="금액을 입력해주세요"
             value={formattedAmount()}
             onChange={handleAmountChange}
             onBlur={(e) => {
@@ -317,7 +304,7 @@ export default function UpdateMyTransactionPageClient() {
           />
         </div>
         {amountError && amountTouched && (
-          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
+          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요</p>
         )}
       </div>
 
@@ -327,7 +314,7 @@ export default function UpdateMyTransactionPageClient() {
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해주세요."
+          placeholder="내용을 입력해주세요"
           value={content}
           onChange={handleContentChange}
         />
@@ -365,6 +352,8 @@ export default function UpdateMyTransactionPageClient() {
               width={48}
               height={48}
               className="rounded-lg"
+              quality={100}
+              unoptimized={true}
             />
             <span className="text-sm">{selectedCategory.name}</span>
           </button>
@@ -402,6 +391,8 @@ export default function UpdateMyTransactionPageClient() {
                       alt={category.name}
                       width={40}
                       height={40}
+                      quality={100}
+                      unoptimized={true}
                     />
                     <span className="text-xs text-center">{category.name}</span>
                   </div>

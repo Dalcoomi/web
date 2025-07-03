@@ -2,7 +2,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { isAuthenticated } from "@/utils/tokenManager";
 
 interface ClientProvidersProps {
@@ -16,12 +16,8 @@ export default function ClientProviders({
 }: ClientProvidersProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // 클라이언트 사이드가 준비되었는지 확인
-    setIsReady(true);
-
     // 클라이언트에서 인증 상태 확인
     const clientAuth = isAuthenticated();
 
@@ -37,15 +33,6 @@ export default function ClientProviders({
       }
     }
   }, [pathname, isLoggedIn, router]);
-
-  // 클라이언트가 준비될 때까지 로딩 표시
-  if (!isReady) {
-    return (
-      <div className="flex items-center justify-center w-full h-screen">
-        <div className="text-center">로딩 중...</div>
-      </div>
-    );
-  }
 
   return <>{children}</>;
 }

@@ -56,13 +56,8 @@ export async function GET(request: NextRequest) {
 
     // 환경 변수가 없는 경우 로그 남기기
     if (!KAKAO_REST_API_KEY || !KAKAO_REDIRECT_URI) {
-      console.error(
-        "KAKAO_REST_API_KEY 혹은 KAKAO_REDIRECT_URI 환경 변수가 설정되지 않았습니다."
-      );
       throw new Error("API 키 or 리다이렉트 URI가 설정되지 않았습니다.");
     }
-
-    console.log("카카오 인증 코드 받음:", code.substring(0, 10) + "...");
 
     // 1. 받은 code로 카카오 토큰 요청
     const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
@@ -79,7 +74,6 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-      console.error("토큰 요청 실패:", tokenData);
       throw new Error("토큰 요청 실패");
     }
 
@@ -94,7 +88,6 @@ export async function GET(request: NextRequest) {
     const userData = await userResponse.json();
 
     if (!userResponse.ok) {
-      console.error("사용자 정보 요청 실패:", userData);
       throw new Error("사용자 정보 요청 실패");
     }
 
@@ -149,8 +142,6 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error("카카오 로그인 처리 오류:", error);
-
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
 
     // 오류 발생 시 브라우저 타입에 따라 다른 응답

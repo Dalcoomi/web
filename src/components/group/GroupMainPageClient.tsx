@@ -20,7 +20,8 @@ export default function GroupPageClient() {
         const response = await getGroups();
         setGroups(response.groups);
       } catch (error) {
-        console.error("그룹 리스트 로드 오류:", error);
+        alert(error);
+
         setGroups([]);
       } finally {
         setIsLoading(false);
