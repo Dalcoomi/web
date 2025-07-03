@@ -146,27 +146,6 @@ const handleLogout = () => {
   if (typeof window !== "undefined") {
     // 🔥 auth-error 이벤트 발생 (useAuth에서 처리)
     window.dispatchEvent(new CustomEvent("auth-error"));
-
-    // 🔥 즉시 리다이렉트 제거 - useAuth에서 처리하도록 위임
-    // 단, 현재 경로가 보호된 경로라면 바로 이동
-    const currentPath = window.location.pathname;
-    const protectedPaths = ["/transaction", "/group"];
-    const isProtectedPath = protectedPaths.some((path) =>
-      currentPath.startsWith(path)
-    );
-
-    // 보호된 경로에서만 즉시 이동, 그 외에는 useAuth에서 처리
-    if (isProtectedPath) {
-      // 약간의 지연을 두어 useAuth의 이벤트 처리와 충돌 방지
-      setTimeout(() => {
-        if (
-          window.location.pathname.startsWith("/transaction") ||
-          window.location.pathname.startsWith("/group")
-        ) {
-          window.location.href = "/";
-        }
-      }, 100);
-    }
   }
 };
 
