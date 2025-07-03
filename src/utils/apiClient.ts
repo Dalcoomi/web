@@ -15,6 +15,9 @@ let failedQueue: Array<{
   reject: (reason: any) => void;
 }> = [];
 
+// 🔥 에러 메시지 중복 표시 방지
+let hasShownAuthError = false;
+
 // 대기 중인 요청들을 처리하는 함수
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
@@ -89,10 +92,17 @@ export const apiClient = async (
           const retryResponse = await fetch(url, { ...config, headers });
           return handleResponse(retryResponse);
         } else {
-          // 리프레시 실패 시 로그아웃 처리
+          // 리프레시 실패 시에만 로그아웃 처리
           processQueue(new Error("토큰 리프레시 실패"), null);
           handleLogout();
-          throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+
+          // 🔥 에러 메시지 중복 방지
+          if (!hasShownAuthError) {
+            hasShownAuthError = true;
+            throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+          } else {
+            throw new Error("AUTH_ERROR"); // 조용히 실패
+          }
         }
       } finally {
         isRefreshing = false;
@@ -139,13 +149,16 @@ const handleResponse = async (response: Response) => {
   return text;
 };
 
-// 🔥 로그아웃 처리 개선
+// 🔥 로그아웃 처리 개선 - 즉시 리다이렉트 제거
 const handleLogout = () => {
   clearTokens();
 
   if (typeof window !== "undefined") {
     // 🔥 auth-error 이벤트 발생 (useAuth에서 처리)
     window.dispatchEvent(new CustomEvent("auth-error"));
+
+    // 🔥 즉시 리다이렉트 완전 제거
+    // useAuth에서 이벤트를 받아서 처리하도록 위임
   }
 };
 
@@ -168,9 +181,6 @@ const refreshAccessToken = async (): Promise<boolean> => {
 
     if (!response.ok) {
       // 리프레시 토큰도 만료된 경우
-      if (response.status === 401) {
-      }
-
       return false;
     }
 
@@ -184,6 +194,9 @@ const refreshAccessToken = async (): Promise<boolean> => {
     // 새로운 토큰 저장
     const newRefreshToken = data.refreshToken || refreshToken;
     saveTokens(data.accessToken, newRefreshToken);
+
+    // 🔥 토큰 갱신 성공 시 에러 상태 리셋
+    hasShownAuthError = false;
 
     // 🔥 토큰 갱신 성공 이벤트 발생
     if (typeof window !== "undefined") {
