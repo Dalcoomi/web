@@ -1,4 +1,4 @@
-// components/transaction/group/AddGroupTransactionPageClient.tsx
+// components/transaction/group/AddWritingGroupTransactionPageClient.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -10,7 +10,7 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 
-export default function AddGroupTransactionPageClient() {
+export default function AddWritingGroupTransactionPageClient() {
   const getTodayInSeoul = (): string => {
     const today = new Date();
     const seoulDate = new Date(
@@ -64,7 +64,8 @@ export default function AddGroupTransactionPageClient() {
           setCategoryId(defaultCategory.id);
         }
       } catch (error) {
-        console.error("카테고리 로드 오류:", error);
+        alert(error);
+
         setCategories([]);
       } finally {
         setIsLoadingCategories(false);
@@ -76,7 +77,6 @@ export default function AddGroupTransactionPageClient() {
   // teamId 유효성 검사 및 그룹 정보 로드
   useEffect(() => {
     if (!teamId) {
-      console.error("teamId가 없습니다.");
       router.replace("/group"); // teamId가 없으면 그룹 목록으로 리다이렉트
       return;
     }
@@ -87,8 +87,7 @@ export default function AddGroupTransactionPageClient() {
 
         setGroupInfo(response);
       } catch (error) {
-        console.error("그룹 정보 로드 오류:", error);
-        alert("그룹 정보를 불러올 수 없습니다.");
+        alert(error || "그룹 정보를 불러올 수 없습니다.");
         router.replace("/group");
       }
     }, 100);
@@ -97,8 +96,7 @@ export default function AddGroupTransactionPageClient() {
       try {
         loadCategories(transactionType);
       } catch (error) {
-        console.error("카테고리 로드 오류:", error);
-        alert("카테고리를 불러올 수 없습니다.");
+        alert(error || "카테고리를 불러올 수 없습니다.");
         router.replace("/group");
       }
     }, 100);
@@ -148,14 +146,12 @@ export default function AddGroupTransactionPageClient() {
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
     if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
       return;
     }
 
     if (!isFormValid || !teamId || !categoryId) return;
 
     // 제출 시작
-    console.log("그룹 거래 내역 저장 시작");
     setIsSubmitting(true);
 
     try {
@@ -194,8 +190,7 @@ export default function AddGroupTransactionPageClient() {
       // 성공 시 그룹 거래 내역 조회 페이지로 이동
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      console.error("그룹 거래 내역 저장 오류:", error);
-      alert(error.message || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
+      alert(error || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);
@@ -255,7 +250,7 @@ export default function AddGroupTransactionPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="0"
+            placeholder="금액을 입력해주세요"
             value={formattedAmount()}
             onChange={handleAmountChange}
             onBlur={(e) => {
@@ -268,22 +263,9 @@ export default function AddGroupTransactionPageClient() {
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
           />
-          <button
-            onClick={() => alert("서비스 준비 중입니다.")}
-            className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center"
-          >
-            <Image
-              src="/images/transaction/영수증_AI_등록.svg"
-              alt="영수증"
-              width={20}
-              height={20}
-              className="mr-1"
-            />
-            <span>영수증으로 작성하기</span>
-          </button>
         </div>
         {amountError && amountTouched && (
-          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
+          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요</p>
         )}
       </div>
 
@@ -293,7 +275,7 @@ export default function AddGroupTransactionPageClient() {
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해주세요."
+          placeholder="내용을 입력해주세요"
           value={content}
           onChange={handleContentChange}
         />
@@ -331,6 +313,8 @@ export default function AddGroupTransactionPageClient() {
               width={48}
               height={48}
               className="rounded-lg"
+              quality={100}
+              unoptimized={true}
             />
             <span className="text-sm">{selectedCategory.name}</span>
           </button>
@@ -412,6 +396,8 @@ export default function AddGroupTransactionPageClient() {
                       alt={category.name}
                       width={40}
                       height={40}
+                      quality={100}
+                      unoptimized={true}
                     />
                     <span className="text-xs text-center">{category.name}</span>
                   </div>

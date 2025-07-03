@@ -80,14 +80,12 @@ export default function CreateGroupPageClient() {
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
     if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
       return;
     }
 
     if (!isFormValid) return;
 
     // 제출 시작
-    console.log("그룹 생성 시작");
     setIsSubmitting(true);
 
     try {
@@ -98,17 +96,12 @@ export default function CreateGroupPageClient() {
         purpose: purpose.trim() || null,
       };
 
-      console.log("전송할 데이터:", groupData);
-
       const response = await createGroup(groupData);
-
-      console.log("그룹 생성 성공", response);
 
       // 성공 시 초대 코드와 함께 성공 페이지로 이동
       const inviteCode = response;
       router.push(`/group/create/success?code=${inviteCode}`);
     } catch (error) {
-      console.error("그룹 생성 오류:", error);
       alert(error.message || "그룹 생성 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
@@ -139,7 +132,7 @@ export default function CreateGroupPageClient() {
                 ? "border-red-500 focus:border-red-500"
                 : "border-gray-300 focus:border-blue-500"
             }`}
-            placeholder="여행 경비 관리"
+            placeholder="그룹명을 입력해주세요"
             value={title}
             onChange={handleTitleChange}
             onBlur={(e) => {
@@ -153,7 +146,7 @@ export default function CreateGroupPageClient() {
           />
           {groupNameError && groupNameTouched && (
             <p className="text-red-500 text-xs mt-1 ml-2">
-              그룹명을 입력해 주세요.
+              그룹명을 입력해주세요
             </p>
           )}
         </div>
@@ -171,7 +164,7 @@ export default function CreateGroupPageClient() {
                 ? "border-red-500 focus:border-red-500"
                 : "border-gray-300 focus:border-blue-500"
             }`}
-            placeholder="3"
+            placeholder="인원 수를 입력해주세요"
             value={memberLimit}
             onChange={handleMemberLimitChange}
             onBlur={(e) => {
@@ -195,7 +188,7 @@ export default function CreateGroupPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 focus:outline-none text-sm transition-colors"
-            placeholder="정해진 경비 안에서만 여행하기"
+            placeholder="목표를 입력해주세요"
             value={purpose}
             onChange={handlePurposeChange}
           />

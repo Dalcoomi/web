@@ -57,28 +57,20 @@ export default function JoinGroupPageClient() {
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
     if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
       return;
     }
 
     if (!isFormValid) return;
 
     // 제출 시작
-    console.log("그룹 참가 시작");
     setIsSubmitting(true);
 
     try {
-      console.log("전송할 초대 코드:", inviteCode);
-
-      const response = await joinGroup(inviteCode);
-
-      console.log("그룹 참가 성공", response);
+      await joinGroup(inviteCode);
 
       // 성공 시 그룹 메인 페이지로 이동
       router.push("/group");
     } catch (error) {
-      console.error("그룹 참가 오류:", error);
-
       // 에러 메시지 설정
       if (
         error.message.includes("404") ||
@@ -124,7 +116,7 @@ export default function JoinGroupPageClient() {
                 ? "border-red-500 focus:border-red-500"
                 : "border-gray-300 focus:border-blue-500"
             }`}
-            placeholder="그룹 초대 코드 8자리를 입력해 주세요."
+            placeholder="그룹 초대 코드 8자리를 입력해주세요"
             value={inviteCode}
             onChange={handleInviteCodeChange}
             onBlur={(e) => {

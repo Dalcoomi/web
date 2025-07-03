@@ -1,4 +1,4 @@
-// components/transaction/my/AddMyTransactionPageClient.tsx
+// components/transaction/my/AddWritingMyTransactionPageClient.tsx
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -9,7 +9,7 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 
-export default function AddMyTransactionPageClient() {
+export default function AddWritingMyTransactionPageClient() {
   const getTodayInSeoul = (): string => {
     const today = new Date();
     const seoulDate = new Date(
@@ -59,7 +59,7 @@ export default function AddMyTransactionPageClient() {
         setCategoryId(defaultCategory.id);
       }
     } catch (error) {
-      console.error("카테고리 로드 오류:", error);
+      alert(error);
 
       setCategories([]);
     } finally {
@@ -117,14 +117,12 @@ export default function AddMyTransactionPageClient() {
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
     if (isSubmitting) {
-      console.log("이미 처리 중입니다.");
       return;
     }
 
     if (!isFormValid || !categoryId) return;
 
     // 제출 시작
-    console.log("거래 내역 저장 시작");
     setIsSubmitting(true);
 
     try {
@@ -155,20 +153,15 @@ export default function AddMyTransactionPageClient() {
         transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
       };
 
-      console.log("전송할 데이터:", transactionData);
-
-      // API 서비스로 내 거래 내역 저장 요청
-      const response = await addTransaction(transactionData);
+      // API 서비스로 개인 거래 내역 저장 요청
+      await addTransaction(transactionData);
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      console.log("내 거래 내역 저장 성공:", response);
-
-      // 성공 시 내 거래 내역 조회 페이지로 이동
+      // 성공 시 개인 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      console.error("내 거래 내역 저장 오류:", error);
-      alert(error.message || "내 거래 내역 저장 중 오류가 발생했습니다.");
+      alert(error || "개인 거래 내역 저장 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);
@@ -190,7 +183,7 @@ export default function AddMyTransactionPageClient() {
 
       {/* 거래 내역 작성 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">내 거래 내역 작성</h1>
+        <h1 className="text-xl font-light">개인 거래 내역 작성</h1>
       </div>
 
       {/* 거래 유형 선택 */}
@@ -226,7 +219,7 @@ export default function AddMyTransactionPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="0"
+            placeholder="금액을 입력해주세요"
             value={formattedAmount()}
             onChange={handleAmountChange}
             onBlur={(e) => {
@@ -239,22 +232,9 @@ export default function AddMyTransactionPageClient() {
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
           />
-          <button
-            onClick={() => alert("서비스 준비 중입니다.")}
-            className="absolute right-1 bottom-2 text-[#11ABFF] border-2 border-[#11ABFF] rounded-[10px] px-1 pr-2 py-1 text-sm flex cursor-pointer items-center"
-          >
-            <Image
-              src="/images/transaction/영수증_AI_등록.svg"
-              alt="영수증"
-              width={20}
-              height={20}
-              className="mr-1"
-            />
-            <span>영수증으로 작성하기</span>
-          </button>
         </div>
         {amountError && amountTouched && (
-          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요.</p>
+          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요</p>
         )}
       </div>
 
@@ -264,7 +244,7 @@ export default function AddMyTransactionPageClient() {
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해주세요."
+          placeholder="내용을 입력해주세요"
           value={content}
           onChange={handleContentChange}
         />
@@ -302,6 +282,8 @@ export default function AddMyTransactionPageClient() {
               width={48}
               height={48}
               className="rounded-lg"
+              quality={100}
+              unoptimized={true}
             />
             <span className="text-sm">{selectedCategory.name}</span>
           </button>
@@ -383,6 +365,8 @@ export default function AddMyTransactionPageClient() {
                       alt={category.name}
                       width={40}
                       height={40}
+                      quality={100}
+                      unoptimized={true}
                     />
                     <span className="text-xs text-center">{category.name}</span>
                   </div>

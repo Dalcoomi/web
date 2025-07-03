@@ -12,11 +12,10 @@ export interface Member {
 // 회원 조회
 export const getMember = async (): Promise<Member> => {
   try {
-    const response = await get("/api/member");
+    const response = await get("/api/members");
 
     return response;
   } catch (error) {
-    console.error("회원 조회 중 오류 발생:", error);
     throw error;
   }
 };

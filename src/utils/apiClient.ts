@@ -8,15 +8,35 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// 토큰 리프레시 중복 방지를 위한 플래그
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value: any) => void;
+  reject: (reason: any) => void;
+}> = [];
+
+// 대기 중인 요청들을 처리하는 함수
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
 // API 요청 함수
 export const apiClient = async (
   endpoint: string,
   options: RequestInit = {}
-) => {
+): Promise<any> => {
   const url = `${API_URL}${endpoint}`;
 
   // 기본 헤더 설정
-  const headers = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...options.headers,
   };
@@ -28,7 +48,7 @@ export const apiClient = async (
   }
 
   // 요청 설정
-  const config = {
+  const config: RequestInit = {
     ...options,
     headers,
   };
@@ -38,41 +58,94 @@ export const apiClient = async (
 
     // 인증 오류(401) 발생 시 토큰 리프레시 시도
     if (response.status === 401) {
-      const refreshed = await refreshAccessToken();
+      // 이미 리프레시 중이면 대기열에 추가
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            // 리프레시 완료 후 원래 요청 재시도
+            const newAccessToken = getAccessToken();
+            if (newAccessToken) {
+              headers["Authorization"] = `Bearer ${newAccessToken}`;
+              return fetch(url, { ...config, headers });
+            }
+            throw new Error("토큰 리프레시 실패");
+          })
+          .then(handleResponse);
+      }
 
-      // 토큰 리프레시 성공 시 요청 재시도
-      if (refreshed) {
-        headers["Authorization"] = `Bearer ${getAccessToken()}`;
-        return fetch(url, { ...config, headers });
-      } else {
-        // 리프레시 실패 시 로그아웃 처리
-        clearTokens();
-        window.location.href = "/";
-        throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+      isRefreshing = true;
+
+      try {
+        const refreshed = await refreshAccessToken();
+
+        if (refreshed) {
+          const newAccessToken = getAccessToken();
+          processQueue(null, newAccessToken);
+
+          // 원래 요청 재시도
+          headers["Authorization"] = `Bearer ${newAccessToken}`;
+          const retryResponse = await fetch(url, { ...config, headers });
+          return handleResponse(retryResponse);
+        } else {
+          // 리프레시 실패 시 로그아웃 처리
+          processQueue(new Error("토큰 리프레시 실패"), null);
+          handleLogout();
+          throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
+        }
+      } finally {
+        isRefreshing = false;
       }
     }
 
-    // JSON 응답 반환
-    if (response.headers.get("content-type")?.includes("application/json")) {
-      const data = await response.json();
-
-      // API 에러 처리
-      if (!response.ok) {
-        throw new Error(data.message || "요청 처리 중 오류가 발생했습니다.");
-      }
-
-      return data;
-    }
-
-    // JSON이 아닌 응답 처리
-    if (!response.ok) {
-      throw new Error("요청 처리 중 오류가 발생했습니다.");
-    }
-
-    return await response.text();
+    return handleResponse(response);
   } catch (error) {
-    console.error("API 호출 오류:", error);
+    // 네트워크 에러 등의 경우
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new Error("네트워크 연결을 확인해주세요.");
+    }
     throw error;
+  }
+};
+
+// 응답 처리 함수
+const handleResponse = async (response: Response) => {
+  const contentType = response.headers.get("content-type");
+
+  // JSON 응답 처리
+  if (contentType?.includes("application/json")) {
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          `HTTP ${response.status}: 요청 처리 중 오류가 발생했습니다.`
+      );
+    }
+
+    return data;
+  }
+
+  // 텍스트 응답 처리
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(
+      `HTTP ${response.status}: 요청 처리 중 오류가 발생했습니다.`
+    );
+  }
+
+  return text;
+};
+
+// 🔥 로그아웃 처리 개선
+const handleLogout = () => {
+  clearTokens();
+
+  if (typeof window !== "undefined") {
+    // 🔥 auth-error 이벤트 발생 (useAuth에서 처리)
+    window.dispatchEvent(new CustomEvent("auth-error"));
   }
 };
 
@@ -80,7 +153,9 @@ export const apiClient = async (
 const refreshAccessToken = async (): Promise<boolean> => {
   const refreshToken = getRefreshToken();
 
-  if (!refreshToken) return false;
+  if (!refreshToken) {
+    return false;
+  }
 
   try {
     const response = await fetch(`${API_URL}/api/auth/reissue`, {
@@ -92,14 +167,31 @@ const refreshAccessToken = async (): Promise<boolean> => {
     });
 
     if (!response.ok) {
+      // 리프레시 토큰도 만료된 경우
+      if (response.status === 401) {
+      }
+
       return false;
     }
 
     const data = await response.json();
-    saveTokens(data.accessToken, data.refreshToken);
+
+    // 응답 데이터 검증
+    if (!data.accessToken) {
+      return false;
+    }
+
+    // 새로운 토큰 저장
+    const newRefreshToken = data.refreshToken || refreshToken;
+    saveTokens(data.accessToken, newRefreshToken);
+
+    // 🔥 토큰 갱신 성공 이벤트 발생
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("token-refreshed"));
+    }
+
     return true;
   } catch (error) {
-    console.error("토큰 리프레시 오류:", error);
     return false;
   }
 };
@@ -128,3 +220,14 @@ export const del = (endpoint: string, data?: any, options?: RequestInit) =>
     method: "DELETE",
     body: data ? JSON.stringify(data) : undefined,
   });
+
+// 토큰 상태 확인 유틸리티
+export const isTokenValid = (): boolean => {
+  const accessToken = getAccessToken();
+  return !!accessToken;
+};
+
+// 수동 로그아웃 함수
+export const logout = () => {
+  handleLogout();
+};
