@@ -307,22 +307,24 @@ export default function UpdateGroupTransactionPageClient() {
           {/* 거래 유형 선택 */}
           <div className="flex px-6 pt-3">
             <button
-              className={`flex-1 cursor-pointer py-2 rounded-[10px] mr-7 ${
+              className={`flex-1 py-2 rounded-[10px] mr-7 ${
                 transactionType === "EXPENSE"
                   ? "bg-[#FF005E] text-white"
                   : "bg-[#D4D4D4] text-white"
-              }`}
-              onClick={() => handleTransactionTypeChange("EXPENSE")}
+              } ${isOwner ? "cursor-pointer" : "cursor-not-allowed"}`}
+              onClick={() => isOwner && handleTransactionTypeChange("EXPENSE")}
+              disabled={!isOwner}
             >
               지출
             </button>
             <button
-              className={`flex-1 cursor-pointer py-2 rounded-[10px] ${
+              className={`flex-1 py-2 rounded-[10px] ${
                 transactionType === "INCOME"
                   ? "bg-[#0E5EFF] text-white"
                   : "bg-[#D4D4D4] text-white"
-              }`}
-              onClick={() => handleTransactionTypeChange("INCOME")}
+              } ${isOwner ? "cursor-pointer" : "cursor-not-allowed"}`}
+              onClick={() => isOwner && handleTransactionTypeChange("INCOME")}
+              disabled={!isOwner}
             >
               수입
             </button>
