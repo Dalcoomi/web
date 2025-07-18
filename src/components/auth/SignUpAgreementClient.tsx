@@ -154,7 +154,7 @@ export default function SignUpAgreementClient() {
               <span className="text-sm">(필수) 서비스 이용약관 동의</span>
             </div>
             <Link
-              href="https://example.com/terms"
+              href="https://dalcoomi.notion.site/2326ea725ec880d69db1ecccb049bcf9"
               target="_blank"
               className="text-sm text-gray-400 min-w-[30px] text-right"
             >
@@ -184,7 +184,7 @@ export default function SignUpAgreementClient() {
               <span className="text-sm">(필수) 개인정보 처리방침 동의</span>
             </div>
             <Link
-              href="https://example.com/privacy"
+              href="https://dalcoomi.notion.site/2326ea725ec881628880db9f9f487680"
               target="_blank"
               className="text-sm text-gray-400 min-w-[30px] text-right"
             >
