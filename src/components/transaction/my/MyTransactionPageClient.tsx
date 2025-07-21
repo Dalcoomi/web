@@ -408,7 +408,7 @@ export default function MyTransactionPageClient() {
           <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-5 relative">
             <button
               onClick={handleCategoryFilterToggle}
-              className="flex items-center justify-center cursor-pointer border-none"
+              className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0"
               data-category-filter
             >
               <span>카테고리</span>
