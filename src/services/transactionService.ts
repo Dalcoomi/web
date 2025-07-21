@@ -22,6 +22,15 @@ export interface MonthlyTransactionsResponse {
   transactions: Transaction[];
 }
 
+// 트랜잭션 검색 조건 타입
+export interface TransactionSearchCriteria {
+  teamId?: number | null;
+  year: number;
+  month: number;
+  categoryName?: string | null;
+  creatorNickname?: string | null;
+}
+
 // 🔥 영수증 업로드 관련 타입 정의
 export interface UploadReceiptResponseItem {
   transactionDate: string; // LocalDate는 문자열로 전송됨
@@ -45,7 +54,7 @@ export interface TransactionRequest {
   transactionType: "INCOME" | "EXPENSE";
 }
 
-export interface BulkTransactionRequest {
+export interface ReceiptsTransactionRequest {
   taskId: string;
   transactions: TransactionRequest[];
 }
@@ -55,9 +64,11 @@ export const addTransaction = async (transactionData: any) => {
   return post("/api/transactions", transactionData);
 };
 
-// 🔥 벌크 거래 내역 추가 API
-export const addBulkTransactions = async (bulkData: BulkTransactionRequest) => {
-  return post("/api/transactions/bulk", bulkData);
+// 🔥 영수증 거래 내역 추가 API
+export const addReceiptsTransactions = async (
+  receiptsData: ReceiptsTransactionRequest
+) => {
+  return post("/api/transactions/receipts/save", receiptsData);
 };
 
 // 🔥 영수증 업로드 API
@@ -85,11 +96,14 @@ export const uploadReceipt = async (
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
-    const response = await fetch(`${API_URL}/api/transactions/upload-receipt`, {
-      method: "POST",
-      body: formData,
-      headers, // Content-Type은 FormData 사용 시 자동 설정
-    });
+    const response = await fetch(
+      `${API_URL}/api/transactions/receipts/upload`,
+      {
+        method: "POST",
+        body: formData,
+        headers, // Content-Type은 FormData 사용 시 자동 설정
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -107,30 +121,35 @@ export const uploadReceipt = async (
 
 // 전체 거래 내역 조회 API
 export const getTransactions = async (
-  teamIdOrYear: number,
-  yearOrMonth: number,
-  month?: number
+  criteria: TransactionSearchCriteria
 ): Promise<MonthlyTransactionsResponse> => {
   try {
-    let url: string;
+    const params = new URLSearchParams();
 
-    if (month !== undefined) {
-      // 3개 매개변수가 모두 있는 경우: teamId, year, month
-      const teamId = teamIdOrYear;
-      const year = yearOrMonth;
-      url = `/api/transactions?teamId=${teamId}&year=${year}&month=${month}`;
-    } else {
-      // 2개 매개변수만 있는 경우: year, month (개인 거래)
-      const year = teamIdOrYear;
-      const monthParam = yearOrMonth;
-      url = `/api/transactions?year=${year}&month=${monthParam}`;
+    // teamId 추가 (null이면 개인 거래)
+    if (criteria.teamId !== null && criteria.teamId !== undefined) {
+      params.append("teamId", criteria.teamId.toString());
     }
 
+    // year, month는 필수
+    params.append("year", criteria.year.toString());
+    params.append("month", criteria.month.toString());
+
+    // 선택적 필터 조건들
+    if (criteria.categoryName) {
+      params.append("categoryName", criteria.categoryName);
+    }
+
+    if (criteria.creatorNickname) {
+      params.append("creatorNickname", criteria.creatorNickname);
+    }
+
+    const url = `/api/transactions?${params.toString()}`;
     const response = await get(url);
 
     return response;
   } catch (error) {
-    alert(error);
+    console.error("거래 내역 조회 실패:", error);
 
     // 기본값 반환
     return {

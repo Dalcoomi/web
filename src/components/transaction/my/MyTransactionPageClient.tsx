@@ -7,10 +7,10 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import MyTransactionItem from "@/components/transaction/MyTransactionItem";
-import EmptyTransactionList from "@/components/transaction/EmptyTransactionList";
 import {
   getTransactions,
   MonthlyTransactionsResponse,
+  TransactionSearchCriteria,
 } from "@/services/transactionService";
 
 export default function MyTransactionPageClient() {
@@ -24,11 +24,24 @@ export default function MyTransactionPageClient() {
     transactions: [],
   });
 
+  // 필터링 관련 상태
+  const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+
+  // 현재 적용된 필터 (API 호출용)
+  const [currentCategoryFilter, setCurrentCategoryFilter] = useState<
+    string | null
+  >(null);
+
   // 중복 호출 방지를 위한 ref
   const lastRequestRef = useRef<string>("");
   const isRequestInProgressRef = useRef<boolean>(false);
 
   const [showAddPageModal, setShowAddPageModal] = useState<boolean>(false);
+
+  // 필터 드롭다운 외부 클릭 감지를 위한 ref
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // 날짜 변경 핸들러
   const handleDateChange = (date: Date) => {
@@ -37,8 +50,8 @@ export default function MyTransactionPageClient() {
 
   // 트랜잭션 데이터 로드
   const loadTransactions = useCallback(
-    async (year: number, month: number) => {
-      const requestKey = `${year}-${month}`;
+    async (year: number, month: number, categoryFilter?: string | null) => {
+      const requestKey = `${year}-${month}-${categoryFilter || ""}`;
 
       // 같은 요청이 진행 중이면 무시
       if (
@@ -54,9 +67,29 @@ export default function MyTransactionPageClient() {
       setIsLoading(true);
 
       try {
-        const response = await getTransactions(year, month);
+        const criteria: TransactionSearchCriteria = {
+          teamId: null, // 개인 거래
+          year,
+          month,
+          categoryName: categoryFilter,
+        };
 
+        const response = await getTransactions(criteria);
         setResponse(response);
+
+        // 전체 데이터에서 카테고리 목록 추출 (필터링 안된 데이터가 필요하면 별도 API 호출)
+        if (!categoryFilter) {
+          const uniqueCategories = Array.from(
+            new Set(response.transactions.map((t) => t.categoryName))
+          );
+
+          setAllCategories(uniqueCategories);
+
+          // 처음 로드시 선택된 상태를 빈 배열로 설정
+          if (selectedCategories.length === 0) {
+            setSelectedCategories([]);
+          }
+        }
       } catch (error) {
         // 401 에러면 루트(로그인)로 리다이렉트
         if (error instanceof Error && error.message.includes("401")) {
@@ -76,10 +109,10 @@ export default function MyTransactionPageClient() {
         isRequestInProgressRef.current = false;
       }
     },
-    [router]
+    [router, selectedCategories.length]
   );
 
-  // useEffect를 변경
+  // 초기 데이터 로드 및 날짜 변경 시
   useEffect(() => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
@@ -93,6 +126,73 @@ export default function MyTransactionPageClient() {
       clearTimeout(timeoutId);
     };
   }, [selectedDate, loadTransactions]);
+
+  // 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      // 카테고리 필터 드롭다운과 버튼 클릭이 아닌 경우에만 닫기
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(target) &&
+        !(target.closest && target.closest("button[data-category-filter]"))
+      ) {
+        setShowCategoryFilter(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // 카테고리 필터 토글
+  const handleCategoryFilterToggle = () => {
+    setShowCategoryFilter((prev) => !prev);
+  };
+
+  // 카테고리 선택 (단일 선택)
+  const handleCategorySelect = (categoryName: string) => {
+    if (selectedCategories.includes(categoryName)) {
+      setSelectedCategories([]); // 이미 선택된 경우 선택 해제
+    } else {
+      setSelectedCategories([categoryName]); // 새로운 카테고리만 선택
+    }
+  };
+
+  // 카테고리 전체 해제
+  const handleClearCategories = () => {
+    setSelectedCategories([]);
+  };
+
+  // 필터 적용 버튼 클릭
+  const handleApplyFilters = () => {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+
+    // 선택된 카테고리가 있으면 해당 카테고리로 필터링, 없으면 null
+    const categoryFilter =
+      selectedCategories.length > 0 ? selectedCategories[0] : null;
+
+    setCurrentCategoryFilter(categoryFilter);
+
+    loadTransactions(year, month, categoryFilter);
+
+    // 드롭다운 닫기
+    setShowCategoryFilter(false);
+  };
+
+  // 필터 초기화
+  const handleResetFilters = () => {
+    setSelectedCategories([]);
+    setCurrentCategoryFilter(null);
+
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    loadTransactions(year, month);
+  };
 
   // 날짜를 "MM.DD" 형식으로 변환
   const formatDateToMMDD = (dateString: string): string => {
@@ -228,7 +328,7 @@ export default function MyTransactionPageClient() {
                 <div className="flex">
                   <button
                     onClick={handleWritingTransaction}
-                    className="flex-1 mx-10 mb-4 mt-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px]  hover:bg-blue-100 cursor-pointer transition-colors"
+                    className="flex-1 mx-10 mb-4 mt-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px] hover:bg-blue-100 cursor-pointer transition-colors"
                   >
                     직접 작성하기
                   </button>
@@ -236,7 +336,7 @@ export default function MyTransactionPageClient() {
                 <div className="flex">
                   <button
                     onClick={handleReceiptTransaction}
-                    className="flex-1 mx-10 mb-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px]  hover:bg-blue-100 cursor-pointer transition-colors"
+                    className="flex-1 mx-10 mb-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px] hover:bg-blue-100 cursor-pointer transition-colors"
                   >
                     영수증으로 작성하기 (AI)
                   </button>
@@ -279,14 +379,106 @@ export default function MyTransactionPageClient() {
               {response.total === 0 ? "0" : formatNumber(response.total)}
             </span>
           </div>
+
+          {/* 현재 적용된 필터 표시 */}
+          {currentCategoryFilter && (
+            <div className="mt-2 p-2 bg-white rounded-[5px] border border-[#E0E0E0]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#666]">필터:</span>
+                  <span className="px-2 py-1 bg-[#FFF3E0] text-[#F57C00] text-xs rounded">
+                    📂 {currentCategoryFilter}
+                  </span>
+                </div>
+                <button
+                  onClick={handleResetFilters}
+                  className="text-xs text-[#999] hover:text-[#666] cursor-pointer"
+                >
+                  초기화
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* 카테고리/내용/금액 헤더 */}
-      <div className="mx-2  border-t-2 border-[#959595] rounded-t-[20px] overflow-hidden">
-        <div className="flex py-2 px-7 bg-white">
-          <div className="flex-1 text-center text-sm font-light text-[#959595] -translate-x-1">
-            카테고리
+      <div className="mx-2 border-t-2 border-[#959595] rounded-t-[20px] overflow-visible relative">
+        <div className="flex py-2 px-7">
+          <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-5 relative">
+            <button
+              onClick={handleCategoryFilterToggle}
+              className="flex items-center justify-center cursor-pointer border-none"
+              data-category-filter
+            >
+              <span>카테고리</span>
+              <svg
+                width="8"
+                height="5"
+                viewBox="0 0 8 5"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={`ml-1 transform transition-transform ${
+                  showCategoryFilter ? "rotate-180" : ""
+                }`}
+              >
+                <path
+                  d="M1 1L4 4L7 1"
+                  stroke="#959595"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            {/* 카테고리 필터 드롭다운 */}
+            {showCategoryFilter && (
+              <div
+                ref={categoryDropdownRef}
+                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[8px] shadow-lg z-40 min-w-[140px]"
+              >
+                {/* 전체 해제 */}
+                <div className="p-2 border-b border-[#E5E5E5]">
+                  <button
+                    onClick={handleClearCategories}
+                    className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
+                  >
+                    전체 해제
+                  </button>
+                </div>
+
+                {/* 카테고리 목록 */}
+                <div className="max-h-[90px] overflow-y-auto">
+                  {allCategories.map((category, index) => (
+                    <div key={index} className="p-2 hover:bg-[#F5F5F5]">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="categoryFilter"
+                          checked={selectedCategories.includes(category)}
+                          onChange={() => handleCategorySelect(category)}
+                          className="mr-2 w-3 h-3"
+                        />
+                        <span className="text-xs font-light text-[#534E4E]">
+                          {category}
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 적용 버튼 */}
+                <div className="p-2 border-t border-[#E5E5E5] flex gap-2">
+                  <button
+                    onClick={handleApplyFilters}
+                    className="flex-1 px-2 py-1 bg-[#0EABFF] text-white text-xs rounded cursor-pointer hover:bg-[#0D9AE8]"
+                  >
+                    적용
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex-1 text-left text-sm font-light text-[#959595] -translate-x-0.5">
             내용
@@ -321,7 +513,7 @@ export default function MyTransactionPageClient() {
 
             return (
               <MyTransactionItem
-                key={index}
+                key={transaction.transactionId}
                 date={shouldShowDate ? currentDate : ""}
                 category={transaction.categoryName}
                 description={transaction.content}
@@ -335,7 +527,13 @@ export default function MyTransactionPageClient() {
             );
           })
         ) : (
-          <EmptyTransactionList />
+          <div className="flex items-center justify-center h-40">
+            <div className="text-gray-500">
+              {currentCategoryFilter
+                ? "필터 조건에 맞는 거래 내역이 없습니다."
+                : "거래 내역이 없습니다."}
+            </div>
+          </div>
         )}
       </div>
 
