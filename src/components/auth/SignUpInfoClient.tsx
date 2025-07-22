@@ -45,14 +45,6 @@ export default function SignUpInfoClient() {
       const parsedSocialData = JSON.parse(socialDataJson);
       setSocialData(parsedSocialData);
 
-      // 이름 설정
-      if (parsedSocialData.nickname) {
-        setUserInfo((prev) => ({
-          ...prev,
-          name: parsedSocialData.nickname,
-        }));
-      }
-
       // 모든 초기화가 완료된 후에 로딩 상태 해제
       setIsLoading(false);
     } catch (error) {
