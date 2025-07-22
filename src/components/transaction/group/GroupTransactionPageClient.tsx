@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import {
   getTransactions,
   MonthlyTransactionsResponse,
+  TransactionSearchCriteria,
 } from "@/services/transactionService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
@@ -29,11 +30,31 @@ export default function MyTransactionPageClient() {
   });
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
+  // 필터링 관련 상태
+  const [showMemberFilter, setShowMemberFilter] = useState<boolean>(false);
+  const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [allMembers, setAllMembers] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+
+  // 현재 적용된 필터 (API 호출용)
+  const [currentMemberFilter, setCurrentMemberFilter] = useState<string | null>(
+    null
+  );
+  const [currentCategoryFilter, setCurrentCategoryFilter] = useState<
+    string | null
+  >(null);
+
   // 중복 호출 방지를 위한 ref
   const lastRequestRef = useRef<string>("");
   const isRequestInProgressRef = useRef<boolean>(false);
 
   const [showAddPageModal, setShowAddPageModal] = useState<boolean>(false);
+
+  // 필터 드롭다운 외부 클릭 감지를 위한 ref
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // 날짜 변경 핸들러
   const handleDateChange = (date: Date) => {
@@ -42,8 +63,16 @@ export default function MyTransactionPageClient() {
 
   // 트랜잭션 데이터 로드
   const loadTransactions = useCallback(
-    async (teamId: string, year: number, month: number) => {
-      const requestKey = `${year}-${month}`;
+    async (
+      teamId: string,
+      year: number,
+      month: number,
+      memberFilter?: string | null,
+      categoryFilter?: string | null
+    ) => {
+      const requestKey = `${year}-${month}-${memberFilter || ""}-${
+        categoryFilter || ""
+      }`;
 
       // 같은 요청이 진행 중이면 무시
       if (
@@ -59,9 +88,35 @@ export default function MyTransactionPageClient() {
       setIsLoading(true);
 
       try {
-        const response = await getTransactions(parseInt(teamId), year, month);
+        const criteria: TransactionSearchCriteria = {
+          teamId: parseInt(teamId),
+          year,
+          month,
+          creatorNickname: memberFilter,
+          categoryName: categoryFilter,
+        };
 
+        const response = await getTransactions(criteria);
         setResponse(response);
+
+        // 전체 데이터에서 멤버와 카테고리 목록 추출 (필터링 안된 데이터가 필요하면 별도 API 호출)
+        if (!memberFilter && !categoryFilter) {
+          const uniqueMembers = Array.from(
+            new Set(response.transactions.map((t) => t.creatorNickname))
+          );
+          const uniqueCategories = Array.from(
+            new Set(response.transactions.map((t) => t.categoryName))
+          );
+
+          setAllMembers(uniqueMembers);
+          setAllCategories(uniqueCategories);
+
+          // 처음 로드시 선택된 상태를 빈 배열로 설정
+          if (selectedMembers.length === 0 && selectedCategories.length === 0) {
+            setSelectedMembers([]);
+            setSelectedCategories([]);
+          }
+        }
       } catch (error) {
         // 401 에러면 루트(로그인)로 리다이렉트
         if (error instanceof Error && error.message.includes("401")) {
@@ -81,20 +136,20 @@ export default function MyTransactionPageClient() {
         isRequestInProgressRef.current = false;
       }
     },
-    [router]
+    [router, selectedMembers.length, selectedCategories.length]
   );
 
-  // useEffect를 변경
+  // 초기 데이터 로드 및 날짜 변경 시
   useEffect(() => {
     if (!teamId) {
-      router.replace("/group"); // teamId가 없으면 그룹 목록으로 리다이렉트
+      router.replace("/group");
       return;
     }
 
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
 
-    // 약간의 디바운스 추가
+    // 디바운스 추가
     const timeoutId = setTimeout(() => {
       loadTransactions(teamId, year, month);
     }, 100);
@@ -106,17 +161,11 @@ export default function MyTransactionPageClient() {
       }
 
       try {
-        setIsLoading(true);
-
         const response = await getGroupInfo(teamId);
-
         setGroupInfo(response);
       } catch (error) {
         alert(error || "그룹 정보를 불러올 수 없습니다.");
-
         router.replace("/group");
-      } finally {
-        setIsLoading(false);
       }
     }, 100);
 
@@ -124,7 +173,135 @@ export default function MyTransactionPageClient() {
       clearTimeout(timeoutId);
       clearTimeout(timeoutId2);
     };
-  }, [selectedDate, teamId, loadTransactions, router]);
+  }, [selectedDate, teamId, router]);
+
+  // 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      // 멤버 필터 드롭다운과 버튼 클릭이 아닌 경우에만 닫기
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(target) &&
+        !(target.closest && target.closest("button[data-member-filter]"))
+      ) {
+        setShowMemberFilter(false);
+      }
+
+      // 카테고리 필터 드롭다운과 버튼 클릭이 아닌 경우에만 닫기
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(target) &&
+        !(target.closest && target.closest("button[data-category-filter]"))
+      ) {
+        setShowCategoryFilter(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // 멤버 필터 토글
+  const handleMemberFilterToggle = () => {
+    setShowCategoryFilter(false);
+    setShowMemberFilter((prev) => !prev);
+  };
+
+  // 카테고리 필터 토글
+  const handleCategoryFilterToggle = () => {
+    setShowMemberFilter(false);
+    setShowCategoryFilter((prev) => !prev);
+  };
+
+  // 멤버 선택 (단일 선택으로 변경)
+  const handleMemberSelect = (memberName: string) => {
+    let newSelection;
+    if (selectedMembers.includes(memberName)) {
+      newSelection = []; // 이미 선택된 경우 선택 해제
+    } else {
+      newSelection = [memberName]; // 새로운 멤버만 선택
+    }
+
+    setSelectedMembers(newSelection);
+
+    // 바로 필터링 적용
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    const memberFilter = newSelection.length > 0 ? newSelection[0] : null;
+
+    setCurrentMemberFilter(memberFilter);
+    loadTransactions(teamId, year, month, memberFilter, currentCategoryFilter);
+
+    // 드롭다운 닫기
+    setShowMemberFilter(false);
+  };
+
+  // 카테고리 선택 (단일 선택으로 변경)
+  const handleCategorySelect = (categoryName: string) => {
+    let newSelection;
+    if (selectedCategories.includes(categoryName)) {
+      newSelection = []; // 이미 선택된 경우 선택 해제
+    } else {
+      newSelection = [categoryName]; // 새로운 카테고리만 선택
+    }
+
+    setSelectedCategories(newSelection);
+
+    // 바로 필터링 적용
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    const categoryFilter = newSelection.length > 0 ? newSelection[0] : null;
+
+    setCurrentCategoryFilter(categoryFilter);
+    loadTransactions(teamId, year, month, currentMemberFilter, categoryFilter);
+
+    // 드롭다운 닫기
+    setShowCategoryFilter(false);
+  };
+
+  // 멤버 전체 해제
+  const handleClearMembers = () => {
+    setSelectedMembers([]);
+    setCurrentMemberFilter(null);
+
+    // 바로 필터링 적용
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    loadTransactions(teamId, year, month, null, currentCategoryFilter);
+
+    // 드롭다운 닫기
+    setShowMemberFilter(false);
+  };
+
+  // 카테고리 전체 해제
+  const handleClearCategories = () => {
+    setSelectedCategories([]);
+    setCurrentCategoryFilter(null);
+
+    // 바로 필터링 적용
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    loadTransactions(teamId, year, month, currentMemberFilter, null);
+
+    // 드롭다운 닫기
+    setShowCategoryFilter(false);
+  };
+
+  // 필터 초기화
+  const handleResetFilters = () => {
+    setSelectedMembers([]);
+    setSelectedCategories([]);
+    setCurrentMemberFilter(null);
+    setCurrentCategoryFilter(null);
+
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    loadTransactions(teamId, year, month);
+  };
 
   // 날짜를 "MM.DD" 형식으로 변환
   const formatDateToMMDD = (dateString: string): string => {
@@ -146,7 +323,6 @@ export default function MyTransactionPageClient() {
 
   const handleReceiptTransaction = () => {
     alert("서비스 준비 중입니다.");
-    // router.push(`/transaction/group/${teamId}/add/receipt`);
   };
 
   // 모달 닫기
@@ -257,11 +433,10 @@ export default function MyTransactionPageClient() {
                 className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] p-2 w-[80%] z-50"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* 버튼들 */}
                 <div className="flex">
                   <button
                     onClick={handleWritingTransaction}
-                    className="flex-1 mx-10 mb-4 mt-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px]  hover:bg-blue-100 cursor-pointer transition-colors"
+                    className="flex-1 mx-10 mb-4 mt-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px] hover:bg-blue-100 cursor-pointer transition-colors"
                   >
                     직접 작성하기
                   </button>
@@ -269,7 +444,7 @@ export default function MyTransactionPageClient() {
                 <div className="flex">
                   <button
                     onClick={handleReceiptTransaction}
-                    className="flex-1 mx-10 mb-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px]  hover:bg-blue-100 cursor-pointer transition-colors"
+                    className="flex-1 mx-10 mb-2 py-4 text-[#0EABFF] font-light border-3 rounded-[10px] hover:bg-blue-100 cursor-pointer transition-colors"
                   >
                     영수증으로 작성하기 (AI)
                   </button>
@@ -312,20 +487,177 @@ export default function MyTransactionPageClient() {
               {response.total === 0 ? "0" : formatNumber(response.total)}
             </span>
           </div>
+
+          {/* 현재 적용된 필터 표시 */}
+          {(currentMemberFilter || currentCategoryFilter) && (
+            <div className="mt-2 p-2 bg-white rounded-[5px] border border-[#E0E0E0]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#666]">필터</span>
+                  {currentMemberFilter && (
+                    <span className="px-2 py-1 bg-[#E3F2FD] text-[#1976D2] text-xs rounded border">
+                      👤 {currentMemberFilter}
+                    </span>
+                  )}
+                  {currentCategoryFilter && (
+                    <span className="px-2 py-1 bg-[#FFF3E0] text-[#F57C00] text-xs rounded border">
+                      📂 {currentCategoryFilter}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleResetFilters}
+                  className="text-xs text-[#999] hover:text-[#666] cursor-pointer"
+                >
+                  초기화
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 카테고리/내용/금액 헤더 */}
-      <div className="mx-2  border-t-2 border-[#959595] rounded-t-[20px] overflow-hidden">
-        <div className="flex py-2 px-7 bg-white">
-          <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-2">
-            카테고리
+      {/* 카테고리/내용/작성자/금액 헤더 */}
+      <div className="mx-2 border-t-2 border-[#959595] rounded-t-[20px] overflow-visible relative">
+        <div className="flex py-2 px-6">
+          <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-4 relative">
+            <button
+              onClick={handleCategoryFilterToggle}
+              className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0"
+              data-category-filter
+            >
+              <span>카테고리</span>
+              <svg
+                width="8"
+                height="5"
+                viewBox="0 0 8 5"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={`ml-1 transform transition-transform ${
+                  showCategoryFilter ? "rotate-180" : ""
+                }`}
+              >
+                <path
+                  d="M1 1L4 4L7 1"
+                  stroke="#959595"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            {/* 카테고리 필터 드롭다운 */}
+            {showCategoryFilter && (
+              <div
+                ref={categoryDropdownRef}
+                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 min-w-[140px]"
+              >
+                {/* 전체 해제 */}
+                <div className="p-2 border-b border-[#E5E5E5]">
+                  <button
+                    onClick={handleClearCategories}
+                    className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
+                  >
+                    전체 해제
+                  </button>
+                </div>
+
+                {/* 카테고리 목록 */}
+                <div className="max-h-[90px] overflow-y-auto">
+                  {allCategories.map((category, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
+                    >
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="categoryFilter"
+                          checked={selectedCategories.includes(category)}
+                          onChange={() => handleCategorySelect(category)}
+                          className="mr-2 w-3 h-3"
+                        />
+                        <span className="text-xs font-light text-[#534E4E]">
+                          {category}
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-2">
             내용
           </div>
-          <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-1">
-            작성자
+          <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-1 relative">
+            <button
+              onClick={handleMemberFilterToggle}
+              className="flex items-center cursor-pointer bg-transparent border-none p-0"
+              data-member-filter
+            >
+              <span>작성자</span>
+              <svg
+                width="8"
+                height="5"
+                viewBox="0 0 8 5"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className={`ml-1 transform transition-transform ${
+                  showMemberFilter ? "rotate-180" : ""
+                }`}
+              >
+                <path
+                  d="M1 1L4 4L7 1"
+                  stroke="#959595"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+
+            {/* 멤버 필터 드롭다운 */}
+            {showMemberFilter && (
+              <div
+                ref={filterDropdownRef}
+                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 min-w-[140px]"
+              >
+                {/* 전체 해제 */}
+                <div className="p-2 border-b border-[#E5E5E5]">
+                  <button
+                    onClick={handleClearMembers}
+                    className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
+                  >
+                    전체 해제
+                  </button>
+                </div>
+
+                {/* 멤버 목록 */}
+                <div className="max-h-[90px] overflow-y-auto">
+                  {allMembers.map((member, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
+                    >
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="memberFilter"
+                          checked={selectedMembers.includes(member)}
+                          onChange={() => handleMemberSelect(member)}
+                          className="mr-2 w-3 h-3"
+                        />
+                        <span className="text-xs font-light text-[#534E4E]">
+                          {member}
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex-1 text-right text-sm font-light text-[#959595]">
             금액
@@ -357,7 +689,7 @@ export default function MyTransactionPageClient() {
 
             return (
               <GroupTransactionItem
-                key={index}
+                key={transaction.transactionId}
                 teamId={teamId}
                 date={shouldShowDate ? currentDate : ""}
                 category={transaction.categoryName}
@@ -373,7 +705,13 @@ export default function MyTransactionPageClient() {
             );
           })
         ) : (
-          <EmptyTransactionList />
+          <div className="flex items-center justify-center h-40">
+            <div className="text-gray-500">
+              {currentMemberFilter || currentCategoryFilter
+                ? "필터 조건에 맞는 거래 내역이 없습니다."
+                : "거래 내역이 없습니다."}
+            </div>
+          </div>
         )}
       </div>
 

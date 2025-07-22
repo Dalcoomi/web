@@ -4,10 +4,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  addBulkTransactions,
+  addReceiptsTransactions,
   uploadReceipt,
   UploadReceiptResponse,
-  BulkTransactionRequest,
+  ReceiptsTransactionRequest,
   TransactionRequest,
 } from "@/services/transactionService";
 import { getMyCategories, Category } from "@/services/categoryService";
@@ -277,14 +277,14 @@ export default function AddReceiptMyTransactionPageClient() {
         throw new Error("영수증 업로드 정보가 없습니다. 다시 업로드해주세요.");
       }
 
-      // 벌크 요청 데이터 구성
-      const bulkData: BulkTransactionRequest = {
+      // 영수증 데이터 구성
+      const receiptsData: ReceiptsTransactionRequest = {
         taskId: taskId, // 🔥 영수증 업로드에서 받은 taskId 사용
         transactions: transactions,
       };
 
-      // 벌크 API 호출
-      await addBulkTransactions(bulkData);
+      // 영수증 등록 API 호출
+      await addReceiptsTransactions(receiptsData);
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
