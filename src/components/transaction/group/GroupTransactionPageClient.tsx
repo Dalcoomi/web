@@ -12,6 +12,7 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
+import EmptyTransactionList from "@/components/transaction/EmptyTransactionList";
 import { getGroupInfo, GroupInfo } from "@/services/groupService";
 
 export default function MyTransactionPageClient() {
@@ -172,7 +173,7 @@ export default function MyTransactionPageClient() {
       clearTimeout(timeoutId);
       clearTimeout(timeoutId2);
     };
-  }, [selectedDate, teamId, router, loadTransactions]);
+  }, [selectedDate, teamId, router]);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -218,51 +219,75 @@ export default function MyTransactionPageClient() {
 
   // 멤버 선택 (단일 선택으로 변경)
   const handleMemberSelect = (memberName: string) => {
+    let newSelection;
     if (selectedMembers.includes(memberName)) {
-      setSelectedMembers([]); // 이미 선택된 경우 선택 해제
+      newSelection = []; // 이미 선택된 경우 선택 해제
     } else {
-      setSelectedMembers([memberName]); // 새로운 멤버만 선택
+      newSelection = [memberName]; // 새로운 멤버만 선택
     }
+
+    setSelectedMembers(newSelection);
+
+    // 바로 필터링 적용
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    const memberFilter = newSelection.length > 0 ? newSelection[0] : null;
+
+    setCurrentMemberFilter(memberFilter);
+    loadTransactions(teamId, year, month, memberFilter, currentCategoryFilter);
+
+    // 드롭다운 닫기
+    setShowMemberFilter(false);
   };
 
   // 카테고리 선택 (단일 선택으로 변경)
   const handleCategorySelect = (categoryName: string) => {
+    let newSelection;
     if (selectedCategories.includes(categoryName)) {
-      setSelectedCategories([]); // 이미 선택된 경우 선택 해제
+      newSelection = []; // 이미 선택된 경우 선택 해제
     } else {
-      setSelectedCategories([categoryName]); // 새로운 카테고리만 선택
+      newSelection = [categoryName]; // 새로운 카테고리만 선택
     }
+
+    setSelectedCategories(newSelection);
+
+    // 바로 필터링 적용
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    const categoryFilter = newSelection.length > 0 ? newSelection[0] : null;
+
+    setCurrentCategoryFilter(categoryFilter);
+    loadTransactions(teamId, year, month, currentMemberFilter, categoryFilter);
+
+    // 드롭다운 닫기
+    setShowCategoryFilter(false);
   };
 
   // 멤버 전체 해제
   const handleClearMembers = () => {
     setSelectedMembers([]);
+    setCurrentMemberFilter(null);
+
+    // 바로 필터링 적용
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    loadTransactions(teamId, year, month, null, currentCategoryFilter);
+
+    // 드롭다운 닫기
+    setShowMemberFilter(false);
   };
 
   // 카테고리 전체 해제
   const handleClearCategories = () => {
     setSelectedCategories([]);
-  };
+    setCurrentCategoryFilter(null);
 
-  // 필터 적용 버튼 클릭
-  const handleApplyFilters = () => {
+    // 바로 필터링 적용
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
-
-    // 선택된 멤버가 있으면 해당 멤버로 필터링, 없으면 null
-    const memberFilter = selectedMembers.length > 0 ? selectedMembers[0] : null;
-
-    // 선택된 카테고리가 있으면 해당 카테고리로 필터링, 없으면 null
-    const categoryFilter =
-      selectedCategories.length > 0 ? selectedCategories[0] : null;
-
-    setCurrentMemberFilter(memberFilter);
-    setCurrentCategoryFilter(categoryFilter);
-
-    loadTransactions(teamId, year, month, memberFilter, categoryFilter);
+    loadTransactions(teamId, year, month, currentMemberFilter, null);
 
     // 드롭다운 닫기
-    setShowMemberFilter(false);
     setShowCategoryFilter(false);
   };
 
@@ -468,14 +493,14 @@ export default function MyTransactionPageClient() {
             <div className="mt-2 p-2 bg-white rounded-[5px] border border-[#E0E0E0]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#666]">필터:</span>
+                  <span className="text-xs text-[#666]">필터</span>
                   {currentMemberFilter && (
-                    <span className="px-2 py-1 bg-[#E3F2FD] text-[#1976D2] text-xs rounded">
+                    <span className="px-2 py-1 bg-[#E3F2FD] text-[#1976D2] text-xs rounded border">
                       👤 {currentMemberFilter}
                     </span>
                   )}
                   {currentCategoryFilter && (
-                    <span className="px-2 py-1 bg-[#FFF3E0] text-[#F57C00] text-xs rounded">
+                    <span className="px-2 py-1 bg-[#FFF3E0] text-[#F57C00] text-xs rounded border">
                       📂 {currentCategoryFilter}
                     </span>
                   )}
@@ -495,7 +520,7 @@ export default function MyTransactionPageClient() {
       {/* 카테고리/내용/작성자/금액 헤더 */}
       <div className="mx-2 border-t-2 border-[#959595] rounded-t-[20px] overflow-visible relative">
         <div className="flex py-2 px-6">
-          <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-3 relative">
+          <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-4 relative">
             <button
               onClick={handleCategoryFilterToggle}
               className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0"
@@ -526,7 +551,7 @@ export default function MyTransactionPageClient() {
             {showCategoryFilter && (
               <div
                 ref={categoryDropdownRef}
-                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[8px] shadow-lg z-40 min-w-[140px]"
+                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 min-w-[140px]"
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">
@@ -541,7 +566,10 @@ export default function MyTransactionPageClient() {
                 {/* 카테고리 목록 */}
                 <div className="max-h-[90px] overflow-y-auto">
                   {allCategories.map((category, index) => (
-                    <div key={index} className="p-2 hover:bg-[#F5F5F5]">
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
+                    >
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="radio"
@@ -556,16 +584,6 @@ export default function MyTransactionPageClient() {
                       </label>
                     </div>
                   ))}
-                </div>
-
-                {/* 적용/초기화 버튼 */}
-                <div className="p-2 border-t border-[#E5E5E5] flex gap-2">
-                  <button
-                    onClick={handleApplyFilters}
-                    className="flex-1 px-2 py-1 bg-[#0EABFF] text-white text-xs rounded cursor-pointer hover:bg-[#0D9AE8]"
-                  >
-                    적용
-                  </button>
                 </div>
               </div>
             )}
@@ -604,7 +622,7 @@ export default function MyTransactionPageClient() {
             {showMemberFilter && (
               <div
                 ref={filterDropdownRef}
-                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[8px] shadow-lg z-40 min-w-[140px]"
+                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 min-w-[140px]"
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">
@@ -619,7 +637,10 @@ export default function MyTransactionPageClient() {
                 {/* 멤버 목록 */}
                 <div className="max-h-[90px] overflow-y-auto">
                   {allMembers.map((member, index) => (
-                    <div key={index} className="p-2 hover:bg-[#F5F5F5]">
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
+                    >
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="radio"
@@ -634,16 +655,6 @@ export default function MyTransactionPageClient() {
                       </label>
                     </div>
                   ))}
-                </div>
-
-                {/* 적용/초기화 버튼 */}
-                <div className="p-2 border-t border-[#E5E5E5] flex gap-2">
-                  <button
-                    onClick={handleApplyFilters}
-                    className="flex-1 px-2 py-1 bg-[#0EABFF] text-white text-xs rounded cursor-pointer hover:bg-[#0D9AE8]"
-                  >
-                    적용
-                  </button>
                 </div>
               </div>
             )}
