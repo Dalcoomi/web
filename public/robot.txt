@@ -1,0 +1,10 @@
+# public/robots.txt
+
+User-agent: *
+Allow: /
+Disallow: /transaction/
+Disallow: /group/
+Disallow: /sign-up/
+Disallow: /api/
+
+Sitemap: https://dalcoomi.com/sitemap.xml
