@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
+import { isPWA, isMobile } from "@/utils/deviceDetection";
 
 export default function LoginPageClient() {
   const router = useRouter();
@@ -18,23 +19,8 @@ export default function LoginPageClient() {
     return /KAKAOTALK/i.test(navigator.userAgent);
   };
 
-  const isMobile = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    );
-  };
-
   const isEdge = () => {
     return /Edg\//.test(navigator.userAgent);
-  };
-
-  const isPWA = () => {
-    return (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true ||
-      document.referrer.includes("android-app://") ||
-      /wv/.test(navigator.userAgent)
-    );
   };
 
   // 리다이렉트를 사용해야 하는 경우 판단
