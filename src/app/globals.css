@@ -62,7 +62,7 @@ body {
   /* PWA에서 안전한 뷰포트 높이 사용 */
   .h-screen {
     height: 100vh;
-    height: 100svh; /* 작은 뷰포트 높이 - PWA에서 안전 */
+    height: 100svh;
   }
 
   .min-h-screen {
@@ -78,19 +78,32 @@ body {
     overflow: hidden;
     margin: 0;
     padding: 0;
+  }
+}
+
+/* 모바일 PWA에서만 가로 꽉차게 - 여기가 수정된 부분 */
+@media (display-mode: standalone) and (max-width: 768px) {
+  html,
+  body {
     width: 100vw;
   }
 
-  /* PWA에서 가로 꽉차게 - 여기가 새로 추가된 부분 */
   .w-full.max-w-\[390px\] {
     width: 100vw !important;
     max-width: none !important;
   }
 
-  /* 컨테이너 가로 꽉차게 */
   .shadow-lg {
     width: 100vw !important;
     max-width: none !important;
+  }
+}
+
+/* PC PWA에서는 기존 크기 유지 */
+@media (display-mode: standalone) and (min-width: 769px) {
+  .w-full.max-w-\[390px\] {
+    width: 100%;
+    max-width: 390px;
   }
 }
 
