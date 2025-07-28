@@ -1,0 +1,24 @@
+name: "✨ Feature"
+description: "새로운 기능이 필요해요."
+title: "OO 페이지 구현하기"
+assignees: "fakerdeft"
+labels: "✨ feature"
+type: "Feature"
+body:
+  - type: textarea
+    id: tasks
+    attributes:
+      label: "✅ Tasks"
+      description: "해당 이슈에 대해 필요한 작업목록을 작성해주세요"
+      value: |
+        - Task1
+    validations:
+      required: true
+
+  - type: textarea
+    id: reference
+    attributes:
+      label: "🔎 Reference"
+      description: "추가 참고사항이 있다면 작성해주세요"
+    validations:
+      required: false

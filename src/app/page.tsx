@@ -4,7 +4,53 @@ import { redirect } from "next/navigation";
 import LoginPageClient from "@/components/auth/LoginPageClient";
 
 export const metadata = {
-  title: "달쿠미 | 개인&그룹 가계부",
+  title: "달쿠미 | 개인&그룹 AI 가계부",
+  description:
+    "개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성, AI 영수증 분석, 그룹 작성 기능을 제공합니다. 지금 시작해보세요!",
+  keywords: [
+    "가계부",
+    "달쿠미",
+    "개인가계부",
+    "그룹가계부",
+    "가계관리",
+    "AI 가계부",
+    "지출관리",
+    "예산관리",
+  ],
+  openGraph: {
+    title: "달쿠미 | 개인&그룹 AI 가계부",
+    description:
+      "개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성과 지출 분석을 제공합니다.",
+    url: "https://dalcoomi.com",
+    siteName: "달쿠미",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "달쿠미 AI 가계부 서비스",
+      },
+    ],
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "달쿠미 | 개인&그룹 AI 가계부",
+    description: "개인과 그룹을 위한 AI 가계부 서비스",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
+  alternates: {
+    canonical: "https://dalcoomi.com",
+  },
 };
 
 export default async function RootPage() {

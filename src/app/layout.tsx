@@ -1,13 +1,48 @@
 // app/layout.tsx
+
 import "./globals.css";
 import { cookies } from "next/headers";
 import ClientProviders from "./providers";
+import type { Metadata, Viewport } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: {
-    default: "달쿠미 | 개인&그룹 가계부",
+    default: "달쿠미 | 개인&그룹 AI 가계부",
     template: "달쿠미 | %s",
   },
+  description:
+    "개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성, AI 영수증 분석, 그룹 작성 기능을 제공합니다.",
+  generator: "Next.js",
+  manifest: "/manifest.json",
+  keywords: [
+    "가계부",
+    "달쿠미",
+    "개인가계부",
+    "그룹가계부",
+    "가계관리",
+    "AI 가계부",
+    "지출관리",
+    "예산관리",
+  ],
+  authors: [{ name: "달쿠미 팀" }],
+  creator: "달쿠미 팀",
+  publisher: "달쿠미",
+  icons: [
+    { rel: "apple-touch-icon", url: "/icons/icon-192x192.png" },
+    { rel: "icon", url: "/icons/icon-192x192.png" },
+  ],
+  metadataBase: new URL("https://dalcoomi.com"),
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
+  minimumScale: 1,
+  initialScale: 1,
+  width: "device-width",
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
@@ -21,8 +56,59 @@ export default async function RootLayout({
 
   return (
     <html lang="ko">
+      <head>
+        {/* Google Search Console 인증 */}
+        <meta
+          name="google-site-verification"
+          content="tgUU4sqjYyMvAIZ0nAuQQRpPO7kKJyRj2WmsKc2_KdA"
+        />
+
+        {/* PWA 메타 태그 */}
+        <meta name="application-name" content="달쿠미" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="달쿠미" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+
+        {/* Viewport */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+
+        {/* 구조화된 데이터 (JSON-LD) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "달쿠미",
+              description: "개인과 그룹을 위한 AI 가계부 서비스",
+              url: "https://dalcoomi.com",
+              applicationCategory: "FinanceApplication",
+              operatingSystem: "All",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "KRW",
+              },
+              author: {
+                "@type": "Organization",
+                name: "달쿠미 팀",
+              },
+            }),
+          }}
+        />
+
+        {/* 파비콘 및 아이콘 */}
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="icon" href="/icons/icon-192x192.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+      </head>
       <body className="flex justify-center items-center min-h-screen">
-        {/* 모바일 앱 스타일 컨테이너 - 모든 페이지에서 동일한 크기와 스타일 유지 */}
         <div className="w-full max-w-[390px] h-screen max-h-[844px] relative overflow-hidden shadow-lg">
           <ClientProviders isLoggedIn={isLoggedIn}>{children}</ClientProviders>
         </div>

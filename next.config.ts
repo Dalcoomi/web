@@ -28,12 +28,15 @@ function loadEnvironmentConfig() {
 // 환경 설정 로드 실행
 loadEnvironmentConfig();
 
+// next-pwa를 ES6 방식으로 import
+import withPWA from "next-pwa";
+
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // 빌드 시 ESLint 무시
+    ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // 빌드 시 TypeScript 에러 무시
+    ignoreBuildErrors: true,
   },
   images: {
     remotePatterns: [
@@ -45,4 +48,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPWA({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+})(nextConfig);
