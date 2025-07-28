@@ -10,6 +10,8 @@ export const metadata = {
   keywords: [
     "가계부",
     "달쿠미",
+    "dalcoomi",
+    "달쿠미 가계부",
     "개인가계부",
     "그룹가계부",
     "가계관리",

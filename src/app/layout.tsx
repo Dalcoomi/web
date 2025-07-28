@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   keywords: [
     "가계부",
     "달쿠미",
+    "dalcoomi",
+    "달쿠미 가계부",
     "개인가계부",
     "그룹가계부",
     "가계관리",
@@ -62,6 +64,12 @@ export default async function RootLayout({
         <meta
           name="google-site-verification"
           content="tgUU4sqjYyMvAIZ0nAuQQRpPO7kKJyRj2WmsKc2_KdA"
+        />
+
+        {/* 네이버 서치어드바이저 인증 - 새로 추가 */}
+        <meta
+          name="naver-site-verification"
+          content="39c4d20da5440f7822f33fabd7022c0c98622c82"
         />
 
         {/* PWA 메타 태그 */}
