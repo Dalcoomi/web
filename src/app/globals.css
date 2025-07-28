@@ -1,3 +1,5 @@
+/* globals.css */
+
 @import "tailwindcss";
 
 /* 폰트 정의 */
@@ -31,6 +33,7 @@
   --font-title-light: "Title_Light", sans-serif;
   --font-title-medium: "Title_Medium", sans-serif;
   --font-title-bold: "Title_Bold", sans-serif;
+  --vh: 1vh; /* 동적 뷰포트 높이를 위한 변수 */
 }
 
 @theme inline {
@@ -52,6 +55,67 @@ body {
   color: #000000;
   font-family: var(--font-title-medium), "Apple Color Emoji", "Segoe UI Emoji",
     Arial, Helvetica, sans-serif;
+}
+
+/* PWA 뷰포트 높이 문제 해결 */
+@media (display-mode: standalone) {
+  /* PWA에서 안전한 뷰포트 높이 사용 */
+  .h-screen {
+    height: 100vh;
+    height: 100svh; /* 작은 뷰포트 높이 - PWA에서 안전 */
+  }
+
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+
+  /* PWA에서 body와 html 높이 고정 */
+  html,
+  body {
+    height: 100%;
+    height: 100svh;
+    overflow: hidden;
+  }
+}
+
+/* iOS Safari 및 모바일 브라우저 대응 */
+@supports (-webkit-touch-callout: none) {
+  .h-screen {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* 동적 뷰포트 높이 지원 브라우저용 */
+@supports (height: 100dvh) {
+  .h-screen {
+    height: 100dvh;
+  }
+
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
+/* 커스텀 뷰포트 클래스 */
+.h-screen-safe {
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+.min-h-screen-safe {
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+
+/* 바텀 시트 등을 위한 안전 영역 */
+.bottom-safe {
+  bottom: env(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .font-title-light {

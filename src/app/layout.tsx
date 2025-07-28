@@ -4,6 +4,7 @@ import "./globals.css";
 import { cookies } from "next/headers";
 import ClientProviders from "./providers";
 import type { Metadata, Viewport } from "next";
+import ViewportFixer from "@/components/common/ViewportFixer";
 
 export const metadata: Metadata = {
   title: {
@@ -74,7 +75,7 @@ export default async function RootLayout({
         {/* Viewport */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover, user-scalable=no"
         />
 
         {/* 구조화된 데이터 (JSON-LD) */}
@@ -109,7 +110,8 @@ export default async function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body className="flex justify-center items-center min-h-screen">
-        <div className="w-full max-w-[390px] h-screen max-h-[844px] relative overflow-hidden shadow-lg">
+        <ViewportFixer />
+        <div className="w-full max-w-[390px] h-screen-safe max-h-[844px] relative overflow-hidden shadow-lg">
           <ClientProviders isLoggedIn={isLoggedIn}>{children}</ClientProviders>
         </div>
       </body>
