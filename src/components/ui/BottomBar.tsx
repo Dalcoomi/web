@@ -14,7 +14,7 @@ export default function BottomBar() {
   };
 
   return (
-    <div className="bg-white border-t border-gray-200 h-13 flex items-center">
+    <div className="bg-white border-t border-gray-200 h-15 flex items-center">
       {/* 개인 버튼 */}
       <button
         onClick={() => router.push("/transaction/my")}

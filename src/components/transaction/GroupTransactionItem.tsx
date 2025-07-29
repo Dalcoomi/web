@@ -37,25 +37,25 @@ export default function GroupTransactionItem({
     return text.substring(0, maxLength) + "..";
   };
 
-  // 금액 포맷팅 및 자르기 (10억자리까지 풀 표시)
+  // 금액 포맷팅 및 자르기 (1억자리까지 풀 표시)
   const formatAmount = (): string => {
     const absAmount = Math.abs(amount);
     const sign = isIncome ? "+" : "-";
     const formattedAmount = `${sign}${formatNumber(absAmount)}`;
 
-    // 10억 (1,000,000,000) 이하면 풀로 표시
-    if (absAmount <= 1000000000) {
+    // 1억 (100,000,000) 이하면 풀로 표시
+    if (absAmount <= 100000000) {
       return formattedAmount;
     }
 
-    // 10억 초과면 10억자리까지만 표시하고 ... 추가
-    // "+1,000,000,000" = 14자까지는 허용
-    if (formattedAmount.length <= 14) {
+    // 1억 초과면 1억자리까지만 표시하고 ... 추가
+    // "+100,000,000" = 12자까지는 허용
+    if (formattedAmount.length <= 12) {
       return formattedAmount;
     }
 
-    // 15자 이상이면 10자까지만 표시하고 ... 추가
-    return formattedAmount.substring(0, 14) + "...";
+    // 13자 이상이면 10자까지만 표시하고 ... 추가
+    return formattedAmount.substring(0, 12) + "..";
   };
 
   // 클릭 핸들러 - 수정 페이지로 이동
@@ -74,27 +74,27 @@ export default function GroupTransactionItem({
       <div className="w-11 text-xs">{date}</div>
 
       {/* 카테고리 (4글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate max-w-[63px]">
+      <div className="flex-1 text-left text-sm truncate max-w-[65px]">
         <span className="block w-full" title={category}>
           {truncateText(category, 4)}
         </span>
       </div>
 
-      {/* 내용 (5글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate max-w-[77px]">
+      {/* 내용 (7글자까지, 넘으면 ...) */}
+      <div className="flex-1 text-left text-sm truncate max-w-[110px]">
         <span className="block w-full" title={description}>
-          {truncateText(description, 5)}
+          {truncateText(description, 7)}
         </span>
       </div>
 
-      {/* 작성자 (3글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate max-w-[65px]">
+      {/* 작성자 (4글자까지, 넘으면 ...) */}
+      <div className="flex-1 text-left text-sm truncate max-w-[40px]">
         <span className="block w-full" title={creator}>
-          {truncateText(creator, 5)}
+          {truncateText(creator, 4)}
         </span>
       </div>
 
-      {/* 금액 (10억자리까지, 넘으면 ...) */}
+      {/* 금액 (1억자리까지, 넘으면 ...) */}
       <div
         className={`flex-1 text-right text-sm font-medium truncate ${
           isIncome ? "text-[#0E7AFF]" : "text-[#FF005E]"

@@ -588,10 +588,10 @@ export default function MyTransactionPageClient() {
               </div>
             )}
           </div>
-          <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-2">
+          <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-3 relative">
             내용
           </div>
-          <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-1 relative">
+          <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-8 relative">
             <button
               onClick={handleMemberFilterToggle}
               className="flex items-center cursor-pointer bg-transparent border-none p-0"
