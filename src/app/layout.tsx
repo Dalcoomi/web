@@ -9,7 +9,7 @@ import ViewportFixer from "@/components/common/ViewportFixer";
 export const metadata: Metadata = {
   title: {
     default: "달쿠미 | 개인&그룹 AI 가계부",
-    template: "달쿠미 | %s",
+    template: "%s - 달쿠미",
   },
   description:
     "개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성, AI 영수증 분석, 그룹 작성 기능을 제공합니다.",
@@ -117,6 +117,28 @@ export default async function RootLayout({
         <link rel="icon" href="/icons/icon-192x192.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="shortcut icon" href="/favicon.ico" />
+
+        {/* iOS 스플래시 스크린 */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/icons/splash-750x1334.png"
+          media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="/icons/splash-1125x2436.png"
+          media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="/icons/splash-1242x2208.png"
+          media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="/icons/splash-1284x2778.png"
+          media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+        />
       </head>
       <body className="flex justify-center items-center min-h-screen">
         <ViewportFixer />
