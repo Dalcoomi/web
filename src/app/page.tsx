@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import LoginPageClient from "@/components/auth/LoginPageClient";
 
 export const metadata = {
-  title: "달쿠미 | 개인&그룹 AI 가계부",
   description:
     "개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성, AI 영수증 분석, 그룹 작성 기능을 제공합니다. 지금 시작해보세요!",
   keywords: [
