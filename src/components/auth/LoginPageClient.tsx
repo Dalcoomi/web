@@ -308,6 +308,29 @@ export default function LoginPageClient() {
 
   return (
     <div className="relative w-full h-screen">
+      {/* SEO용 숨김 텍스트 */}
+      <div className="sr-only">
+        <h1>달쿠미 - 개인과 그룹을 위한 AI 가계부</h1>
+        <p>
+          개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성, AI 영수증
+          분석, 그룹 작성 기능을 제공합니다. 달쿠미 가계부로 지출 관리를
+          시작해보세요.
+        </p>
+        <p>
+          AI가 도와주는 스마트한 가계부 앱입니다. 개인 가계부부터 그룹
+          가계부까지 모든 기능을 한 번에 관리할 수 있습니다.
+        </p>
+        <nav>
+          <ul>
+            <li>개인 가계부 작성 및 관리</li>
+            <li>그룹 가계부 공유 기능</li>
+            <li>AI 영수증 자동 분석</li>
+            <li>지출 패턴 분석 리포트</li>
+            <li>예산 관리 및 알림</li>
+          </ul>
+        </nav>
+      </div>
+
       {/* 배경 이미지 */}
       <div className="absolute inset-0 w-full h-full z-0">
         <Image

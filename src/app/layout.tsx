@@ -98,6 +98,7 @@ export default async function RootLayout({
               url: "https://dalcoomi.com",
               applicationCategory: "FinanceApplication",
               operatingSystem: "All",
+              keywords: "가계부, AI 가계부, 그룹 가계부, 달쿠미, 달쿠미 가계부",
               offers: {
                 "@type": "Offer",
                 price: "0",
