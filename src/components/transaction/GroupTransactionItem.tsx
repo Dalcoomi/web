@@ -81,7 +81,7 @@ export default function GroupTransactionItem({
       </div>
 
       {/* 내용 (7글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate max-w-[110px]">
+      <div className="flex-1 text-left text-sm truncate max-w-[130px]">
         <span className="block w-full" title={description}>
           {truncateText(description, 7)}
         </span>
