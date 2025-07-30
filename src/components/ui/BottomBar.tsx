@@ -23,66 +23,68 @@ export default function BottomBar() {
   };
 
   return (
-    <div
-      className={`bg-white border-t border-gray-200 h-13 flex items-center ${
-        isIOS ? "pb-4" : ""
-      }`}
-    >
-      {/* 개인 버튼 */}
-      <button
-        onClick={() => router.push("/transaction/my")}
-        className="flex flex-col items-center justify-center w-1/2 h-full hover:bg-gray-50 transition-colors cursor-pointer"
-      >
-        <div className="w-6 h-6">
-          <Image
-            src={
-              isActive("/transaction/my")
-                ? "/images/개인_활성.svg"
-                : "/images/개인_비활성.svg"
-            }
-            alt="개인"
-            width={24}
-            height={24}
-            className="w-full h-full"
-          />
-        </div>
-        <span
-          className={`text-xs ${
-            isActive("/transaction/my") ? "text-[#11ABFF]" : "text-[#D4D4D4]"
-          }`}
+    <div className="flex flex-col">
+      {/* 바텀바 */}
+      <div className="bg-white border-t border-gray-200 h-13 flex items-center">
+        {/* 개인 버튼 */}
+        <button
+          onClick={() => router.push("/transaction/my")}
+          className="flex flex-col items-center justify-center w-1/2 h-full hover:bg-gray-50 transition-colors cursor-pointer"
         >
-          개인
-        </span>
-      </button>
+          <div className="w-6 h-6">
+            <Image
+              src={
+                isActive("/transaction/my")
+                  ? "/images/개인_활성.svg"
+                  : "/images/개인_비활성.svg"
+              }
+              alt="개인"
+              width={24}
+              height={24}
+              className="w-full h-full"
+            />
+          </div>
+          <span
+            className={`text-xs ${
+              isActive("/transaction/my") ? "text-[#11ABFF]" : "text-[#D4D4D4]"
+            }`}
+          >
+            개인
+          </span>
+        </button>
 
-      {/* 그룹 버튼 */}
-      <button
-        onClick={() => router.push("/group")}
-        className="flex flex-col items-center justify-center w-1/2 h-full hover:bg-gray-50 transition-colors cursor-pointer"
-      >
-        <div className="w-6 h-6">
-          <Image
-            src={
-              isActive("/group") || isActive("/transaction/group")
-                ? "/images/그룹_활성.svg"
-                : "/images/그룹_비활성.svg"
-            }
-            alt="그룹"
-            width={24}
-            height={24}
-            className="w-full h-full"
-          />
-        </div>
-        <span
-          className={`text-xs ${
-            isActive("/group") || isActive("/transaction/group")
-              ? "text-[#11ABFF]"
-              : "text-[#D4D4D4]"
-          }`}
+        {/* 그룹 버튼 */}
+        <button
+          onClick={() => router.push("/group")}
+          className="flex flex-col items-center justify-center w-1/2 h-full hover:bg-gray-50 transition-colors cursor-pointer"
         >
-          그룹
-        </span>
-      </button>
+          <div className="w-6 h-6">
+            <Image
+              src={
+                isActive("/group") || isActive("/transaction/group")
+                  ? "/images/그룹_활성.svg"
+                  : "/images/그룹_비활성.svg"
+              }
+              alt="그룹"
+              width={24}
+              height={24}
+              className="w-full h-full"
+            />
+          </div>
+          <span
+            className={`text-xs ${
+              isActive("/group") || isActive("/transaction/group")
+                ? "text-[#11ABFF]"
+                : "text-[#D4D4D4]"
+            }`}
+          >
+            그룹
+          </span>
+        </button>
+      </div>
+
+      {/* iOS용 하단 검은색 영역 */}
+      {isIOS && <div className="bg-black h-4"></div>}
     </div>
   );
 }
