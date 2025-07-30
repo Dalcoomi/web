@@ -4,17 +4,30 @@
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export default function BottomBar() {
   const router = useRouter();
   const pathname = usePathname();
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    // iOS 환경 감지
+    const userAgent = window.navigator.userAgent;
+    const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent);
+    setIsIOS(isIOSDevice);
+  }, []);
 
   const isActive = (path: string) => {
     return pathname === path || pathname.startsWith(path);
   };
 
   return (
-    <div className="bg-white border-t border-gray-200 h-15 flex items-center pb-safe">
+    <div
+      className={`bg-white border-t border-gray-200 h-13 flex items-center ${
+        isIOS ? "pb-4" : ""
+      }`}
+    >
       {/* 개인 버튼 */}
       <button
         onClick={() => router.push("/transaction/my")}
