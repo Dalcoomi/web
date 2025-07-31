@@ -7,7 +7,6 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import MyTransactionItem from "@/components/transaction/MyTransactionItem";
-import EmptyTransactionList from "@/components/transaction/EmptyTransactionList";
 import {
   getTransactions,
   MonthlyTransactionsResponse,
@@ -60,6 +59,11 @@ export default function MyTransactionPageClient() {
         lastRequestRef.current === requestKey
       ) {
         return;
+      }
+
+      // 새로운 요청이면 이전 요청 상태 초기화
+      if (lastRequestRef.current !== requestKey) {
+        isRequestInProgressRef.current = false;
       }
 
       // 요청 시작
@@ -156,7 +160,7 @@ export default function MyTransactionPageClient() {
 
   // 카테고리 선택 (단일 선택)
   const handleCategorySelect = (categoryName: string) => {
-    let newSelection;
+    let newSelection: string | any[] | ((prevState: string[]) => string[]);
     if (selectedCategories.includes(categoryName)) {
       newSelection = []; // 이미 선택된 경우 선택 해제
     } else {

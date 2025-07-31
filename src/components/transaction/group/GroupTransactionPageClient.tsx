@@ -12,7 +12,6 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
-import EmptyTransactionList from "@/components/transaction/EmptyTransactionList";
 import { getGroupInfo, GroupInfo } from "@/services/groupService";
 
 export default function MyTransactionPageClient() {
@@ -80,6 +79,11 @@ export default function MyTransactionPageClient() {
         lastRequestRef.current === requestKey
       ) {
         return;
+      }
+
+      // 새로운 요청이면 이전 요청 상태 초기화
+      if (lastRequestRef.current !== requestKey) {
+        isRequestInProgressRef.current = false;
       }
 
       // 요청 시작
@@ -173,7 +177,7 @@ export default function MyTransactionPageClient() {
       clearTimeout(timeoutId);
       clearTimeout(timeoutId2);
     };
-  }, [selectedDate, teamId, router]);
+  }, [selectedDate, teamId, router, loadTransactions]);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -219,7 +223,7 @@ export default function MyTransactionPageClient() {
 
   // 멤버 선택 (단일 선택으로 변경)
   const handleMemberSelect = (memberName: string) => {
-    let newSelection;
+    let newSelection: string | any[] | ((prevState: string[]) => string[]);
     if (selectedMembers.includes(memberName)) {
       newSelection = []; // 이미 선택된 경우 선택 해제
     } else {
@@ -242,7 +246,7 @@ export default function MyTransactionPageClient() {
 
   // 카테고리 선택 (단일 선택으로 변경)
   const handleCategorySelect = (categoryName: string) => {
-    let newSelection;
+    let newSelection: string | any[] | ((prevState: string[]) => string[]);
     if (selectedCategories.includes(categoryName)) {
       newSelection = []; // 이미 선택된 경우 선택 해제
     } else {
