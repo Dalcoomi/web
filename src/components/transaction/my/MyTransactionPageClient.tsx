@@ -46,6 +46,15 @@ export default function MyTransactionPageClient() {
   // 날짜 변경 핸들러
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
+
+    // 필터 초기화
+    setSelectedCategories([]);
+    setCurrentCategoryFilter(null);
+
+    // 새 월 데이터 로드
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    loadTransactions(year, month, null);
   };
 
   // 트랜잭션 데이터 로드
