@@ -60,24 +60,24 @@ export default function MyTransactionPageClient() {
   // 트랜잭션 데이터 로드
   const loadTransactions = useCallback(
     async (year: number, month: number, categoryFilter?: string | null) => {
-      const requestKey = `${year}-${month}-${categoryFilter || ""}`;
+      // const requestKey = `${year}-${month}-${categoryFilter || ""}`;
 
-      // 같은 요청이 진행 중이면 무시
-      if (
-        isRequestInProgressRef.current &&
-        lastRequestRef.current === requestKey
-      ) {
-        return;
-      }
+      // // 같은 요청이 진행 중이면 무시
+      // if (
+      //   isRequestInProgressRef.current &&
+      //   lastRequestRef.current === requestKey
+      // ) {
+      //   return;
+      // }
 
-      // 새로운 요청이면 이전 요청 상태 초기화
-      if (lastRequestRef.current !== requestKey) {
-        isRequestInProgressRef.current = false;
-      }
+      // // 새로운 요청이면 이전 요청 상태 초기화
+      // if (lastRequestRef.current !== requestKey) {
+      //   isRequestInProgressRef.current = false;
+      // }
 
-      // 요청 시작
-      isRequestInProgressRef.current = true;
-      lastRequestRef.current = requestKey;
+      // // 요청 시작
+      // isRequestInProgressRef.current = true;
+      // lastRequestRef.current = requestKey;
       setIsLoading(true);
 
       try {
@@ -99,10 +99,10 @@ export default function MyTransactionPageClient() {
 
           setAllCategories(uniqueCategories);
 
-          // 처음 로드시 선택된 상태를 빈 배열로 설정
-          if (selectedCategories.length === 0) {
-            setSelectedCategories([]);
-          }
+          // // 처음 로드시 선택된 상태를 빈 배열로 설정
+          // if (selectedCategories.length === 0) {
+          //   setSelectedCategories([]);
+          // }
         }
       } catch (error) {
         // 401 에러면 루트(로그인)로 리다이렉트
@@ -120,10 +120,10 @@ export default function MyTransactionPageClient() {
         });
       } finally {
         setIsLoading(false);
-        isRequestInProgressRef.current = false;
+        // isRequestInProgressRef.current = false;
       }
     },
-    [router, selectedCategories.length]
+    [router]
   );
 
   // 초기 데이터 로드 및 날짜 변경 시
