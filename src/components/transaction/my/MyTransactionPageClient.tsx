@@ -7,6 +7,7 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import MyTransactionItem from "@/components/transaction/MyTransactionItem";
+import EmptyTransactionList from "@/components/transaction/EmptyTransactionList";
 import {
   getTransactions,
   MonthlyTransactionsResponse,
@@ -46,38 +47,24 @@ export default function MyTransactionPageClient() {
   // 날짜 변경 핸들러
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
-
-    // 필터 초기화
-    setSelectedCategories([]);
-    setCurrentCategoryFilter(null);
-
-    // 새 월 데이터 로드
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    loadTransactions(year, month, null);
   };
 
   // 트랜잭션 데이터 로드
   const loadTransactions = useCallback(
     async (year: number, month: number, categoryFilter?: string | null) => {
-      // const requestKey = `${year}-${month}-${categoryFilter || ""}`;
+      const requestKey = `${year}-${month}-${categoryFilter || ""}`;
 
-      // // 같은 요청이 진행 중이면 무시
-      // if (
-      //   isRequestInProgressRef.current &&
-      //   lastRequestRef.current === requestKey
-      // ) {
-      //   return;
-      // }
+      // 같은 요청이 진행 중이면 무시
+      if (
+        isRequestInProgressRef.current &&
+        lastRequestRef.current === requestKey
+      ) {
+        return;
+      }
 
-      // // 새로운 요청이면 이전 요청 상태 초기화
-      // if (lastRequestRef.current !== requestKey) {
-      //   isRequestInProgressRef.current = false;
-      // }
-
-      // // 요청 시작
-      // isRequestInProgressRef.current = true;
-      // lastRequestRef.current = requestKey;
+      // 요청 시작
+      isRequestInProgressRef.current = true;
+      lastRequestRef.current = requestKey;
       setIsLoading(true);
 
       try {
@@ -99,10 +86,10 @@ export default function MyTransactionPageClient() {
 
           setAllCategories(uniqueCategories);
 
-          // // 처음 로드시 선택된 상태를 빈 배열로 설정
-          // if (selectedCategories.length === 0) {
-          //   setSelectedCategories([]);
-          // }
+          // 처음 로드시 선택된 상태를 빈 배열로 설정
+          if (selectedCategories.length === 0) {
+            setSelectedCategories([]);
+          }
         }
       } catch (error) {
         // 401 에러면 루트(로그인)로 리다이렉트
@@ -120,7 +107,7 @@ export default function MyTransactionPageClient() {
         });
       } finally {
         setIsLoading(false);
-        // isRequestInProgressRef.current = false;
+        isRequestInProgressRef.current = false;
       }
     },
     [router]
@@ -139,7 +126,7 @@ export default function MyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [loadTransactions, selectedDate]);
+  }, [selectedDate]);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -169,7 +156,7 @@ export default function MyTransactionPageClient() {
 
   // 카테고리 선택 (단일 선택)
   const handleCategorySelect = (categoryName: string) => {
-    let newSelection: string | any[] | ((prevState: string[]) => string[]);
+    let newSelection;
     if (selectedCategories.includes(categoryName)) {
       newSelection = []; // 이미 선택된 경우 선택 해제
     } else {
@@ -247,14 +234,20 @@ export default function MyTransactionPageClient() {
   };
 
   const handlePrevMonth = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setMonth(newDate.getMonth() - 1);
+    const newDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth() - 1,
+      1
+    );
     handleDateChange(newDate);
   };
 
   const handleNextMonth = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setMonth(newDate.getMonth() + 1);
+    const newDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth() + 1,
+      1
+    );
     handleDateChange(newDate);
   };
 
