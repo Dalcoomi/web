@@ -110,7 +110,7 @@ export default function MyTransactionPageClient() {
         isRequestInProgressRef.current = false;
       }
     },
-    [router] // selectedCategories.length 의존성 제거
+    [router, selectedCategories.length]
   );
 
   // 초기 데이터 로드 및 날짜 변경 시
@@ -126,7 +126,7 @@ export default function MyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [selectedDate]); // loadTransactions 의존성 제거
+  }, [loadTransactions, selectedDate]);
 
   // 외부 클릭 감지
   useEffect(() => {
