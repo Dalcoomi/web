@@ -339,14 +339,20 @@ export default function MyTransactionPageClient() {
   };
 
   const handlePrevMonth = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setMonth(newDate.getMonth() - 1);
+    const newDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth() - 1,
+      1
+    );
     handleDateChange(newDate);
   };
 
   const handleNextMonth = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setMonth(newDate.getMonth() + 1);
+    const newDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth() + 1,
+      1
+    );
     handleDateChange(newDate);
   };
 
