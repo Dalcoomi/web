@@ -126,7 +126,7 @@ export default function MyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [selectedDate]);
+  }, [loadTransactions, selectedDate]);
 
   // 외부 클릭 감지
   useEffect(() => {

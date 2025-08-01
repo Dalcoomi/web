@@ -140,7 +140,7 @@ export default function MyTransactionPageClient() {
         isRequestInProgressRef.current = false;
       }
     },
-    [router, selectedMembers.length, selectedCategories.length]
+    [router]
   );
 
   // 초기 데이터 로드 및 날짜 변경 시
@@ -223,7 +223,7 @@ export default function MyTransactionPageClient() {
 
   // 멤버 선택 (단일 선택으로 변경)
   const handleMemberSelect = (memberName: string) => {
-    let newSelection: string | any[] | ((prevState: string[]) => string[]);
+    let newSelection;
     if (selectedMembers.includes(memberName)) {
       newSelection = []; // 이미 선택된 경우 선택 해제
     } else {
@@ -246,7 +246,7 @@ export default function MyTransactionPageClient() {
 
   // 카테고리 선택 (단일 선택으로 변경)
   const handleCategorySelect = (categoryName: string) => {
-    let newSelection: string | any[] | ((prevState: string[]) => string[]);
+    let newSelection;
     if (selectedCategories.includes(categoryName)) {
       newSelection = []; // 이미 선택된 경우 선택 해제
     } else {
