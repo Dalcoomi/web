@@ -7,7 +7,6 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import MyTransactionItem from "@/components/transaction/MyTransactionItem";
-import EmptyTransactionList from "@/components/transaction/EmptyTransactionList";
 import {
   getTransactions,
   MonthlyTransactionsResponse,
@@ -449,7 +448,7 @@ export default function MyTransactionPageClient() {
             {showCategoryFilter && (
               <div
                 ref={categoryDropdownRef}
-                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 min-w-[140px]"
+                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 w-[140px]"
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">
