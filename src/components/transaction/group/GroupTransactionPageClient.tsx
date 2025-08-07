@@ -561,7 +561,7 @@ export default function MyTransactionPageClient() {
             {showCategoryFilter && (
               <div
                 ref={categoryDropdownRef}
-                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 min-w-[140px]"
+                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 w-[140px]"
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">
@@ -632,7 +632,7 @@ export default function MyTransactionPageClient() {
             {showMemberFilter && (
               <div
                 ref={filterDropdownRef}
-                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 min-w-[140px]"
+                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 w-[140px]"
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">
