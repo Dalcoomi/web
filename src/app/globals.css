@@ -93,10 +93,10 @@ body {
     max-width: none !important;
   }
 
-  .shadow-lg {
+  /* .shadow-lg {
     width: 100vw !important;
     max-width: none !important;
-  }
+  } */
 }
 
 /* PC PWA에서는 기존 크기 유지 */
