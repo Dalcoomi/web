@@ -46,6 +46,11 @@ export default function MyTransactionPageClient() {
   // 날짜 변경 핸들러
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
+
+    // 날짜 변경 시 필터 상태 초기화
+    setSelectedCategories([]);
+    setCurrentCategoryFilter(null);
+    setShowCategoryFilter(false);
   };
 
   // 트랜잭션 데이터 로드
@@ -84,11 +89,6 @@ export default function MyTransactionPageClient() {
           );
 
           setAllCategories(uniqueCategories);
-
-          // 처음 로드시 선택된 상태를 빈 배열로 설정
-          if (selectedCategories.length === 0) {
-            setSelectedCategories([]);
-          }
         }
       } catch (error) {
         // 401 에러면 루트(로그인)로 리다이렉트
@@ -119,7 +119,7 @@ export default function MyTransactionPageClient() {
 
     // 약간의 디바운스 추가
     const timeoutId = setTimeout(() => {
-      loadTransactions(year, month);
+      loadTransactions(year, month, null);
     }, 100);
 
     return () => {
