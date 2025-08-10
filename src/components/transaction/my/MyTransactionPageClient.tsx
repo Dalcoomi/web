@@ -43,13 +43,10 @@ export default function MyTransactionPageClient() {
   // 필터 드롭다운 외부 클릭 감지를 위한 ref
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  // 날짜 변경 핸들러
+  // 날짜 변경 핸들러 (필터 유지)
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
-
-    // 날짜 변경 시 필터 상태 초기화
-    setSelectedCategories([]);
-    setCurrentCategoryFilter(null);
+    // 필터는 유지하고, 드롭다운만 닫기
     setShowCategoryFilter(false);
   };
 
@@ -82,12 +79,20 @@ export default function MyTransactionPageClient() {
         const response = await getTransactions(criteria);
         setResponse(response);
 
-        // 전체 데이터에서 카테고리 목록 추출 (필터링 안된 데이터가 필요하면 별도 API 호출)
+        // 필터가 없는 경우에만 전체 카테고리 목록 갱신
         if (!categoryFilter) {
-          const uniqueCategories = Array.from(
-            new Set(response.transactions.map((t) => t.categoryName))
-          );
+          // 전체 데이터를 다시 조회해서 카테고리 목록 추출
+          const allDataCriteria: TransactionSearchCriteria = {
+            teamId: null,
+            year,
+            month,
+            categoryName: null,
+          };
 
+          const allDataResponse = await getTransactions(allDataCriteria);
+          const uniqueCategories = Array.from(
+            new Set(allDataResponse.transactions.map((t) => t.categoryName))
+          );
           setAllCategories(uniqueCategories);
         }
       } catch (error) {
@@ -112,20 +117,21 @@ export default function MyTransactionPageClient() {
     [router]
   );
 
-  // 초기 데이터 로드 및 날짜 변경 시
+  // 초기 데이터 로드 및 날짜 변경 시 (현재 필터 유지)
   useEffect(() => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
 
     // 약간의 디바운스 추가
     const timeoutId = setTimeout(() => {
-      loadTransactions(year, month, null);
+      // 현재 선택된 필터를 유지하여 로드
+      loadTransactions(year, month, currentCategoryFilter);
     }, 100);
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [loadTransactions, selectedDate]);
+  }, [loadTransactions, selectedDate, currentCategoryFilter]);
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -197,7 +203,7 @@ export default function MyTransactionPageClient() {
 
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
-    loadTransactions(year, month);
+    loadTransactions(year, month, null);
   };
 
   // 날짜를 "MM.DD" 형식으로 변환
