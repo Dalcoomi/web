@@ -55,15 +55,10 @@ export default function MyTransactionPageClient() {
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  // 날짜 변경 핸들러 (필터 초기화 추가)
+  // 날짜 변경 핸들러 (필터 유지)
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
-
-    // 날짜 변경 시 필터 상태 초기화
-    setSelectedMembers([]);
-    setSelectedCategories([]);
-    setCurrentMemberFilter(null);
-    setCurrentCategoryFilter(null);
+    // 필터는 유지하고, 드롭다운만 닫기
     setShowMemberFilter(false);
     setShowCategoryFilter(false);
   };
@@ -111,13 +106,33 @@ export default function MyTransactionPageClient() {
         const response = await getTransactions(criteria);
         setResponse(response);
 
-        // 전체 데이터에서 멤버와 카테고리 목록 추출 (필터링 안된 데이터가 필요하면 별도 API 호출)
+        // 필터가 없는 경우에만 전체 멤버와 카테고리 목록 갱신
         if (!memberFilter && !categoryFilter) {
           const uniqueMembers = Array.from(
             new Set(response.transactions.map((t) => t.creatorNickname))
           );
           const uniqueCategories = Array.from(
             new Set(response.transactions.map((t) => t.categoryName))
+          );
+
+          setAllMembers(uniqueMembers);
+          setAllCategories(uniqueCategories);
+        } else {
+          // 필터가 적용된 경우, 전체 데이터를 별도로 조회해서 필터 옵션 갱신
+          const allDataCriteria: TransactionSearchCriteria = {
+            teamId: parseInt(teamId),
+            year,
+            month,
+            creatorNickname: null,
+            categoryName: null,
+          };
+
+          const allDataResponse = await getTransactions(allDataCriteria);
+          const uniqueMembers = Array.from(
+            new Set(allDataResponse.transactions.map((t) => t.creatorNickname))
+          );
+          const uniqueCategories = Array.from(
+            new Set(allDataResponse.transactions.map((t) => t.categoryName))
           );
 
           setAllMembers(uniqueMembers);
@@ -145,7 +160,7 @@ export default function MyTransactionPageClient() {
     [router]
   );
 
-  // 초기 데이터 로드 및 날짜 변경 시 (필터 없이 로드)
+  // 초기 데이터 로드 및 날짜 변경 시 (현재 필터 유지)
   useEffect(() => {
     if (!teamId) {
       router.replace("/group");
@@ -157,8 +172,14 @@ export default function MyTransactionPageClient() {
 
     // 디바운스 추가
     const timeoutId = setTimeout(() => {
-      // 날짜 변경 시에는 항상 필터 없이 로드
-      loadTransactions(teamId, year, month, null, null);
+      // 현재 선택된 필터들을 유지하여 로드
+      loadTransactions(
+        teamId,
+        year,
+        month,
+        currentMemberFilter,
+        currentCategoryFilter
+      );
     }, 100);
 
     const timeoutId2 = setTimeout(async () => {
@@ -180,7 +201,14 @@ export default function MyTransactionPageClient() {
       clearTimeout(timeoutId);
       clearTimeout(timeoutId2);
     };
-  }, [selectedDate, teamId, router, loadTransactions]);
+  }, [
+    selectedDate,
+    teamId,
+    router,
+    loadTransactions,
+    currentMemberFilter,
+    currentCategoryFilter,
+  ]);
 
   // 외부 클릭 감지
   useEffect(() => {
