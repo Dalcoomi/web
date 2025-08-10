@@ -55,9 +55,17 @@ export default function MyTransactionPageClient() {
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  // 날짜 변경 핸들러
+  // 날짜 변경 핸들러 (필터 초기화 추가)
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
+
+    // 날짜 변경 시 필터 상태 초기화
+    setSelectedMembers([]);
+    setSelectedCategories([]);
+    setCurrentMemberFilter(null);
+    setCurrentCategoryFilter(null);
+    setShowMemberFilter(false);
+    setShowCategoryFilter(false);
   };
 
   // 트랜잭션 데이터 로드
@@ -114,12 +122,6 @@ export default function MyTransactionPageClient() {
 
           setAllMembers(uniqueMembers);
           setAllCategories(uniqueCategories);
-
-          // 처음 로드시 선택된 상태를 빈 배열로 설정
-          if (selectedMembers.length === 0 && selectedCategories.length === 0) {
-            setSelectedMembers([]);
-            setSelectedCategories([]);
-          }
         }
       } catch (error) {
         // 401 에러면 루트(로그인)로 리다이렉트
@@ -143,7 +145,7 @@ export default function MyTransactionPageClient() {
     [router]
   );
 
-  // 초기 데이터 로드 및 날짜 변경 시
+  // 초기 데이터 로드 및 날짜 변경 시 (필터 없이 로드)
   useEffect(() => {
     if (!teamId) {
       router.replace("/group");
@@ -155,7 +157,8 @@ export default function MyTransactionPageClient() {
 
     // 디바운스 추가
     const timeoutId = setTimeout(() => {
-      loadTransactions(teamId, year, month);
+      // 날짜 변경 시에는 항상 필터 없이 로드
+      loadTransactions(teamId, year, month, null, null);
     }, 100);
 
     const timeoutId2 = setTimeout(async () => {
@@ -304,7 +307,7 @@ export default function MyTransactionPageClient() {
 
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
-    loadTransactions(teamId, year, month);
+    loadTransactions(teamId, year, month, null, null);
   };
 
   // 날짜를 "MM.DD" 형식으로 변환
