@@ -16,7 +16,7 @@ import {
 export default function MyTransactionPageClient() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false); // 초기 로딩 제거
   const [response, setResponse] = useState<MonthlyTransactionsResponse>({
     income: 0,
     expense: 0,
@@ -43,19 +43,15 @@ export default function MyTransactionPageClient() {
   // 필터 드롭다운 외부 클릭 감지를 위한 ref
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
-  // 날짜 변경 핸들러 (필터 유지)
-  const handleDateChange = (date: Date) => {
-    setSelectedDate(date);
-    // 필터는 유지하고, 드롭다운만 닫기
-    setShowCategoryFilter(false);
-  };
+  // 통합된 useEffect로 중복 호출 방지
+  useEffect(() => {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
 
-  // 트랜잭션 데이터 로드
-  const loadTransactions = useCallback(
-    async (year: number, month: number, categoryFilter?: string | null) => {
-      const requestKey = `${year}-${month}-${categoryFilter || ""}`;
+    const timeoutId = setTimeout(() => {
+      // loadTransactions 직접 호출하지 않고 내부 로직 실행
+      const requestKey = `${year}-${month}-${currentCategoryFilter || ""}`;
 
-      // 같은 요청이 진행 중이면 무시
       if (
         isRequestInProgressRef.current &&
         lastRequestRef.current === requestKey
@@ -63,75 +59,60 @@ export default function MyTransactionPageClient() {
         return;
       }
 
-      // 요청 시작
       isRequestInProgressRef.current = true;
       lastRequestRef.current = requestKey;
       setIsLoading(true);
 
-      try {
-        const criteria: TransactionSearchCriteria = {
-          teamId: null, // 개인 거래
-          year,
-          month,
-          categoryName: categoryFilter,
-        };
-
-        const response = await getTransactions(criteria);
-        setResponse(response);
-
-        // 필터가 없는 경우에만 전체 카테고리 목록 갱신
-        if (!categoryFilter) {
-          // 전체 데이터를 다시 조회해서 카테고리 목록 추출
-          const allDataCriteria: TransactionSearchCriteria = {
+      const fetchData = async () => {
+        try {
+          const criteria: TransactionSearchCriteria = {
             teamId: null,
             year,
             month,
-            categoryName: null,
+            categoryName: currentCategoryFilter,
           };
 
-          const allDataResponse = await getTransactions(allDataCriteria);
-          const uniqueCategories = Array.from(
-            new Set(allDataResponse.transactions.map((t) => t.categoryName))
-          );
-          setAllCategories(uniqueCategories);
+          const response = await getTransactions(criteria);
+          setResponse(response);
+
+          if (!currentCategoryFilter && allCategories.length === 0) {
+            const uniqueCategories = Array.from(
+              new Set(response.transactions.map((t) => t.categoryName))
+            );
+            setAllCategories(uniqueCategories);
+          }
+        } catch (error) {
+          if (error instanceof Error && error.message.includes("401")) {
+            window.location.href = "/";
+            return;
+          }
+
+          setResponse({
+            income: 0,
+            expense: 0,
+            total: 0,
+            transactions: [],
+          });
+        } finally {
+          setIsLoading(false);
+          isRequestInProgressRef.current = false;
         }
-      } catch (error) {
-        // 401 에러면 루트(로그인)로 리다이렉트
-        if (error instanceof Error && error.message.includes("401")) {
-          router.replace("/");
-          return;
-        }
+      };
 
-        // 기타 오류 처리
-        setResponse({
-          income: 0,
-          expense: 0,
-          total: 0,
-          transactions: [],
-        });
-      } finally {
-        setIsLoading(false);
-        isRequestInProgressRef.current = false;
-      }
-    },
-    [router]
-  );
-
-  // 초기 데이터 로드 및 날짜 변경 시 (현재 필터 유지)
-  useEffect(() => {
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
-
-    // 약간의 디바운스 추가
-    const timeoutId = setTimeout(() => {
-      // 현재 선택된 필터를 유지하여 로드
-      loadTransactions(year, month, currentCategoryFilter);
-    }, 100);
+      fetchData();
+    }, 300);
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [loadTransactions, selectedDate, currentCategoryFilter]);
+  }, [selectedDate, currentCategoryFilter, allCategories.length]); // loadTransactions 의존성 완전 제거
+
+  // 날짜 변경 핸들러 (필터 유지)
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    // 필터는 유지하고, 드롭다운만 닫기
+    setShowCategoryFilter(false);
+  };
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -171,12 +152,8 @@ export default function MyTransactionPageClient() {
     setSelectedCategories(newSelection);
 
     // 바로 필터링 적용
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
     const categoryFilter = newSelection.length > 0 ? newSelection[0] : null;
-
     setCurrentCategoryFilter(categoryFilter);
-    loadTransactions(year, month, categoryFilter);
 
     // 드롭다운 닫기
     setShowCategoryFilter(false);
@@ -187,11 +164,6 @@ export default function MyTransactionPageClient() {
     setSelectedCategories([]);
     setCurrentCategoryFilter(null);
 
-    // 바로 필터링 적용
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
-    loadTransactions(year, month, null);
-
     // 드롭다운 닫기
     setShowCategoryFilter(false);
   };
@@ -200,10 +172,6 @@ export default function MyTransactionPageClient() {
   const handleResetFilters = () => {
     setSelectedCategories([]);
     setCurrentCategoryFilter(null);
-
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
-    loadTransactions(year, month, null);
   };
 
   // 날짜를 "MM.DD" 형식으로 변환
@@ -271,12 +239,6 @@ export default function MyTransactionPageClient() {
   return (
     <div className="flex flex-col h-screen bg-white">
       <TopBar />
-
-      {/* 거래 내역 작성 제목 블록 */}
-      {/* <div className="text-[#11ABFF] px-4 py-2 items-center">
-        <h1 className="text-xl font-light text-center">
-          {memberInfo?.nickname}의 가계부
-        </h1> */}
 
       {/* 파란색 박스 영역 */}
       <div className="px-2 py-2">
