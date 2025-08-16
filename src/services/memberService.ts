@@ -6,7 +6,7 @@ export interface Member {
   email: string;
   name: string;
   nickname: string;
-  profileIamgeUrl: string;
+  profileImageUrl: string;
 }
 
 // 회원 조회
