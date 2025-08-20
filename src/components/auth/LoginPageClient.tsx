@@ -7,11 +7,13 @@ import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
+import { useMemberStore } from "@/stores/useMemberStore";
 
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const { fetchMember } = useMemberStore();
   const [isLoading, setIsLoading] = useState(false);
 
   // 브라우저 및 환경 감지 함수들
@@ -272,7 +274,12 @@ export default function LoginPageClient() {
       try {
         const response = await socialLogin(requestData);
 
+        // 로그인 성공 시 토큰 저장
         login(response.accessToken, response.refreshToken);
+
+        // 회원 정보를 zustand store에 저장
+        await fetchMember();
+
         router.push("/transaction/my");
       } catch (error) {
         if (error.message === "존재하지 않는 회원입니다.") {

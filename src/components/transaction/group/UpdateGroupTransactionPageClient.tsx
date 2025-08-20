@@ -10,7 +10,7 @@ import {
 } from "@/services/transactionService";
 import { Transaction } from "@/services/transactionService";
 import { getTeamCategories, Category } from "@/services/categoryService";
-import { getMember, Member } from "@/services/memberService";
+import { useMemberStore } from "@/stores/useMemberStore";
 import { getGroupInfo, GroupInfo } from "@/services/groupService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
@@ -33,11 +33,10 @@ export default function UpdateGroupTransactionPageClient() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
+  const { member: currentUser, fetchMember } = useMemberStore();
 
   const teamId = params.teamId as string;
   const transactionId = searchParams.get("id");
-
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [transactionType, setTransactionType] = useState<"EXPENSE" | "INCOME">(
@@ -50,7 +49,6 @@ export default function UpdateGroupTransactionPageClient() {
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [amountError, setAmountError] = useState(false);
   const [amountTouched, setAmountTouched] = useState(false);
-  const [currentUser, setCurrentUser] = useState<Member | null>(null);
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
   // 카테고리 관련 상태
@@ -58,6 +56,13 @@ export default function UpdateGroupTransactionPageClient() {
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [originalTransaction, setOriginalTransaction] =
     useState<Transaction | null>(null);
+
+  // 회원 정보가 없으면 가져오기
+  useEffect(() => {
+    if (!currentUser) {
+      fetchMember();
+    }
+  }, [currentUser, fetchMember]);
 
   // 기존 거래 내역 로드
   useEffect(() => {
@@ -74,8 +79,6 @@ export default function UpdateGroupTransactionPageClient() {
       }
 
       try {
-        setIsLoading(true);
-
         const transaction = await getTransactionById(transactionId, teamId);
 
         // 원본 거래 데이터 저장
@@ -103,8 +106,6 @@ export default function UpdateGroupTransactionPageClient() {
         alert(error || "거래 내역을 불러올 수 없습니다.");
 
         router.replace(`/transaction/group/${teamId}`);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -123,20 +124,9 @@ export default function UpdateGroupTransactionPageClient() {
       loadTransaction();
     }, 100);
 
-    const timeoutId3 = setTimeout(async () => {
-      try {
-        const userInfo = await getMember();
-        setCurrentUser(userInfo);
-      } catch (error) {
-        alert(error || "사용자 정보를 불러올 수 없습니다.");
-        router.replace(`/transaction/group/${teamId}`);
-      }
-    }, 100);
-
     return () => {
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
-      clearTimeout(timeoutId3);
     };
   }, [transactionId, router, teamId]);
 
@@ -276,18 +266,6 @@ export default function UpdateGroupTransactionPageClient() {
   // 현재 사용자가 작성자인지 확인
   const isOwner =
     currentUser?.nickname === originalTransaction?.creatorNickname;
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-screen bg-white">
-        <TopBar />
-        <div className="flex items-center justify-center flex-1">
-          <div className="text-gray-500">로딩 중...</div>
-        </div>
-        <BottomBar />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-screen bg-white">

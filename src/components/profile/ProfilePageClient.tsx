@@ -1,54 +1,28 @@
 // components/profile/ProfilePageClient.tsx
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
-import { getMember, Member } from "@/services/memberService";
+import { useMemberStore } from "@/stores/useMemberStore";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ProfilePageClient() {
-  const [member, setMember] = useState<Member | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter();
+  const { member, fetchMember } = useMemberStore();
+  const { logout, isLoggedIn } = useAuth();
 
+  // 회원 정보가 없으면 가져오기 (단, 로그인된 상태에서만)
   useEffect(() => {
-    // 기존 디바운스 타이머 제거
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
+    if (!member && isLoggedIn) {
+      fetchMember();
     }
+  }, [member, isLoggedIn, fetchMember]);
 
-    // 디바운스 적용된 API 호출
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const memberData = await getMember();
-        setMember(memberData);
-        setError(null);
-      } catch (err) {
-        setError("회원 정보를 불러오는데 실패했습니다.");
-        console.error("Failed to fetch member:", err);
-
-        // 에러 발생 시 기본값 설정
-        setMember({
-          email: "",
-          name: "",
-          nickname: "사용자",
-          profileImageUrl: "",
-        });
-      }
-    }, 100);
-
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
-
-  // 에러 재시도 함수
-  const handleRetry = () => {
-    setError(null);
-    window.location.reload();
+  const handleProfileUpdate = () => {
+    router.push("/profile/update");
   };
 
   const handlePrivacyPolicy = () => {
@@ -65,43 +39,52 @@ export default function ProfilePageClient() {
     );
   };
 
+  const handleLogout = () => {
+    logout();
+  };
+
+  const handleWithdrawal = () => {
+    if (
+      confirm("정말로 회원탈퇴를 하시겠습니까?\n이 작업은 되돌릴 수 없습니다.")
+    ) {
+      // 회원탈퇴 로직 구현 필요
+      console.log("회원탈퇴 처리");
+    }
+  };
+
+  // 로그인 상태가 아니거나 회원 정보가 없는 경우
+  if (!member) {
+    return <div className="h-screen bg-white flex flex-col"></div>;
+  }
+
   return (
     <div className="h-screen bg-white flex flex-col">
       <TopBar />
 
-      {/* 에러 토스트 */}
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mx-6 mt-4">
-          <div className="flex justify-between items-center">
-            <div className="flex">
-              <span className="text-red-700 text-sm">{error}</span>
-            </div>
-            <button
-              onClick={handleRetry}
-              className="text-red-600 text-sm underline hover:text-red-800"
-            >
-              다시 시도
-            </button>
-          </div>
-        </div>
-      )}
-
       <main className="flex-1 px-6 py-4 overflow-y-auto">
         {/* Profile Section */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl text-black mb-4">{member?.nickname}</h1>
+          <h1 className="text-2xl text-black mb-4">
+            {member?.nickname || "사용자"}
+          </h1>
 
           <div className="w-24 h-24 mx-auto mb-6 relative">
-            {member?.profileImageUrl && (
+            {member?.profileImageUrl ? (
               <Image
                 src={member.profileImageUrl}
-                alt={`${member.nickname}의 프로필`}
-                width={24}
-                height={24}
+                alt={`${member.nickname || "사용자"}의 프로필`}
+                width={96}
+                height={96}
                 quality={100}
                 unoptimized={true}
                 className="w-24 h-24 rounded-full object-cover"
               />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-gray-500 text-2xl">
+                  {member?.nickname?.charAt(0) || "?"}
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -109,7 +92,10 @@ export default function ProfilePageClient() {
         {/* Menu Section */}
         <div className="bg-gray-50 rounded-lg shadow-sm">
           <div className="divide-y divide-gray-100">
-            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-100 cursor-pointer transition-colors">
+            <button
+              onClick={handleProfileUpdate}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-100 cursor-pointer transition-colors"
+            >
               <span className="text-gray-600">프로필 수정</span>
               <span className="text-gray-400">›</span>
             </button>
@@ -139,10 +125,16 @@ export default function ProfilePageClient() {
 
         {/* Logout & Withdrawal Buttons */}
         <div className="mt-6 space-y-3">
-          <button className="w-full bg-red-50 text-red-600 py-3 px-4 rounded-lg text-sm font-medium hover:bg-red-100 cursor-pointer transition-colors">
+          <button
+            onClick={handleLogout}
+            className="w-full bg-red-50 text-red-600 py-3 px-4 rounded-lg text-sm font-medium hover:bg-red-100 cursor-pointer transition-colors"
+          >
             로그아웃
           </button>
-          <button className="w-full text-gray-400 py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-100 cursor-pointer transition-colors">
+          <button
+            onClick={handleWithdrawal}
+            className="w-full text-gray-400 py-3 px-4 rounded-lg text-sm font-medium hover:bg-gray-100 cursor-pointer transition-colors"
+          >
             회원탈퇴
           </button>
         </div>
