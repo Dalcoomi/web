@@ -72,7 +72,7 @@ export default function ProfilePageClient() {
             {member?.profileImageUrl ? (
               <Image
                 src={member.profileImageUrl}
-                alt={`${member.nickname || "사용자"}의 프로필`}
+                alt={`${member.nickname}`}
                 width={96}
                 height={96}
                 quality={100}
