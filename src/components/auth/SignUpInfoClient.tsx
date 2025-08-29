@@ -336,7 +336,7 @@ export default function SignUpInfoClient() {
             />
             {nameError && (
               <p className="text-red-500 text-xs mt-1">
-                2자 ~ 15자 사이의 한글, 영문으로 입력해주세요
+                2자 ~ 30자 사이의 한글, 영문으로 입력해주세요
               </p>
             )}
           </div>

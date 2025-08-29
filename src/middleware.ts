@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
 
   const publicPaths = ["/"];
   const authOptionalPaths = ["/sign-up"];
-  const protectedPaths = ["/transaction", "/group"];
+  const protectedPaths = ["/transaction", "/group", "/profile"];
 
   const isPublicPath = publicPaths.some((p) => path === p);
   const isAuthOptionalPath = authOptionalPaths.some((p) => path.startsWith(p));
