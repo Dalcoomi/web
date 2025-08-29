@@ -40,9 +40,13 @@ export const apiClient = async (
 
   // 기본 헤더 설정
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...options.headers,
   };
+
+  // body가 FormData가 아닐 때만 Content-Type을 application/json으로 설정
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   // 액세스 토큰이 있으면 인증 헤더 추가
   const accessToken = getAccessToken();
@@ -226,6 +230,23 @@ export const put = (endpoint: string, data?: any, options?: RequestInit) =>
     method: "PUT",
     body: data ? JSON.stringify(data) : undefined,
   });
+
+export const patch = (endpoint: string, data?: any, options?: RequestInit) => {
+  // FormData인 경우, JSON.stringify를 하지 않고 바로 반환
+  if (data instanceof FormData) {
+    return apiClient(endpoint, {
+      ...options,
+      method: "PATCH",
+      body: data,
+    });
+  }
+
+  return apiClient(endpoint, {
+    ...options,
+    method: "PATCH",
+    body: data ? JSON.stringify(data) : undefined,
+  });
+};
 
 export const del = (endpoint: string, data?: any, options?: RequestInit) =>
   apiClient(endpoint, {
