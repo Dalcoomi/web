@@ -4,8 +4,8 @@ export const validateNickname = (nickname: string): string | null => {
     return "닉네임은 필수입니다.";
   }
 
-  if (nickname.length < 2 || nickname.length > 15) {
-    return "닉네임은 2~15자입니다.";
+  if (nickname.length < 2 || nickname.length > 6) {
+    return "닉네임은 2~6자입니다.";
   }
 
   if (!/^[가-힣a-zA-Z0-9_]+$/.test(nickname)) {

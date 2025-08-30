@@ -413,7 +413,7 @@ export default function ProfileUpdatePageClient() {
                 onChange={handleNicknameChange}
                 className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 placeholder="닉네임을 입력하세요"
-                maxLength={15}
+                maxLength={6}
               />
               <button
                 type="button"

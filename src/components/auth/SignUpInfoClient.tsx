@@ -54,8 +54,8 @@ export default function SignUpInfoClient() {
 
   // 폼 유효성 검사
   useEffect(() => {
-    // 이름이 유효한지 확인 (2자 이상, 한글/영문)
-    const nameRegex = /^[가-힣a-zA-Z\s]{2,15}$/;
+    // 이름이 유효한지 확인 (2~30자, 한글/영문)
+    const nameRegex = /^[가-힣a-zA-Z\s]{2,30}$/;
     const isNameValid =
       userInfo.name.trim().length >= 2 && nameRegex.test(userInfo.name.trim());
 
@@ -68,8 +68,8 @@ export default function SignUpInfoClient() {
 
     // 이름 필드에 대한 처리
     if (name === "name") {
-      // 15자 제한
-      if (value.length > 15) {
+      // 30자 제한
+      if (value.length > 30) {
         return;
       }
 
@@ -180,14 +180,14 @@ export default function SignUpInfoClient() {
     if (!userInfo.name || userInfo.name.trim().length < 2) {
       setNameError(true);
       setTimeout(() => {
-        alert("이름을 다시 입력해주세요. (2자 이상 15자 이하)");
+        alert("이름을 다시 입력해주세요. (2자 이상 30자 이하)");
       }, 10);
       isValid = false;
       return;
     }
 
     // 한글, 영문만 포함하는지 확인
-    const nameRegex = /^[가-힣a-zA-Z\s]{2,15}$/;
+    const nameRegex = /^[가-힣a-zA-Z\s]{2,30}$/;
     if (!nameRegex.test(userInfo.name.trim())) {
       setNameError(true);
       setTimeout(() => {
