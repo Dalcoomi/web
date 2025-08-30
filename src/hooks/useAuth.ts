@@ -9,12 +9,15 @@ import {
   saveTokens,
   clearTokens,
 } from "@/utils/tokenManager";
+import { useMemberStore } from "@/stores/useMemberStore";
+import { logout as logoutAPI } from "@/services/authService";
 
 export function useAuth() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [mounted, setMounted] = useState(false);
+  const { clearMember } = useMemberStore();
 
   // 🔥 토큰 리프레시 진행 상태와 중복 방지
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -87,6 +90,7 @@ export function useAuth() {
         // 🔥 리프레시 토큰이 없으면 즉시 로그아웃 상태 설정
         if (!refreshToken) {
           clearTokens();
+          clearMember(); // 회원 정보도 제거
           setIsLoggedIn(false);
           setIsLoading(false);
           return;
@@ -108,6 +112,7 @@ export function useAuth() {
         refreshAccessToken().then((success) => {
           if (!success) {
             clearTokens();
+            clearMember(); // 회원 정보도 제거
             setIsLoggedIn(false);
 
             // 보호된 페이지에 있다면 메인으로 이동
@@ -125,12 +130,13 @@ export function useAuth() {
       } catch (error) {
         setIsLoggedIn(false);
         clearTokens();
+        clearMember(); // 회원 정보도 제거
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [mounted, refreshAccessToken, router]);
+  }, [mounted, refreshAccessToken, router, clearMember]);
 
   // 로그인 함수
   const login = useCallback((accessToken: string, refreshToken?: string) => {
@@ -139,20 +145,30 @@ export function useAuth() {
   }, []);
 
   // 로그아웃 함수
-  const logout = useCallback(() => {
-    clearTokens();
-    setIsLoggedIn(false);
+  const logout = useCallback(async () => {
+    try {
+      // 백엔드 로그아웃 API 호출
+      await logoutAPI();
+    } catch (error) {
+      // 로그아웃 API 실패해도 클라이언트 로그아웃은 진행
+      console.error("로그아웃 API 호출 실패:", error);
+    } finally {
+      // 클라이언트 상태 정리
+      clearTokens();
+      clearMember(); // 회원 정보도 제거
+      setIsLoggedIn(false);
 
-    const currentPath = window.location.pathname;
-    const protectedPaths = ["/transaction", "/group"];
-    const isProtectedPath = protectedPaths.some((path) =>
-      currentPath.startsWith(path)
-    );
+      const currentPath = window.location.pathname;
+      const protectedPaths = ["/transaction", "/group", "/profile"];
+      const isProtectedPath = protectedPaths.some((path) =>
+        currentPath.startsWith(path)
+      );
 
-    if (isProtectedPath) {
-      router.push("/");
+      if (isProtectedPath) {
+        router.push("/");
+      }
     }
-  }, [router]);
+  }, [router, clearMember]);
 
   // 🔥 requireAuth - 간소화 및 최적화
   const requireAuth = useCallback(
@@ -174,6 +190,7 @@ export function useAuth() {
         refreshAccessToken().then((success) => {
           if (!success) {
             clearTokens();
+            clearMember(); // 회원 정보도 제거
             setIsLoggedIn(false);
             router.replace("/");
           }
@@ -184,7 +201,7 @@ export function useAuth() {
         callback();
       }
     },
-    [isLoading, isRefreshing, router, refreshAccessToken]
+    [isLoading, isRefreshing, router, refreshAccessToken, clearMember]
   );
 
   // 🔥 requireUnauth - 리프레시 토큰 기준
@@ -224,6 +241,7 @@ export function useAuth() {
 
       setIsLoggedIn(false);
       clearTokens();
+      clearMember(); // 회원 정보도 제거
 
       const currentPath = window.location.pathname;
       const protectedPaths = ["/transaction", "/group"];
@@ -247,7 +265,7 @@ export function useAuth() {
       window.removeEventListener("auth-error", handleAuthError);
       window.removeEventListener("token-refreshed", handleTokenRefresh);
     };
-  }, [router, mounted, refreshAccessToken]);
+  }, [router, mounted, refreshAccessToken, clearMember]);
 
   // 기타 함수들
   const checkTokenValidity = useCallback(() => {
@@ -277,13 +295,14 @@ export function useAuth() {
       } else {
         setIsLoggedIn(false);
         clearTokens();
+        clearMember(); // 회원 정보도 제거
         return false;
       }
     }
 
     setIsLoggedIn(true);
     return true;
-  }, [refreshAccessToken]);
+  }, [refreshAccessToken, clearMember]);
 
   return {
     isLoggedIn,

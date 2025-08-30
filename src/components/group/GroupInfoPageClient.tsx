@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getGroupInfo, leaveGroup, GroupInfo } from "@/services/groupService";
-import { getMember, Member } from "@/services/memberService";
+import { useMemberStore } from "@/stores/useMemberStore";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -13,13 +13,19 @@ export default function GroupInfoPageClient() {
   const router = useRouter();
   const params = useParams();
   const teamId = params.teamId as string;
+  const { member: memberInfo, fetchMember } = useMemberStore();
 
-  const [memberInfo, setMemberInfo] = useState<Member | null>(null);
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showLeaderSelectModal, setShowLeaderSelectModal] = useState(false);
   const [selectedNewLeader, setSelectedNewLeader] = useState<string>("");
+
+  // 회원 정보가 없으면 가져오기
+  useEffect(() => {
+    if (!memberInfo) {
+      fetchMember();
+    }
+  }, [memberInfo, fetchMember]);
 
   // 그룹 정보 로드
   useEffect(() => {
@@ -31,8 +37,6 @@ export default function GroupInfoPageClient() {
       }
 
       try {
-        setIsLoading(true);
-
         const response = await getGroupInfo(teamId);
 
         setGroupInfo(response);
@@ -40,31 +44,12 @@ export default function GroupInfoPageClient() {
         alert(error || "그룹 정보를 불러올 수 없습니다.");
 
         router.replace("/group");
-      } finally {
-        setIsLoading(false);
-      }
-    }, 100);
-
-    const timeoutId2 = setTimeout(async () => {
-      try {
-        setIsLoading(true);
-
-        const response = await getMember();
-
-        setMemberInfo(response);
-      } catch (error) {
-        alert(error || "회원 정보를 불러올 수 없습니다.");
-
-        router.replace("/group");
-      } finally {
-        setIsLoading(false);
       }
     }, 100);
 
     // cleanup: 다음 effect 실행 전에 이전 timeout 취소
     return () => {
       clearTimeout(timeoutId);
-      clearTimeout(timeoutId2);
     };
   }, [teamId, router]);
 
@@ -165,18 +150,6 @@ export default function GroupInfoPageClient() {
       ) || []
     );
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-screen bg-white">
-        <TopBar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-500">로딩 중...</div>
-        </div>
-        <BottomBar />
-      </div>
-    );
-  }
 
   if (!groupInfo) {
     return (
