@@ -42,6 +42,10 @@ export default function AddWritingGroupTransactionPageClient() {
   const [amountTouched, setAmountTouched] = useState(false);
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
+  // 개인 거래 내역 동기화 상태 추가
+  const [synchronizeTransaction, setSynchronizeTransaction] =
+    useState<boolean>(true);
+
   // 카테고리 관련 상태
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
@@ -142,6 +146,11 @@ export default function AddWritingGroupTransactionPageClient() {
     loadCategories(type); // 거래 유형 변경 시 카테고리 다시 로드
   };
 
+  // 동기화 체크박스 핸들러
+  const handleSynchronizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSynchronizeTransaction(e.target.checked);
+  };
+
   // 저장 핸들러
   const handleSubmit = async () => {
     // 이미 제출 중이면 무시
@@ -180,6 +189,7 @@ export default function AddWritingGroupTransactionPageClient() {
           "T" +
           transactionDateTime.toLocaleTimeString("sv-SE"),
         transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
+        synchronizeTransaction: synchronizeTransaction, // 동기화 여부 추가
       };
 
       // API 서비스로 그룹 거래 내역 저장 요청
@@ -320,6 +330,22 @@ export default function AddWritingGroupTransactionPageClient() {
           </button>
         </div>
       )}
+
+      {/* 개인 거래 내역 동기화 체크박스 */}
+      <div className="px-4 py-5">
+        <label className="flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={synchronizeTransaction}
+            onChange={handleSynchronizeChange}
+            className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+          />
+          <span className="text-sm text-gray-700">개인 가계부 동기화</span>
+        </label>
+        <p className="text-xs text-gray-500 mt-1 ml-6">
+          체크 시 해당 내역은 개인 가계부에도 기록됩니다.
+        </p>
+      </div>
 
       {/* 저장 버튼 */}
       <div className="px-10 pb-7 mt-auto">
