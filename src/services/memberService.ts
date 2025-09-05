@@ -34,6 +34,30 @@ export interface UpdateProfileResponse {
   gender: string;
 }
 
+// 탈퇴 사유 enum (백엔드와 일치)
+export enum WithdrawalType {
+  LOW_USAGE_FREQUENCY = "LOW_USAGE_FREQUENCY",
+  LACK_OF_FEATURES = "LACK_OF_FEATURES",
+  USING_OTHER_SERVICE = "USING_OTHER_SERVICE",
+  DIFFICULT_UI_UX = "DIFFICULT_UI_UX",
+  FREQUENT_BUGS = "FREQUENT_BUGS",
+  PRIVACY_CONCERN = "PRIVACY_CONCERN",
+  OTHER = "OTHER",
+}
+
+// 리더 권한 이양 정보 타입
+export interface LeaderTransferInfo {
+  teamId: number;
+  nextLeaderNickname: string;
+}
+
+// 회원탈퇴 요청 타입
+export interface WithdrawRequest {
+  withdrawalType: WithdrawalType;
+  otherReason?: string;
+  leaderTransferInfos: LeaderTransferInfo[];
+}
+
 // 회원 조회
 export const getMember = async (): Promise<Member> => {
   try {
@@ -88,6 +112,17 @@ export const updateProfile = async (
   try {
     const response = await patch("/api/members/profile", profileData);
     return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 회원탈퇴 API 함수
+export const withdrawMember = async (
+  request: WithdrawRequest
+): Promise<void> => {
+  try {
+    await patch("/api/members", request);
   } catch (error) {
     throw error;
   }
