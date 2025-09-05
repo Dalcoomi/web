@@ -1,7 +1,7 @@
 // components/transaction/my/MyTransactionPageClient.tsx
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
@@ -12,9 +12,11 @@ import {
   MonthlyTransactionsResponse,
   TransactionSearchCriteria,
 } from "@/services/transactionService";
+import { useMemberStore } from "@/stores/useMemberStore";
 
 export default function MyTransactionPageClient() {
   const router = useRouter();
+  const { fetchMember } = useMemberStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState<boolean>(false); // 초기 로딩 제거
   const [response, setResponse] = useState<MonthlyTransactionsResponse>({
@@ -45,6 +47,8 @@ export default function MyTransactionPageClient() {
 
   // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
+    fetchMember();
+
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
 
@@ -105,7 +109,7 @@ export default function MyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [selectedDate, currentCategoryFilter, allCategories.length]); // loadTransactions 의존성 완전 제거
+  }, [selectedDate, currentCategoryFilter, allCategories.length, fetchMember]); // loadTransactions 의존성 완전 제거
 
   // 날짜 변경 핸들러 (필터 유지)
   const handleDateChange = (date: Date) => {
