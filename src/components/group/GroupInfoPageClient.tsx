@@ -338,15 +338,15 @@ export default function GroupInfoPageClient() {
             <div className="text-center py-5 px-6">
               {groupInfo && groupInfo.members.length === 1 ? (
                 <>
-                  <p className="text-lg">마지막 인원이 떠날 경우</p>
-                  <p className="text-lg">그룹이 삭제됩니다.</p>
+                  <p className="text-lg">⚠️마지막 그룹원이 떠날 경우</p>
+                  <p className="text-lg">그룹이 삭제됩니다</p>
                   <br></br>
                   <p className="text-lg text-red-500">그래도 떠나시겠습니까?</p>
                 </>
               ) : (
                 <>
                   <p className="text-lg">그룹을 떠나기 전에</p>
-                  <p className="text-lg">새 그룹장을 지정해 주세요.</p>
+                  <p className="text-lg">새 그룹장을 지정해 주세요</p>
                 </>
               )}
             </div>
