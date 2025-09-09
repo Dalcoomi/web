@@ -219,7 +219,7 @@ export default function AddWritingMyTransactionPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="금액을 입력해주세요"
+            placeholder="금액을 입력해 주세요"
             value={formattedAmount()}
             onChange={handleAmountChange}
             onBlur={(e) => {
@@ -244,7 +244,7 @@ export default function AddWritingMyTransactionPageClient() {
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해주세요"
+          placeholder="내용을 입력해 주세요(최대 50자)"
           value={content}
           onChange={handleContentChange}
         />

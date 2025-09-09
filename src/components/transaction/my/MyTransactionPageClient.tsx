@@ -45,10 +45,17 @@ export default function MyTransactionPageClient() {
   // 필터 드롭다운 외부 클릭 감지를 위한 ref
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
+  const hasFetchedMember = useRef(false);
+
+  useEffect(() => {
+    if (!hasFetchedMember.current) {
+      fetchMember();
+      hasFetchedMember.current = true;
+    }
+  }, []);
+
   // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
-    fetchMember();
-
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
 
@@ -109,7 +116,7 @@ export default function MyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [selectedDate, currentCategoryFilter, allCategories.length, fetchMember]); // loadTransactions 의존성 완전 제거
+  }, [selectedDate, currentCategoryFilter, allCategories.length]); // loadTransactions 의존성 완전 제거
 
   // 날짜 변경 핸들러 (필터 유지)
   const handleDateChange = (date: Date) => {
