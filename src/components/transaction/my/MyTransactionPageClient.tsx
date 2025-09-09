@@ -1,7 +1,7 @@
 // components/transaction/my/MyTransactionPageClient.tsx
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
@@ -12,9 +12,11 @@ import {
   MonthlyTransactionsResponse,
   TransactionSearchCriteria,
 } from "@/services/transactionService";
+import { useMemberStore } from "@/stores/useMemberStore";
 
 export default function MyTransactionPageClient() {
   const router = useRouter();
+  const { fetchMember } = useMemberStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState<boolean>(false); // 초기 로딩 제거
   const [response, setResponse] = useState<MonthlyTransactionsResponse>({
@@ -42,6 +44,15 @@ export default function MyTransactionPageClient() {
 
   // 필터 드롭다운 외부 클릭 감지를 위한 ref
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+
+  const hasFetchedMember = useRef(false);
+
+  useEffect(() => {
+    if (!hasFetchedMember.current) {
+      fetchMember();
+      hasFetchedMember.current = true;
+    }
+  }, []);
 
   // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
