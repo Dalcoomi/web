@@ -3,6 +3,7 @@ import { post } from "@/utils/apiClient";
 
 // 로그인 API
 export const socialLogin = async (data: {
+  email: string;
   socialId: string;
   socialType: string;
 }) => {

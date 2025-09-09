@@ -262,6 +262,7 @@ export default function LoginPageClient() {
       setIsLoading(true);
 
       const requestData = {
+        email: userData.email,
         socialId:
           socialType === "KAKAO"
             ? userData.kakaoId.toString()
