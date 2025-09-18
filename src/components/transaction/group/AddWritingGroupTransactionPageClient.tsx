@@ -44,7 +44,7 @@ export default function AddWritingGroupTransactionPageClient() {
 
   // 개인 거래 내역 동기화 상태 추가
   const [synchronizeTransaction, setSynchronizeTransaction] =
-    useState<boolean>(true);
+    useState<boolean>(false);
 
   // 카테고리 관련 상태
   const [categories, setCategories] = useState<Category[]>([]);
