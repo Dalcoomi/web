@@ -3,7 +3,7 @@ import { post } from "@/utils/apiClient";
 
 // 로그인 API
 export const socialLogin = async (data: {
-  email: string;
+  socialEmail: string;
   socialId: string;
   socialType: string;
 }) => {
@@ -13,9 +13,4 @@ export const socialLogin = async (data: {
 // 로그아웃 API
 export const logout = async () => {
   return post("/api/auth/logout");
-};
-
-// 회원가입 API
-export const signUp = async (signUpData: any) => {
-  return post("/api/members/sign-up", signUpData);
 };

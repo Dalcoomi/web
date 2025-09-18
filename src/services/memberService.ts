@@ -58,6 +58,20 @@ export interface WithdrawRequest {
   leaderTransferInfos: LeaderTransferInfo[];
 }
 
+// 회원가입 API
+export const signUp = async (signUpData: any) => {
+  return post("/api/members/sign-up", signUpData);
+};
+
+// 소셜 연동 API
+export const integrateSocial = async (data: {
+  socialEmail: string;
+  socialId: string;
+  socialType: string;
+}) => {
+  return post("/api/members/integrate", data);
+};
+
 // 회원 조회
 export const getMember = async (): Promise<Member> => {
   try {

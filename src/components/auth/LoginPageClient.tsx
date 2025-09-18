@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
+import { integrateSocial } from "@/services/memberService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
 
 export default function LoginPageClient() {
@@ -13,6 +14,17 @@ export default function LoginPageClient() {
   const searchParams = useSearchParams();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  // 소셜 연동 모달 상태
+  const [showIntegrateModal, setShowIntegrateModal] = useState(false);
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
+  const [pendingSocialData, setPendingSocialData] = useState<{
+    socialEmail: string;
+    socialId: string;
+    socialType: string;
+    socialAccessToken: string;
+    existingSocialType?: string; // 연동 확인 모달에서만 사용
+  } | null>(null);
 
   // 브라우저 및 환경 감지 함수들
   const isKakaoTalkBrowser = () => {
@@ -262,7 +274,7 @@ export default function LoginPageClient() {
       setIsLoading(true);
 
       const requestData = {
-        email: userData.email,
+        socialEmail: userData.email,
         socialId:
           socialType === "KAKAO"
             ? userData.kakaoId.toString()
@@ -273,29 +285,38 @@ export default function LoginPageClient() {
       try {
         const response = await socialLogin(requestData);
 
+        // sameSocial이 false면 다른 소셜로 가입된 계정이 있음 → 연동 확인 모달
+        if (response.sameSocial === false) {
+          setPendingSocialData({
+            socialEmail: requestData.socialEmail,
+            socialId: requestData.socialId,
+            socialType: requestData.socialType,
+            socialAccessToken: userData.accessToken,
+            existingSocialType: response.existingSocialType,
+          });
+
+          setShowIntegrateModal(true);
+          return;
+        }
+
         // 로그인 성공 시 토큰 저장
         login(response.accessToken, response.refreshToken);
 
         router.push("/transaction/my");
       } catch (error) {
-        if (error.message === "존재하지 않는 회원입니다.") {
-          const socialLoginData = {
-            socialId:
-              socialType === "KAKAO"
-                ? userData.kakaoId.toString()
-                : userData.naverId.toString(),
-            socialType: socialType,
-            email: userData.email || null,
-            nickname: userData.nickname || null,
-            profileImage: userData.profileImage || null,
-          };
+        if (
+          error.message === "존재하지 않는 회원입니다." ||
+          error.message.includes("404")
+        ) {
+          // 가입된 계정이 없음 → 회원가입 안내 모달
+          setPendingSocialData({
+            socialEmail: requestData.socialEmail,
+            socialId: requestData.socialId,
+            socialType: requestData.socialType,
+            socialAccessToken: userData.accessToken,
+          });
 
-          sessionStorage.setItem(
-            "socialLoginData",
-            JSON.stringify(socialLoginData)
-          );
-
-          router.push("/sign-up/step1");
+          setShowSignUpModal(true);
         } else {
           alert(`로그인 실패: ${error.message}`);
         }
@@ -306,6 +327,126 @@ export default function LoginPageClient() {
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 소셜 연동 확인 처리
+  const handleIntegrateConfirm = async () => {
+    if (!pendingSocialData) return;
+
+    try {
+      setIsLoading(true);
+      await integrateSocial({
+        socialEmail: pendingSocialData.socialEmail,
+        socialId: pendingSocialData.socialId,
+        socialType: pendingSocialData.socialType,
+      });
+
+      // 연동 성공 후 다시 로그인 시도
+      const response = await socialLogin({
+        socialEmail: pendingSocialData.socialEmail,
+        socialId: pendingSocialData.socialId,
+        socialType: pendingSocialData.socialType,
+      });
+
+      login(response.accessToken, response.refreshToken);
+      setShowIntegrateModal(false);
+      setPendingSocialData(null);
+      router.push("/transaction/my");
+    } catch (error) {
+      alert(`소셜 연동 실패: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 소셜 연동 취소 처리 (소셜 플랫폼에서 연결 끊기)
+  const handleIntegrateCancel = async () => {
+    if (!pendingSocialData) return;
+
+    // 카카오 또는 네이버 연결 해제
+    if (pendingSocialData.socialType === "KAKAO") {
+      await disconnectKakao();
+    } else if (pendingSocialData.socialType === "NAVER") {
+      await disconnectNaver();
+    }
+
+    setShowIntegrateModal(false);
+    setPendingSocialData(null);
+  };
+
+  // 회원가입 처리
+  const handleSignUp = () => {
+    if (!pendingSocialData) return;
+
+    const socialLoginData = {
+      socialId: pendingSocialData.socialId,
+      socialType: pendingSocialData.socialType,
+      socialEmail: pendingSocialData.socialEmail || null,
+      nickname: null,
+      profileImage: null,
+    };
+
+    sessionStorage.setItem("socialLoginData", JSON.stringify(socialLoginData));
+    setShowSignUpModal(false);
+    setPendingSocialData(null);
+    router.push("/sign-up/step1");
+  };
+
+  // 회원가입 취소 처리 (소셜 플랫폼에서 연결 끊기)
+  const handleSignUpCancel = async () => {
+    if (!pendingSocialData) return;
+
+    // 카카오 또는 네이버 연결 해제
+    if (pendingSocialData.socialType === "KAKAO") {
+      await disconnectKakao();
+    } else if (pendingSocialData.socialType === "NAVER") {
+      await disconnectNaver();
+    }
+
+    setShowSignUpModal(false);
+    setPendingSocialData(null);
+  };
+
+  // 카카오 연결 해제
+  const disconnectKakao = async () => {
+    if (!pendingSocialData?.socialAccessToken) return;
+
+    try {
+      await fetch("https://kapi.kakao.com/v1/user/unlink", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${pendingSocialData.socialAccessToken}`,
+        },
+      });
+    } catch (error) {
+      console.error("카카오 연결 해제 실패:", error);
+    }
+  };
+
+  // 네이버 연결 해제
+  const disconnectNaver = async () => {
+    if (!pendingSocialData?.socialAccessToken) return;
+
+    const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
+    const NAVER_CLIENT_SECRET = process.env.NEXT_PUBLIC_NAVER_CLIENT_SECRET;
+
+    const naverRevokeUrl = `https://nid.naver.com/oauth2.0/token?grant_type=delete&client_id=${NAVER_CLIENT_ID}&client_secret=${NAVER_CLIENT_SECRET}&access_token=${pendingSocialData.socialAccessToken}`;
+
+    try {
+      // 네이버는 CORS 제한으로 직접 호출이 어려울 수 있으므로 새 창으로 처리
+      const popup = window.open(
+        naverRevokeUrl,
+        "_blank",
+        "width=400,height=300"
+      );
+      if (popup) {
+        setTimeout(() => {
+          popup.close();
+        }, 10000);
+      }
+    } catch (error) {
+      console.error("네이버 연결 해제 실패:", error);
     }
   };
 
@@ -377,6 +518,124 @@ export default function LoginPageClient() {
           />
         </button>
       </div>
+
+      {/* 소셜 연동 확인 모달 */}
+      {showIntegrateModal && (
+        <>
+          {/* 배경 오버레이 */}
+          <div
+            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
+            onClick={handleIntegrateCancel}
+          ></div>
+
+          {/* 모달 컨텐츠 */}
+          <div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] p-6 w-[80%] max-w-sm z-50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-center mb-4">
+              SNS 간편 로그인 안내
+            </h3>
+            <p className="text-gray-600 text-center mb-6 text-sm leading-relaxed">
+              <span className="font-medium text-blue-500">
+                {pendingSocialData?.socialEmail}
+              </span>
+              <br />
+              이미{" "}
+              <span className="font-medium text-gray-800">
+                {pendingSocialData?.existingSocialType}
+              </span>{" "}
+              계정으로 가입된
+              <br />
+              회원 정보가 있습니다.
+              <br />
+              <br />
+              <span className="font-medium text-gray-800">
+                {pendingSocialData?.socialType}
+              </span>{" "}
+              계정과 연동하시겠습니까?
+              <br />
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleIntegrateCancel}
+                className="flex-1 py-3 px-4 text-[#0EABFF] font-light border-2 border-[#0EABFF] rounded-[10px] hover:bg-blue-50 transition-colors cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleIntegrateConfirm}
+                disabled={isLoading}
+                className="flex-1 py-3 px-4 bg-[#0EABFF] text-white font-light rounded-[10px] hover:bg-blue-600 disabled:opacity-50 transition-colors cursor-pointer"
+              >
+                {isLoading ? "연동 중..." : "확인"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 회원가입 안내 모달 */}
+      {showSignUpModal && (
+        <>
+          {/* 배경 오버레이 */}
+          <div
+            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
+            onClick={handleSignUpCancel}
+          ></div>
+
+          {/* 모달 컨텐츠 */}
+          <div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] p-6 w-[80%] max-w-sm z-50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-center mb-4">
+              SNS 간편 로그인 안내
+            </h3>
+            <p className="text-gray-600 text-center mb-6 text-md leading-relaxed">
+              <span className="font-medium text-gray-800">
+                {pendingSocialData?.socialType}
+              </span>{" "}
+              계정 정보로
+              <br />
+              일치하는 회원 정보를 찾을 수 없어요.
+              <br />
+              <br />
+              <span className="font-medium text-gray-800">
+                {pendingSocialData?.socialType}
+              </span>{" "}
+              계정 회원가입을 원하시는 경우
+              <br />
+              회원가입 버튼을 눌러주세요.
+              <br />
+              <br />
+              <span className="text-xs text-gray-500">
+                이미 다른 소셜로 가입한 회원이시라면
+                <br />
+                로그인 후 <span className="text-red-400">"마이페이지"</span>
+                <br />
+                메뉴에서 소셜 연결 설정을 진행해 주세요.
+              </span>
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleSignUpCancel}
+                className="flex-1 py-3 px-4 text-[#0EABFF] font-light border-2 border-[#0EABFF] rounded-[10px] hover:bg-blue-50 transition-colors cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSignUp}
+                className="flex-1 py-3 px-4 bg-[#0EABFF] text-white font-light rounded-[10px] hover:bg-blue-600 transition-colors cursor-pointer"
+              >
+                회원가입
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
