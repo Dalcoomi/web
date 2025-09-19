@@ -220,8 +220,11 @@ export default function SignUpInfoClient() {
         throw new Error("약관 동의 정보가 없습니다.");
       }
 
-      const { service: serviceAgreement, privacy: collectionAgreement } =
-        JSON.parse(agreementDataJson);
+      const {
+        service: serviceAgreement,
+        privacy: collectionAgreement,
+        aiLearning: aiLearningAgreement,
+      } = JSON.parse(agreementDataJson);
 
       // 생년월일 형식 변환
       let formattedBirthday = null;
@@ -239,6 +242,7 @@ export default function SignUpInfoClient() {
         gender: userInfo.gender || null,
         serviceAgreement,
         collectionAgreement,
+        aiLearningAgreement,
       };
 
       // API 서비스로 회원가입 요청

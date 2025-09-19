@@ -8,7 +8,11 @@ import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useAuth } from "@/hooks/useAuth";
-import { withdrawMember, WithdrawalType } from "@/services/memberService";
+import {
+  withdrawMember,
+  WithdrawalType,
+  updateAiLearningAgreement,
+} from "@/services/memberService";
 import {
   getGroups,
   getGroupInfo,
@@ -43,6 +47,9 @@ export default function ProfilePageClient() {
     Array<{ teamId: number; nextLeaderNickname: string }>
   >([]);
   const [selectedNewLeader, setSelectedNewLeader] = useState<string>("");
+
+  // AI 학습 동의 관련 상태
+  const [isUpdatingAiAgreement, setIsUpdatingAiAgreement] = useState(false);
 
   // 회원 정보가 없으면 가져오기 (단, 로그인된 상태에서만)
   useEffect(() => {
@@ -93,6 +100,24 @@ export default function ProfilePageClient() {
 
   const handleLogout = () => {
     logout();
+  };
+
+  // AI 학습 동의 토글 핸들러
+  const handleAiLearningAgreementToggle = async (newAgreement: boolean) => {
+    if (isUpdatingAiAgreement) return;
+
+    setIsUpdatingAiAgreement(true);
+    try {
+      await updateAiLearningAgreement(newAgreement);
+      // aiLearningAgreement 필드만 업데이트
+      useMemberStore
+        .getState()
+        .updateMember({ aiLearningAgreement: newAgreement });
+    } catch (error) {
+      alert(error || "AI 학습 동의 설정 변경 중 오류가 발생했습니다.");
+    } finally {
+      setIsUpdatingAiAgreement(false);
+    }
   };
 
   // 회원탈퇴 버튼 클릭
@@ -274,14 +299,14 @@ export default function ProfilePageClient() {
     <div className="h-screen bg-white flex flex-col">
       <TopBar />
 
-      <main className="flex-1 px-6 py-4 overflow-y-auto">
+      <main className="flex-1 px-6 py-3 overflow-y-auto">
         {/* Profile Section */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl text-black mb-4">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl text-black mb-2">
             {member?.nickname || "사용자"}
           </h1>
 
-          <div className="w-24 h-24 mx-auto mb-6 relative">
+          <div className="w-24 h-24 mx-auto mb-4 relative">
             {member?.profileImageUrl ? (
               <Image
                 src={member.profileImageUrl}
@@ -312,7 +337,7 @@ export default function ProfilePageClient() {
         </div>
 
         {/* Policy & Help Section */}
-        <div className="bg-gray-50 rounded-lg text-sm shadow-sm mt-4">
+        <div className="bg-gray-50 rounded-lg text-sm shadow-sm mt-3">
           <div className="divide-y divide-gray-100">
             <button
               onClick={handlePrivacyPolicy}
@@ -329,6 +354,36 @@ export default function ProfilePageClient() {
               <span className="text-gray-600">서비스 이용약관</span>
               <span className="text-gray-400">›</span>
             </button>
+          </div>
+        </div>
+
+        {/* AI Learning Agreement Section */}
+        <div className="bg-gray-50 rounded-lg shadow-sm mt-3">
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-gray-600 text-sm">
+                  (선택) 가계부 데이터 활용 동의
+                </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  개인정보를 제거한 가계부 데이터를
+                  <br />
+                  AI 서비스 개선에 활용합니다.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={member?.aiLearningAgreement || false}
+                  onChange={(e) =>
+                    handleAiLearningAgreementToggle(e.target.checked)
+                  }
+                  disabled={isUpdatingAiAgreement}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EABFF]"></div>
+              </label>
+            </div>
           </div>
         </div>
 
