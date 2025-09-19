@@ -9,13 +9,14 @@ export enum SocialType {
 
 // 멤버 타입 정의
 export interface Member {
-  socialType: SocialType;
+  socialTypes: SocialType[]; // 연동된 소셜 계정 리스트
   email: string;
   name: string;
   nickname: string;
   birthday: string; // LocalDate는 문자열로 전송됨 (YYYY-MM-DD 형식)
   gender: string;
   profileImageUrl: string;
+  aiLearningAgreement: boolean; // AI 학습 활용 동의 여부
 }
 
 // 프로필 정보 업데이트 요청 타입
@@ -131,12 +132,34 @@ export const updateProfile = async (
   }
 };
 
+// AI 학습 동의 설정 업데이트
+export const updateAiLearningAgreement = async (
+  agreement: boolean
+): Promise<void> => {
+  try {
+    await patch(`/api/members/ai-learning-agreement?agreement=${agreement}`);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 소셜 연동 해제 API
+export const disconnectSocial = async (
+  socialType: SocialType
+): Promise<void> => {
+  try {
+    await del(`/api/members/unlink?socialType=${socialType}`);
+  } catch (error) {
+    throw error;
+  }
+};
+
 // 회원탈퇴 API 함수
 export const withdrawMember = async (
   request: WithdrawRequest
 ): Promise<void> => {
   try {
-    await patch("/api/members", request);
+    await del("/api/members", request);
   } catch (error) {
     throw error;
   }
