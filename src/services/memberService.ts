@@ -57,6 +57,8 @@ export interface WithdrawRequest {
   withdrawalType: WithdrawalType;
   otherReason?: string;
   leaderTransferInfos: LeaderTransferInfo[];
+  softDelete: boolean; // 휴면탈퇴 여부 (true: 휴면탈퇴, false: 영구탈퇴)
+  dataRetentionConsent?: boolean; // AI 학습 활용 동의 (휴면탈퇴 시에만 선택사항)
 }
 
 // 회원가입 API
