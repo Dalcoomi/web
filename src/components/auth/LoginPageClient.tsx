@@ -613,9 +613,9 @@ export default function LoginPageClient() {
               <span className="text-xs text-gray-500">
                 이미 다른 소셜로 가입한 회원이시라면
                 <br />
-                로그인 후 <span className="text-red-400">"마이페이지"</span>
+                로그인 후 <span className="text-red-400">"마이페이지 > 프로필 수정"</span>
                 <br />
-                메뉴에서 소셜 연결 설정을 진행해 주세요.
+                메뉴에서 소셜 연동 설정을 진행해 주세요.
               </span>
             </p>
 
