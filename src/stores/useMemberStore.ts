@@ -11,13 +11,14 @@ export enum SocialType {
 
 // 멤버 타입 정의
 export interface Member {
-  socialType: SocialType;
+  socialTypes: SocialType[]; // 연동된 소셜 계정 리스트
   email: string;
   name: string;
   nickname: string;
   birthday: string;
   gender: string;
   profileImageUrl: string;
+  aiLearningAgreement: boolean;
 }
 
 interface MemberStore {

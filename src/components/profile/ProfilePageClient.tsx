@@ -8,7 +8,11 @@ import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useAuth } from "@/hooks/useAuth";
-import { withdrawMember, WithdrawalType } from "@/services/memberService";
+import {
+  withdrawMember,
+  WithdrawalType,
+  updateAiLearningAgreement,
+} from "@/services/memberService";
 import {
   getGroups,
   getGroupInfo,
@@ -23,6 +27,7 @@ export default function ProfilePageClient() {
 
   // 모달 상태들
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showWithdrawTypeModal, setShowWithdrawTypeModal] = useState(false);
   const [showGroupLeaveModal, setShowGroupLeaveModal] = useState(false);
   const [showLeaderSelectModal, setShowLeaderSelectModal] = useState(false);
   const [showReasonModal, setShowReasonModal] = useState(false);
@@ -31,6 +36,14 @@ export default function ProfilePageClient() {
   );
   const [otherReason, setOtherReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // 탈퇴 방식 관련 상태
+  const [selectedWithdrawType, setSelectedWithdrawType] = useState<
+    "DORMANT" | "PERMANENT" | null
+  >(null);
+  const [aiLearningConsent, setAiLearningConsent] = useState<boolean | null>(
+    null
+  );
 
   // 그룹 관련 상태
   const [myGroups, setMyGroups] = useState<Group[]>([]);
@@ -43,6 +56,9 @@ export default function ProfilePageClient() {
     Array<{ teamId: number; nextLeaderNickname: string }>
   >([]);
   const [selectedNewLeader, setSelectedNewLeader] = useState<string>("");
+
+  // AI 학습 동의 관련 상태
+  const [isUpdatingAiAgreement, setIsUpdatingAiAgreement] = useState(false);
 
   // 회원 정보가 없으면 가져오기 (단, 로그인된 상태에서만)
   useEffect(() => {
@@ -95,13 +111,47 @@ export default function ProfilePageClient() {
     logout();
   };
 
+  // AI 학습 동의 토글 핸들러
+  const handleAiLearningAgreementToggle = async (newAgreement: boolean) => {
+    if (isUpdatingAiAgreement) return;
+
+    setIsUpdatingAiAgreement(true);
+    try {
+      await updateAiLearningAgreement(newAgreement);
+      // aiLearningAgreement 필드만 업데이트
+      useMemberStore
+        .getState()
+        .updateMember({ aiLearningAgreement: newAgreement });
+    } catch (error) {
+      alert(error || "AI 학습 동의 설정 변경 중 오류가 발생했습니다.");
+    } finally {
+      setIsUpdatingAiAgreement(false);
+    }
+  };
+
   // 회원탈퇴 버튼 클릭
   const handleWithdrawalClick = () => {
     setShowWithdrawModal(true);
   };
 
-  // 첫 번째 모달에서 '네' 클릭 - 그룹 조회 및 그룹 탈퇴 모달로 이동
-  const handleFirstConfirm = async () => {
+  // 첫 번째 모달에서 '네' 클릭 - 탈퇴 방식 선택 모달로 이동
+  const handleFirstConfirm = () => {
+    setShowWithdrawModal(false);
+    setShowWithdrawTypeModal(true);
+  };
+
+  // 탈퇴 방식 선택 후 그룹 조회 및 다음 단계로 이동
+  const handleWithdrawTypeConfirm = async () => {
+    if (!selectedWithdrawType) {
+      alert("탈퇴 방식을 선택해 주세요.");
+      return;
+    }
+
+    if (selectedWithdrawType === "DORMANT" && aiLearningConsent === null) {
+      alert("데이터 보존 동의 여부를 선택해 주세요.");
+      return;
+    }
+
     setIsLoadingGroups(true);
 
     try {
@@ -109,7 +159,7 @@ export default function ProfilePageClient() {
       setMyGroups(groupsResponse.groups);
       setCurrentGroupIndex(0);
 
-      setShowWithdrawModal(false);
+      setShowWithdrawTypeModal(false);
 
       if (groupsResponse.groups.length > 0) {
         // 속한 그룹이 있으면 그룹 탈퇴 모달 표시
@@ -198,9 +248,16 @@ export default function ProfilePageClient() {
         otherReason:
           selectedReason === WithdrawalType.OTHER ? otherReason : undefined,
         leaderTransferInfos,
+        softDelete: selectedWithdrawType === "DORMANT",
+        dataRetentionConsent:
+          selectedWithdrawType === "DORMANT" && aiLearningConsent !== null
+            ? aiLearningConsent
+            : undefined,
       });
 
-      alert("회원탈퇴가 완료되었습니다.");
+      const withdrawTypeText =
+        selectedWithdrawType === "DORMANT" ? "휴면탈퇴" : "영구탈퇴";
+      alert(`${withdrawTypeText}가 완료되었습니다.`);
       logout(); // 로그아웃 처리
     } catch (error) {
       alert(error || "회원탈퇴 중 오류가 발생했습니다.");
@@ -212,6 +269,7 @@ export default function ProfilePageClient() {
   // 모달 닫기
   const handleCloseModal = () => {
     setShowWithdrawModal(false);
+    setShowWithdrawTypeModal(false);
     setShowGroupLeaveModal(false);
     setShowLeaderSelectModal(false);
     setShowReasonModal(false);
@@ -221,6 +279,8 @@ export default function ProfilePageClient() {
     setCurrentGroupIndex(0);
     setCurrentGroupInfo(null);
     setLeaderTransferInfos([]);
+    setSelectedWithdrawType(null);
+    setAiLearningConsent(null);
   };
 
   // 탈퇴 사유 옵션들 (백엔드 enum과 일치)
@@ -274,14 +334,14 @@ export default function ProfilePageClient() {
     <div className="h-screen bg-white flex flex-col">
       <TopBar />
 
-      <main className="flex-1 px-6 py-4 overflow-y-auto">
+      <main className="flex-1 px-6 py-3 overflow-y-auto">
         {/* Profile Section */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl text-black mb-4">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl text-black mb-2">
             {member?.nickname || "사용자"}
           </h1>
 
-          <div className="w-24 h-24 mx-auto mb-6 relative">
+          <div className="w-24 h-24 mx-auto mb-4 relative">
             {member?.profileImageUrl ? (
               <Image
                 src={member.profileImageUrl}
@@ -312,7 +372,7 @@ export default function ProfilePageClient() {
         </div>
 
         {/* Policy & Help Section */}
-        <div className="bg-gray-50 rounded-lg text-sm shadow-sm mt-4">
+        <div className="bg-gray-50 rounded-lg text-sm shadow-sm mt-3">
           <div className="divide-y divide-gray-100">
             <button
               onClick={handlePrivacyPolicy}
@@ -329,6 +389,36 @@ export default function ProfilePageClient() {
               <span className="text-gray-600">서비스 이용약관</span>
               <span className="text-gray-400">›</span>
             </button>
+          </div>
+        </div>
+
+        {/* AI Learning Agreement Section */}
+        <div className="bg-gray-50 rounded-lg shadow-sm mt-3">
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-gray-600 text-sm">
+                  (선택) 가계부 데이터 활용 동의
+                </span>
+                <p className="text-xs text-gray-500 mt-1">
+                  개인정보를 제거한 가계부 데이터를
+                  <br />
+                  AI 서비스 개선에 활용합니다.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={member?.aiLearningAgreement || false}
+                  onChange={(e) =>
+                    handleAiLearningAgreementToggle(e.target.checked)
+                  }
+                  disabled={isUpdatingAiAgreement}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EABFF]"></div>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -391,7 +481,167 @@ export default function ProfilePageClient() {
         </>
       )}
 
-      {/* 두 번째 모달: 그룹 탈퇴 처리 */}
+      {/* 두 번째 모달: 탈퇴 방식 선택 */}
+      {showWithdrawTypeModal && (
+        <>
+          {/* 배경 오버레이 */}
+          <div
+            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
+            onClick={handleCloseModal}
+          ></div>
+
+          {/* 모달 컨텐츠 */}
+          <div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] w-[85%] max-w-md z-50 max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 모달 헤더 */}
+            <div className="text-center py-4 px-6">
+              <p className="text-lg font-medium">탈퇴 방식 선택</p>
+            </div>
+
+            {/* 탈퇴 방식 선택 */}
+            <div className="px-6 space-y-4">
+              {/* 휴면탈퇴 옵션 */}
+              <div
+                onClick={() => setSelectedWithdrawType("DORMANT")}
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                  selectedWithdrawType === "DORMANT"
+                    ? "border-[#0EABFF] bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                      selectedWithdrawType === "DORMANT"
+                        ? "border-[#0EABFF] bg-[#0EABFF]"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {selectedWithdrawType === "DORMANT" && (
+                      <div className="w-2 h-2 rounded-full bg-white"></div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-800">휴면탈퇴</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      90일 후 회원정보와 가계부 데이터가 모두 삭제돼요.
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      90일 이내 재가입 시 모든 데이터가 복구돼요.
+                    </p>
+                  </div>
+                </div>
+
+                {/* AI 학습 동의 옵션 (휴면탈퇴 선택 시에만 표시) */}
+                {selectedWithdrawType === "DORMANT" && (
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-sm font-medium text-gray-700">
+                      (선택) 가계부 데이터 활용 동의
+                    </p>
+                    <p className="text-xs text-gray-500 mb-1">
+                      개인정보를 제거한 가계부 데이터를 AI 서비스 개선에 5년간
+                      활용합니다.
+                      <br />
+                      동의 후에도 언제든지 데이터 삭제를 요청할 수 있어요.
+                    </p>
+                    <div className="space-y-2">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="aiConsent"
+                          checked={aiLearningConsent === true}
+                          onChange={() => setAiLearningConsent(true)}
+                          className="w-4 h-4 text-[#0EABFF] border-gray-300 focus:ring-[#0EABFF] cursor-pointer"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">동의</span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="aiConsent"
+                          checked={aiLearningConsent === false}
+                          onChange={() => setAiLearningConsent(false)}
+                          className="w-4 h-4 text-[#0EABFF] border-gray-300 focus:ring-[#0EABFF] cursor-pointer"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">거부</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 영구탈퇴 옵션 */}
+              <div
+                onClick={() => setSelectedWithdrawType("PERMANENT")}
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                  selectedWithdrawType === "PERMANENT"
+                    ? "border-[#0EABFF] bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                      selectedWithdrawType === "PERMANENT"
+                        ? "border-[#0EABFF] bg-[#0EABFF]"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {selectedWithdrawType === "PERMANENT" && (
+                      <div className="w-2 h-2 rounded-full bg-white"></div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-800">영구탈퇴</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      회원정보와 가계부 데이터가 모두 삭제됩니다.
+                    </p>
+                    <p className="text-sm text-red-600">
+                      삭제된 데이터는 복구되지 않습니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 버튼들 */}
+            <div className="flex px-6 pb-6 space-x-3 pt-5">
+              <button
+                onClick={handleWithdrawTypeConfirm}
+                disabled={
+                  !selectedWithdrawType ||
+                  isLoadingGroups ||
+                  (selectedWithdrawType === "DORMANT" &&
+                    aiLearningConsent === null)
+                }
+                className={`flex-1 py-3 px-4 rounded-[10px] font-light transition-colors ${
+                  selectedWithdrawType &&
+                  !(
+                    selectedWithdrawType === "DORMANT" &&
+                    aiLearningConsent === null
+                  ) &&
+                  !isLoadingGroups
+                    ? "bg-[#0EABFF] text-white hover:bg-blue-600 cursor-pointer"
+                    : "bg-[#D4D4D4] text-white cursor-not-allowed"
+                }`}
+              >
+                {isLoadingGroups ? "처리 중..." : "다음"}
+              </button>
+              <button
+                onClick={handleCloseModal}
+                disabled={isLoadingGroups}
+                className="flex-1 py-3 px-4 bg-[#D4D4D4] text-white rounded-[10px] font-light hover:bg-gray-400 cursor-pointer transition-colors disabled:cursor-not-allowed"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 세 번째 모달: 그룹 탈퇴 처리 */}
       {showGroupLeaveModal && (
         <>
           {/* 배경 오버레이 */}
@@ -428,7 +678,7 @@ export default function ProfilePageClient() {
                   </p>
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
                     <p className="font-medium text-gray-800">
-                      {myGroups[currentGroupIndex]?.title}
+                      그룹명: {myGroups[currentGroupIndex]?.title}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
                       현재 인원: {myGroups[currentGroupIndex]?.memberCount}명
@@ -505,7 +755,7 @@ export default function ProfilePageClient() {
         </>
       )}
 
-      {/* 세 번째 모달: 그룹장 선택 (권한 이양이 필요한 경우만) */}
+      {/* 네 번째 모달: 그룹장 선택 (권한 이양이 필요한 경우만) */}
       {showLeaderSelectModal && currentGroupInfo && (
         <>
           {/* 배경 오버레이 */}
@@ -612,7 +862,7 @@ export default function ProfilePageClient() {
         </>
       )}
 
-      {/* 네 번째 모달: 탈퇴 사유 선택 */}
+      {/* 다섯 번째 모달: 탈퇴 사유 선택 */}
       {showReasonModal && (
         <>
           {/* 배경 오버레이 */}
@@ -627,13 +877,13 @@ export default function ProfilePageClient() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* 모달 헤더 */}
-            <div className="text-center py-5 px-6">
-              <p className="text-lg">탈퇴 사유를 선택해 주세요</p>
+            <div className="text-center py-3 px-6">
+              <p className="text-lg">탈퇴 사유 선택</p>
               <p className="text-sm text-[#11ABFF] mt-1">
                 이용 중 불편하셨던 점이 있다면 알려주세요
               </p>
-              <p className="text-sm text-[#11ABFF] mt-1">
-                더 나은 서비스로 보답하겠습니다
+              <p className="text-sm text-[#11ABFF]">
+                더 나은 서비스로 보답할게요
               </p>
             </div>
 
@@ -694,7 +944,7 @@ export default function ProfilePageClient() {
             </div>
 
             {/* 버튼들 */}
-            <div className="flex px-6 pb-6 space-x-3 pt-3">
+            <div className="flex px-6 pb-6 space-x-3 pt-5">
               <button
                 onClick={handleFinalWithdraw}
                 disabled={isProcessing || !selectedReason}

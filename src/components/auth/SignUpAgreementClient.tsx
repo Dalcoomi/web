@@ -11,6 +11,7 @@ export default function SignUpAgreementClient() {
     all: false,
     service: false,
     privacy: false,
+    aiLearning: false,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -36,18 +37,22 @@ export default function SignUpAgreementClient() {
       all: newValue,
       service: newValue,
       privacy: newValue,
+      aiLearning: newValue,
     });
   };
 
   // 개별 동의 처리
-  const handleAgreement = (key: "service" | "privacy") => {
+  const handleAgreement = (key: "service" | "privacy" | "aiLearning") => {
     const newAgreements = {
       ...agreements,
       [key]: !agreements[key],
     };
 
-    // 모든 약관이 체크되었는지 확인
-    newAgreements.all = newAgreements.service && newAgreements.privacy;
+    // 모든 약관이 체크되었는지 확인 (필수 + 선택사항 모두)
+    newAgreements.all =
+      newAgreements.service &&
+      newAgreements.privacy &&
+      newAgreements.aiLearning;
 
     setAgreements(newAgreements);
   };
@@ -66,6 +71,7 @@ export default function SignUpAgreementClient() {
           JSON.stringify({
             service: true,
             privacy: true,
+            aiLearning: agreements.aiLearning,
           })
         );
         sessionStorage.setItem("signupStep1Completed", "true");
@@ -191,6 +197,35 @@ export default function SignUpAgreementClient() {
               보기
             </Link>
           </div>
+        </div>
+
+        {/* AI 학습용 데이터 활용 동의 */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between">
+            <div
+              className="flex items-center cursor-pointer"
+              onClick={() => handleAgreement("aiLearning")}
+            >
+              <div className="relative w-5 h-5 mr-2">
+                <div
+                  className={`w-5 h-5 border rounded-full transition-colors ${
+                    agreements.aiLearning
+                      ? "border-[#0EABFF]"
+                      : "border-gray-300"
+                  }`}
+                >
+                  {agreements.aiLearning && (
+                    <div className="absolute top-1 left-1 w-3 h-3 bg-[#0EABFF] rounded-full"></div>
+                  )}
+                </div>
+              </div>
+              <span className="text-sm">(선택) 가계부 데이터 활용 동의</span>
+            </div>
+          </div>
+          <p className="text-xs text-[#737373] mt-1 ml-8">
+            개인정보를 제거한 가계부 데이터를 AI 서비스 개선에 활용할 수
+            있습니다.
+          </p>
         </div>
       </div>
 
