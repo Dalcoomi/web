@@ -19,10 +19,6 @@ function loadEnvironmentConfig() {
   dotenv.config({
     path: path.resolve(`./env-config/${envFile}`),
   });
-
-  console.log(
-    `✅ Loaded environment: ${isDevelopment ? "development" : "production"}`
-  );
 }
 
 // 환경 설정 로드 실행

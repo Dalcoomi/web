@@ -129,7 +129,8 @@ export async function GET(request: NextRequest) {
       const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
 
       // 🔥 프로필 연동인 경우 프로필 페이지로 리다이렉트
-      const redirectPath = state === "profile_integration" ? "/profile/update" : "/";
+      const redirectPath =
+        state === "profile_integration" ? "/profile/update" : "/";
 
       return Response.redirect(
         `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?kakao_login=success&user_data=${userInfoEncoded}`,
@@ -158,7 +159,9 @@ export async function GET(request: NextRequest) {
                 const userInfoEncoded = encodeURIComponent('${JSON.stringify(
                   userInfo
                 )}');
-                const redirectPath = '${state === "profile_integration" ? "/profile/update" : "/"}';
+                const redirectPath = '${
+                  state === "profile_integration" ? "/profile/update" : "/"
+                }';
                 window.location.href = '${
                   process.env.NEXT_PUBLIC_BASE_URL
                 }' + redirectPath + '?kakao_login=success&user_data=' + userInfoEncoded;

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
-import { integrateSocial } from "@/services/memberService";
+import { connectSocial } from "@/services/memberService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
 
 export default function LoginPageClient() {
@@ -23,6 +23,7 @@ export default function LoginPageClient() {
     socialId: string;
     socialType: string;
     socialAccessToken: string;
+    socialRefreshToken?: string; // 네이버 연결 해제용
     existingSocialType?: string; // 연동 확인 모달에서만 사용
   } | null>(null);
 
@@ -280,6 +281,7 @@ export default function LoginPageClient() {
             ? userData.kakaoId.toString()
             : userData.naverId.toString(),
         socialType: socialType,
+        socialRefreshToken: userData.refreshToken, // 소셜 리프레시 토큰 추가
       };
 
       try {
@@ -292,6 +294,7 @@ export default function LoginPageClient() {
             socialId: requestData.socialId,
             socialType: requestData.socialType,
             socialAccessToken: userData.accessToken,
+            socialRefreshToken: userData.refreshToken, // 네이버 리프레시 토큰 추가
             existingSocialType: response.existingSocialType,
           });
 
@@ -314,6 +317,7 @@ export default function LoginPageClient() {
             socialId: requestData.socialId,
             socialType: requestData.socialType,
             socialAccessToken: userData.accessToken,
+            socialRefreshToken: userData.refreshToken, // 네이버 리프레시 토큰 추가
           });
 
           setShowSignUpModal(true);
@@ -336,7 +340,7 @@ export default function LoginPageClient() {
 
     try {
       setIsLoading(true);
-      await integrateSocial({
+      await connectSocial({
         socialEmail: pendingSocialData.socialEmail,
         socialId: pendingSocialData.socialId,
         socialType: pendingSocialData.socialType,
@@ -347,6 +351,7 @@ export default function LoginPageClient() {
         socialEmail: pendingSocialData.socialEmail,
         socialId: pendingSocialData.socialId,
         socialType: pendingSocialData.socialType,
+        socialRefreshToken: pendingSocialData.socialRefreshToken, // 소셜 리프레시 토큰 추가
       });
 
       login(response.accessToken, response.refreshToken);
@@ -383,6 +388,7 @@ export default function LoginPageClient() {
       socialId: pendingSocialData.socialId,
       socialType: pendingSocialData.socialType,
       socialEmail: pendingSocialData.socialEmail || null,
+      socialRefreshToken: pendingSocialData.socialRefreshToken,
       nickname: null,
       profileImage: null,
     };
@@ -412,13 +418,24 @@ export default function LoginPageClient() {
   const disconnectKakao = async () => {
     if (!pendingSocialData?.socialAccessToken) return;
 
+
     try {
-      await fetch("https://kapi.kakao.com/v1/user/unlink", {
-        method: "POST",
+      // 🔥 서버 API를 통해 카카오 토큰 해제 처리
+      const response = await fetch('/api/auth/kakao/revoke', {
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${pendingSocialData.socialAccessToken}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          accessToken: pendingSocialData.socialAccessToken
+        })
       });
+
+      if (response.ok) {
+        const result = await response.json();
+      } else {
+      }
+
     } catch (error) {
       console.error("카카오 연결 해제 실패:", error);
     }
@@ -428,23 +445,25 @@ export default function LoginPageClient() {
   const disconnectNaver = async () => {
     if (!pendingSocialData?.socialAccessToken) return;
 
-    const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
-    const NAVER_CLIENT_SECRET = process.env.NEXT_PUBLIC_NAVER_CLIENT_SECRET;
-
-    const naverRevokeUrl = `https://nid.naver.com/oauth2.0/token?grant_type=delete&client_id=${NAVER_CLIENT_ID}&client_secret=${NAVER_CLIENT_SECRET}&access_token=${pendingSocialData.socialAccessToken}`;
 
     try {
-      // 네이버는 CORS 제한으로 직접 호출이 어려울 수 있으므로 새 창으로 처리
-      const popup = window.open(
-        naverRevokeUrl,
-        "_blank",
-        "width=400,height=300"
-      );
-      if (popup) {
-        setTimeout(() => {
-          popup.close();
-        }, 10000);
+      // 🔥 서버 API를 통해 네이버 토큰 해제 처리
+      const response = await fetch('/api/auth/naver/revoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: pendingSocialData.socialAccessToken,
+          refreshToken: pendingSocialData.socialRefreshToken
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+      } else {
       }
+
     } catch (error) {
       console.error("네이버 연결 해제 실패:", error);
     }

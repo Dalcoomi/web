@@ -6,6 +6,7 @@ export const socialLogin = async (data: {
   socialEmail: string;
   socialId: string;
   socialType: string;
+  socialRefreshToken?: string;
 }) => {
   return post("/api/auth/login", data);
 };
