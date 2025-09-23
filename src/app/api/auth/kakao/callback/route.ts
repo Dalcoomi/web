@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   // URL에서 코드 파라미터 추출
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
+  const state = searchParams.get("state"); // 🔥 state 파라미터 추가
 
   // 다양한 방법으로 PWA/모바일 감지
   const userAgent = request.headers.get("user-agent") || "";
@@ -126,8 +127,12 @@ export async function GET(request: NextRequest) {
     if (shouldUseRedirect) {
       // 모바일/PWA: 리다이렉트 방식
       const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
+
+      // 🔥 프로필 연동인 경우 프로필 페이지로 리다이렉트
+      const redirectPath = state === "profile_integration" ? "/profile/update" : "/";
+
       return Response.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/?kakao_login=success&user_data=${userInfoEncoded}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?kakao_login=success&user_data=${userInfoEncoded}`,
         302
       );
     } else {
@@ -149,13 +154,14 @@ export async function GET(request: NextRequest) {
                 );
                 window.close();
               } else {
-                // 팝업이 아닌 경우 메인으로 리다이렉트
+                // 팝업이 아닌 경우 적절한 페이지로 리다이렉트
                 const userInfoEncoded = encodeURIComponent('${JSON.stringify(
                   userInfo
                 )}');
+                const redirectPath = '${state === "profile_integration" ? "/profile/update" : "/"}';
                 window.location.href = '${
                   process.env.NEXT_PUBLIC_BASE_URL
-                }/?kakao_login=success&user_data=' + userInfoEncoded;
+                }' + redirectPath + '?kakao_login=success&user_data=' + userInfoEncoded;
               }
             </script>
           </head>

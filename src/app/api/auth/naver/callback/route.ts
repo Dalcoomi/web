@@ -132,8 +132,13 @@ export async function GET(request: NextRequest) {
     if (shouldUseRedirect) {
       // 모바일/PWA: 리다이렉트 방식
       const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
+
+      // 🔥 프로필 연동인 경우 프로필 페이지로 리다이렉트
+      const isProfileIntegration = state?.startsWith("profile_integration");
+      const redirectPath = isProfileIntegration ? "/profile/update" : "/";
+
       return Response.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/?naver_login=success&user_data=${userInfoEncoded}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`,
         302
       );
     } else {
@@ -155,13 +160,15 @@ export async function GET(request: NextRequest) {
               );
               window.close();
               } else {
-                // 팝업이 아닌 경우 메인으로 리다이렉트
+                // 팝업이 아닌 경우 적절한 페이지로 리다이렉트
                 const userInfoEncoded = encodeURIComponent('${JSON.stringify(
                   userInfo
                 )}');
+                const isProfileIntegration = '${state?.startsWith("profile_integration")}' === 'true';
+                const redirectPath = isProfileIntegration ? '/profile/update' : '/';
                 window.location.href = '${
                   process.env.NEXT_PUBLIC_BASE_URL
-                }/?naver_login=success&user_data=' + userInfoEncoded;
+                }' + redirectPath + '?naver_login=success&user_data=' + userInfoEncoded;
               }
             </script>
           </head>

@@ -94,6 +94,50 @@ export default function ProfileUpdatePageClient() {
     }
   }, [member]);
 
+  // 🔥 프로필 연동 콜백 처리
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const kakaoLogin = urlParams.get("kakao_login");
+    const naverLogin = urlParams.get("naver_login");
+    const userData = urlParams.get("user_data");
+    const error = urlParams.get("error");
+
+    if (error) {
+      alert(`연동 실패: ${decodeURIComponent(error)}`);
+      // URL 정리
+      window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+
+    if (kakaoLogin === "success" && userData) {
+      const userInfo = JSON.parse(decodeURIComponent(userData));
+      const socialData = {
+        socialEmail: userInfo.email,
+        socialId: userInfo.kakaoId.toString(),
+        socialType: "KAKAO",
+        socialAccessToken: userInfo.accessToken || "",
+      };
+      setPendingSocialData(socialData);
+      handleSocialIntegration(socialData);
+      // URL 정리
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    if (naverLogin === "success" && userData) {
+      const userInfo = JSON.parse(decodeURIComponent(userData));
+      const socialData = {
+        socialEmail: userInfo.email,
+        socialId: userInfo.naverId.toString(),
+        socialType: "NAVER",
+        socialAccessToken: userInfo.accessToken || "",
+      };
+      setPendingSocialData(socialData);
+      handleSocialIntegration(socialData);
+      // URL 정리
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   // 프로필 사진 변경
   const handleImageClick = () => {
     setShowAvatarModal(true);
@@ -330,7 +374,8 @@ export default function ProfileUpdatePageClient() {
     const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_API_KEY;
     const REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI;
 
-    const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+    // 🔥 프로필 연동임을 나타내는 state 추가
+    const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code&state=profile_integration`;
 
     // PWA, 모바일, 카카오톡 브라우저는 리다이렉트
     if (shouldUseRedirect()) {
@@ -352,7 +397,8 @@ export default function ProfileUpdatePageClient() {
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
 
-    const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+    // 🔥 프로필 연동임을 나타내는 state 추가
+    const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code&state=profile_integration`;
 
     let popupOptions = `width=${width},height=${height},left=${left},top=${top}`;
 
@@ -444,7 +490,9 @@ export default function ProfileUpdatePageClient() {
   const handleNaverIntegration = () => {
     const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
     const REDIRECT_URI = process.env.NEXT_PUBLIC_NAVER_REDIRECT_URI;
-    const STATE = Math.random().toString(36).substring(2, 15);
+    // 🔥 프로필 연동임을 나타내는 state 사용
+    const STATE =
+      "profile_integration_" + Math.random().toString(36).substring(2, 15);
 
     const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
 
@@ -467,7 +515,9 @@ export default function ProfileUpdatePageClient() {
   const handleNaverPopupIntegration = () => {
     const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
     const REDIRECT_URI = process.env.NEXT_PUBLIC_NAVER_REDIRECT_URI;
-    const STATE = Math.random().toString(36).substring(2, 15);
+    // 🔥 프로필 연동임을 나타내는 state 사용
+    const STATE =
+      "profile_integration_" + Math.random().toString(36).substring(2, 15);
 
     const width = 500;
     const height = 700;
@@ -618,7 +668,7 @@ export default function ProfileUpdatePageClient() {
             clearInterval(checkClosed);
             console.log("네이버 연결 해제 완료 (토큰 사용)");
           }
-        }, 1000);
+        }, 10);
 
         return;
       }
