@@ -27,7 +27,7 @@ interface MemberStore {
   error: string | null;
 
   // Actions
-  fetchMember: () => Promise<void>;
+  fetchMember: (force?: boolean) => Promise<void>;
   setMember: (member: Member) => void;
   clearMember: () => void;
   updateMember: (updates: Partial<Member>) => void;
@@ -40,9 +40,9 @@ export const useMemberStore = create<MemberStore>()(
       isLoading: false,
       error: null,
 
-      fetchMember: async () => {
-        // 이미 회원 정보가 있으면 API 호출하지 않음
-        if (get().member) {
+      fetchMember: async (force = false) => {
+        // force가 true이면 강제로 다시 조회, 그렇지 않으면 이미 회원 정보가 있으면 API 호출하지 않음
+        if (!force && get().member) {
           return;
         }
 

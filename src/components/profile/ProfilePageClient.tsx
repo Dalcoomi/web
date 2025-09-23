@@ -12,6 +12,8 @@ import {
   withdrawMember,
   WithdrawalType,
   updateAiLearningAgreement,
+  getSocialRefreshToken,
+  SocialType,
 } from "@/services/memberService";
 import {
   getGroups,
@@ -66,6 +68,7 @@ export default function ProfilePageClient() {
       fetchMember();
     }
   }, [member, isLoggedIn, fetchMember]);
+
 
   // 현재 그룹이 변경될 때마다 그룹 정보 조회
   useEffect(() => {
@@ -243,7 +246,49 @@ export default function ProfilePageClient() {
     setIsProcessing(true);
 
     try {
-      // 회원탈퇴 API 호출 (그룹 탈퇴도 함께 처리됨)
+      // 🔥 1단계: 회원탈퇴 전에 소셜 연결 해제 처리
+      if (member?.socialTypes && member.socialTypes.length > 0) {
+
+        // 소셜 연결 해제 시도
+        try {
+          for (const socialType of member.socialTypes) {
+            try {
+              // 백엔드에서 리프레시 토큰 조회
+              const refreshToken = await getSocialRefreshToken(socialType as SocialType);
+
+              if (socialType === "KAKAO") {
+                // 카카오 연결 해제
+                await fetch('/api/auth/kakao/revoke', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    accessToken: null, // 서버에서 처리하므로 null
+                    refreshToken: refreshToken
+                  })
+                });
+              } else if (socialType === "NAVER") {
+                // 네이버 연결 해제
+                await fetch('/api/auth/naver/revoke', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    accessToken: null,
+                    refreshToken: refreshToken
+                  })
+                });
+              }
+            } catch (tokenError) {
+            }
+          }
+        } catch (socialError) {
+        }
+      }
+
+      // 🔥 2단계: 회원탈퇴 API 호출 (그룹 탈퇴도 함께 처리됨)
       await withdrawMember({
         withdrawalType: selectedReason,
         otherReason:

@@ -12,7 +12,8 @@ import {
   checkNicknameAvailability,
   SocialType,
   disconnectSocial,
-  integrateSocial,
+  connectSocial,
+  getSocialRefreshToken,
 } from "@/services/memberService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
 import { useMemberStore } from "@/stores/useMemberStore";
@@ -48,6 +49,7 @@ export default function ProfileUpdatePageClient() {
     socialId: string;
     socialType: string;
     socialAccessToken: string;
+    socialRefreshToken?: string; // 네이버 연결 해제용
   } | null>(null);
 
   // 기본 프로필 사진 URL들
@@ -122,11 +124,11 @@ export default function ProfileUpdatePageClient() {
           socialId: userInfo.kakaoId.toString(),
           socialType: "KAKAO",
           socialAccessToken: userInfo.accessToken || "",
+          socialRefreshToken: userInfo.refreshToken || "",
         };
         setPendingSocialData(socialData);
         handleSocialIntegration(socialData);
       } catch (error) {
-        console.error("카카오 연동 데이터 처리 실패:", error);
         alert("연동 처리 중 오류가 발생했습니다.");
       }
       // URL 정리
@@ -141,11 +143,11 @@ export default function ProfileUpdatePageClient() {
           socialId: userInfo.naverId.toString(),
           socialType: "NAVER",
           socialAccessToken: userInfo.accessToken || "",
+          socialRefreshToken: userInfo.refreshToken || "",
         };
         setPendingSocialData(socialData);
         handleSocialIntegration(socialData);
       } catch (error) {
-        console.error("네이버 연동 데이터 처리 실패:", error);
         alert("연동 처리 중 오류가 발생했습니다.");
       }
       // URL 정리
@@ -373,18 +375,6 @@ export default function ProfileUpdatePageClient() {
     }
   };
 
-  // 소셜 타입별 스타일 클래스
-  const getSocialStyleClass = (socialType: SocialType) => {
-    switch (socialType) {
-      case SocialType.KAKAO:
-        return "bg-[#fae100] text-[#3f211e]";
-      case SocialType.NAVER:
-        return "bg-green-500 text-white";
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
-  };
-
   // 카카오 연동을 위한 로그인 함수
   const handleKakaoIntegration = () => {
     const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_API_KEY;
@@ -477,7 +467,8 @@ export default function ProfileUpdatePageClient() {
             socialEmail: event.data.userData.email,
             socialId: event.data.userData.kakaoId,
             socialType: "KAKAO",
-            socialAccessToken: event.data.userData.access_token || "",
+            socialAccessToken: event.data.userData.accessToken || "",
+            socialRefreshToken: event.data.userData.refreshToken || "",
           };
           setPendingSocialData(socialData);
           handleSocialIntegration(socialData);
@@ -574,7 +565,7 @@ export default function ProfileUpdatePageClient() {
         false
       );
       setIsUpdatingSocial(false);
-    }, 30000);
+    }, 30000); // 🔥 30초로 변경 (카카오와 동일)
 
     window.addEventListener("message", receiveNaverIntegrationMessage, false);
 
@@ -588,10 +579,12 @@ export default function ProfileUpdatePageClient() {
             socialEmail: event.data.userData.email,
             socialId: event.data.userData.naverId,
             socialType: "NAVER",
-            socialAccessToken: event.data.userData.access_token || "",
+            socialAccessToken: event.data.userData.accessToken || "",
+            socialRefreshToken: event.data.userData.refreshToken || "",
           };
           setPendingSocialData(socialData);
           handleSocialIntegration(socialData);
+          // 🔥 성공 시에도 setIsUpdatingSocial(false) 호출은 handleSocialIntegration에서 처리됨
         } else {
           if (!event.data.cancelled) {
             alert(`네이버 연동 실패: ${event.data.error}`);
@@ -616,18 +609,20 @@ export default function ProfileUpdatePageClient() {
   // 카카오 연결 해제 (프로필 수정용)
   const disconnectKakaoProfile = async () => {
     try {
-      // pendingSocialData에 카카오 토큰이 있으면 그것을 사용
+      // pendingSocialData에 카카오 토큰이 있으면 서버 API를 통해 해제
       if (
         pendingSocialData?.socialType === "KAKAO" &&
         pendingSocialData.socialAccessToken
       ) {
-        await fetch("https://kapi.kakao.com/v1/user/unlink", {
+        await fetch("/api/auth/kakao/revoke", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${pendingSocialData.socialAccessToken}`,
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            accessToken: pendingSocialData.socialAccessToken,
+          }),
         });
-        console.log("카카오 연결 해제 성공 (토큰 사용)");
         return;
       }
 
@@ -640,129 +635,123 @@ export default function ProfileUpdatePageClient() {
               // 카카오 앱과의 연결 해제
               (window as any).Kakao.API.request({
                 url: "/v1/user/unlink",
-                success: (response: any) => {
-                  console.log("카카오 연결 해제 성공 (SDK 사용)");
-                },
-                fail: (error: any) => {
-                  console.warn("카카오 연결 해제 실패:", error);
-                },
+                success: (response: any) => {},
+                fail: (error: any) => {},
               });
             }
           })
-          .catch((error: any) => {
-            console.warn("카카오 상태 확인 실패:", error);
-          });
+          .catch((error: any) => {});
       }
-    } catch (error) {
-      console.warn("카카오 연결 해제 실패:", error);
-    }
+    } catch (error) {}
   };
 
   // 네이버 연결 해제 (프로필 수정용)
   const disconnectNaverProfile = async () => {
     try {
-      // pendingSocialData에 네이버 토큰이 있으면 그것을 사용
+      // pendingSocialData에 네이버 토큰이 있으면 서버 API를 통해 해제
       if (
         pendingSocialData?.socialType === "NAVER" &&
         pendingSocialData.socialAccessToken
       ) {
-        const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
-        const NAVER_CLIENT_SECRET = process.env.NEXT_PUBLIC_NAVER_CLIENT_SECRET;
-
-        const naverRevokeUrl = `https://nid.naver.com/oauth2.0/token?grant_type=delete&client_id=${NAVER_CLIENT_ID}&client_secret=${NAVER_CLIENT_SECRET}&access_token=${pendingSocialData.socialAccessToken}`;
-
-        // 네이버는 CORS 제한으로 팝업으로 처리
-        const popup = window.open(
-          naverRevokeUrl,
-          "naverRevoke",
-          "width=400,height=300"
-        );
-
-        // 팝업이 닫히면 완료로 간주
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed);
-            console.log("네이버 연결 해제 완료 (토큰 사용)");
-          }
-        }, 10);
-
+        await fetch("/api/auth/naver/revoke", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            accessToken: pendingSocialData.socialAccessToken,
+            refreshToken: pendingSocialData.socialRefreshToken,
+          }),
+        });
         return;
       }
-
-      // pendingSocialData가 없으면 백엔드에서만 처리
-      console.log("네이버 연동 해제는 백엔드에서만 처리됩니다.");
-    } catch (error) {
-      console.warn("네이버 연결 해제 실패:", error);
-    }
+    } catch (error) {}
   };
 
   // 🔥 소셜 연동 처리 - useCallback으로 메모이제이션
-  const handleSocialIntegration = useCallback(async (socialData: {
-    socialEmail: string;
-    socialId: string;
-    socialType: string;
-    socialAccessToken: string;
-  }) => {
-    try {
-      console.log("소셜 연동 시도:", socialData); // 디버깅용
+  const handleSocialIntegration = useCallback(
+    async (socialData: {
+      socialEmail: string;
+      socialId: string;
+      socialType: string;
+      socialAccessToken: string;
+      socialRefreshToken: string;
+    }) => {
+      // 일반 연동 처리
+      try {
+        await connectSocial({
+          socialEmail: socialData.socialEmail,
+          socialId: socialData.socialId,
+          socialType: socialData.socialType,
+          socialRefreshToken: socialData.socialRefreshToken,
+        });
 
-      await integrateSocial({
-        socialEmail: socialData.socialEmail,
-        socialId: socialData.socialId,
-        socialType: socialData.socialType,
-      });
+        // 🔥 로컬 상태 먼저 업데이트 (즉시 토글 상태 반영)
+        if (member) {
+          const currentSocialTypes = member.socialTypes || [];
+          const newSocialType = socialData.socialType as SocialType;
 
-      console.log("소셜 연동 API 성공"); // 디버깅용
-
-      // 🔥 백엔드에서 최신 회원 정보 다시 불러오기 (확실한 동기화)
-      await fetchMember();
-
-      console.log("회원 정보 갱신 완료"); // 디버깅용
-
-      alert(
-        `${getSocialDisplayName(
-          socialData.socialType as SocialType
-        )} 연동이 완료되었습니다.`
-      );
-
-      // 연동 완료 후 pendingSocialData 초기화
-      setPendingSocialData(null);
-    } catch (error) {
-      console.error("소셜 연동 실패:", error); // 디버깅용
-
-      // 🔥 409 에러(이미 연동된 계정)인 경우 회원 정보 갱신하여 토글 상태 동기화
-      if (error.message && (error.message.includes("409") || error.message.includes("이미 연동된") || error.message.includes("이미 존재"))) {
-        console.log("이미 연동된 계정 감지 - 회원 정보 갱신 중..."); // 디버깅용
-
-        try {
-          await fetchMember(); // 회원 정보 다시 가져오기
-          console.log("회원 정보 갱신 완료 - 토글 상태 동기화됨"); // 디버깅용
-
-          alert(
-            `${getSocialDisplayName(
-              socialData.socialType as SocialType
-            )} 계정이 이미 연동되어 있습니다.`
-          );
-        } catch (fetchError) {
-          console.error("회원 정보 갱신 실패:", fetchError);
-          alert("연동 상태 확인 중 오류가 발생했습니다.");
+          if (!currentSocialTypes.includes(newSocialType)) {
+            const updatedSocialTypes = [...currentSocialTypes, newSocialType];
+            updateMember({ socialTypes: updatedSocialTypes });
+          }
         }
-      } else {
-        // 다른 에러인 경우 기존 처리
-        alert(
-          error ||
-            `${getSocialDisplayName(
-              socialData.socialType as SocialType
-            )} 연동 중 오류가 발생했습니다.`
-        );
-      }
 
-      // 연동 완료 후 pendingSocialData 초기화
-      setPendingSocialData(null);
-    } finally {
-      setIsUpdatingSocial(false);
-    }
-  }, [fetchMember, updateMember]);
+        // 🔥 백엔드와 동기화를 위해 강제로 회원 정보 다시 가져오기
+        await fetchMember(true);
+
+        alert(
+          `${getSocialDisplayName(
+            socialData.socialType as SocialType
+          )} 연동이 완료되었습니다.`
+        );
+
+        // 연동 완료 후 pendingSocialData 초기화
+        setPendingSocialData(null);
+      } catch (error) {
+        // 🔥 409 에러(이미 연동된 계정)인 경우 회원 정보 갱신하여 토글 상태 동기화
+        const errorMessage =
+          error?.message || error?.toString() || String(error);
+        const isDuplicateError =
+          errorMessage.includes("409") ||
+          errorMessage.includes("이미 연동된") ||
+          errorMessage.includes("이미 존재") ||
+          errorMessage.includes("duplicate") ||
+          errorMessage.includes("already") ||
+          errorMessage.includes("중복");
+
+        if (isDuplicateError) {
+          try {
+            // 🔥 백엔드와 동기화를 위해 강제로 회원 정보 다시 가져오기
+            await fetchMember(true);
+
+            alert(
+              `${getSocialDisplayName(
+                socialData.socialType as SocialType
+              )} 계정이 이미 연동되어 있습니다.`
+            );
+          } catch (fetchError) {
+            console.error("회원 정보 갱신 실패:", fetchError);
+            alert("연동 상태 확인 중 오류가 발생했습니다.");
+          }
+        } else {
+          // 다른 에러인 경우 기존 처리
+          alert(
+            errorMessage ||
+              `${getSocialDisplayName(
+                socialData.socialType as SocialType
+              )} 연동 중 오류가 발생했습니다.`
+          );
+        }
+
+        // 연동 완료 후 pendingSocialData 초기화
+        setPendingSocialData(null);
+      } finally {
+        setIsUpdatingSocial(false);
+      }
+    },
+    [fetchMember, updateMember]
+  );
 
   // 소셜 연동 토글 핸들러
   const handleSocialToggle = async (
@@ -789,21 +778,62 @@ export default function ProfileUpdatePageClient() {
           return;
         }
 
-        // 1. 백엔드에서 연동 해제
+        // 1. 백엔드에서 리프레시 토큰 조회 (먼저 가져와두기)
+        let refreshToken = null;
+        try {
+          refreshToken = await getSocialRefreshToken(socialType);
+        } catch (tokenError) {}
+
+        // 2. 백엔드에서 연동 해제
         await disconnectSocial(socialType);
 
-        // 2. 프론트에서 소셜 언링크 (실패해도 계속 진행)
+        // 3. 소셜 플랫폼 연결 해제
         try {
-          if (socialType === SocialType.KAKAO) {
-            await disconnectKakaoProfile();
-          } else if (socialType === SocialType.NAVER) {
-            await disconnectNaverProfile();
+          if (refreshToken) {
+            if (socialType === SocialType.KAKAO) {
+              // 카카오 연결 해제
+              await fetch("/api/auth/kakao/revoke", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  accessToken: null, // 서버에서 처리하므로 null
+                  refreshToken: refreshToken,
+                }),
+              });
+
+              // 추가로 기존 함수를 통한 카카오 SDK 연결 해제도 시도
+              await disconnectKakaoProfile();
+            } else if (socialType === SocialType.NAVER) {
+              // 네이버 연결 해제
+              await fetch("/api/auth/naver/revoke", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  accessToken: null,
+                  refreshToken: refreshToken,
+                }),
+              });
+
+              // 추가로 기존 함수를 통한 네이버 연결 해제도 시도
+              await disconnectNaverProfile();
+            }
+          } else {
+            // 리프레시 토큰이 없어도 기존 함수들로 시도
+            if (socialType === SocialType.KAKAO) {
+              await disconnectKakaoProfile();
+            } else if (socialType === SocialType.NAVER) {
+              await disconnectNaverProfile();
+            }
           }
         } catch (unlinkError) {
-          console.warn("소셜 언링크 실패:", unlinkError);
+          console.warn("소셜 연결 해제 실패:", unlinkError);
         }
 
-        // 3. 로컬 상태 업데이트
+        // 4. 로컬 상태 업데이트
         if (member?.socialTypes) {
           const updatedSocialTypes = member.socialTypes.filter(
             (type) => type !== socialType
@@ -1015,7 +1045,7 @@ export default function ProfileUpdatePageClient() {
               type="date"
               value={birthday}
               onChange={(e) => setBirthday(e.target.value)}
-              className="w-30 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="w-40 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
           </div>
 

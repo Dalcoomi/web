@@ -23,6 +23,7 @@ export default function SignUpInfoClient() {
     socialId?: string;
     socialType?: string;
     socialEmail?: string;
+    socialRefreshToken?: string;
   }>({});
 
   // 접근 권한 확인
@@ -237,6 +238,7 @@ export default function SignUpInfoClient() {
         socialId: socialData.socialId,
         socialType: socialData.socialType,
         socialEmail: socialData.socialEmail,
+        socialRefreshToken: socialData.socialRefreshToken,
         name: userInfo.name.trim(),
         birthday: formattedBirthday,
         gender: userInfo.gender || null,

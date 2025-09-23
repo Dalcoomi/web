@@ -61,18 +61,33 @@ export interface WithdrawRequest {
   dataRetentionConsent?: boolean; // AI 학습 활용 동의 (휴면탈퇴 시에만 선택사항)
 }
 
+// 회원가입 요청 타입
+export interface SignUpRequest {
+  socialId: string;
+  socialType: string;
+  socialEmail: string;
+  socialRefreshToken?: string;
+  name: string;
+  birthday?: string;
+  gender?: string;
+  serviceAgreement: boolean;
+  collectionAgreement: boolean;
+  aiLearningAgreement: boolean;
+}
+
 // 회원가입 API
-export const signUp = async (signUpData: any) => {
+export const signUp = async (signUpData: SignUpRequest) => {
   return post("/api/members/sign-up", signUpData);
 };
 
 // 소셜 연동 API
-export const integrateSocial = async (data: {
+export const connectSocial = async (data: {
   socialEmail: string;
   socialId: string;
   socialType: string;
+  socialRefreshToken?: string;
 }) => {
-  return post("/api/members/integrate", data);
+  return post("/api/members/connect", data);
 };
 
 // 회원 조회
@@ -145,12 +160,24 @@ export const updateAiLearningAgreement = async (
   }
 };
 
+// 소셜 리프레시 토큰 조회 API
+export const getSocialRefreshToken = async (
+  socialType: SocialType
+): Promise<string | null> => {
+  try {
+    const response = await get(`/api/members/refresh-token/${socialType}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // 소셜 연동 해제 API
 export const disconnectSocial = async (
   socialType: SocialType
 ): Promise<void> => {
   try {
-    await del(`/api/members/unlink?socialType=${socialType}`);
+    await del(`/api/members/disconnect?socialType=${socialType}`);
   } catch (error) {
     throw error;
   }
