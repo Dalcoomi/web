@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { signUp } from "@/services/authService";
+import { signUp } from "@/services/memberService";
 
 export default function SignUpInfoClient() {
   const router = useRouter();
@@ -22,7 +22,7 @@ export default function SignUpInfoClient() {
   const [socialData, setSocialData] = useState<{
     socialId?: string;
     socialType?: string;
-    email?: string;
+    socialEmail?: string;
   }>({});
 
   // 접근 권한 확인
@@ -220,8 +220,11 @@ export default function SignUpInfoClient() {
         throw new Error("약관 동의 정보가 없습니다.");
       }
 
-      const { service: serviceAgreement, privacy: collectionAgreement } =
-        JSON.parse(agreementDataJson);
+      const {
+        service: serviceAgreement,
+        privacy: collectionAgreement,
+        aiLearning: aiLearningAgreement,
+      } = JSON.parse(agreementDataJson);
 
       // 생년월일 형식 변환
       let formattedBirthday = null;
@@ -233,12 +236,13 @@ export default function SignUpInfoClient() {
       const signUpData = {
         socialId: socialData.socialId,
         socialType: socialData.socialType,
-        email: socialData.email,
+        socialEmail: socialData.socialEmail,
         name: userInfo.name.trim(),
         birthday: formattedBirthday,
         gender: userInfo.gender || null,
         serviceAgreement,
         collectionAgreement,
+        aiLearningAgreement,
       };
 
       // API 서비스로 회원가입 요청
@@ -302,11 +306,11 @@ export default function SignUpInfoClient() {
         </h1>
 
         {/* 소셜 로그인 정보 표시 */}
-        {socialData.email && (
+        {socialData.socialEmail && (
           <div className="mb-6 p-3 bg-gray-50 rounded-md">
             <p className="text-sm text-gray-600">
               <span className="font-medium">연결된 계정 :</span>{" "}
-              {socialData.email}
+              {socialData.socialEmail}
             </p>
             <p className="text-xs text-gray-500 mt-1">
               {socialData.socialType === "KAKAO" ? "카카오" : "네이버"} 계정으로
