@@ -1,7 +1,7 @@
 // components/profile/ProfileUpdatePageClient.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
@@ -94,13 +94,18 @@ export default function ProfileUpdatePageClient() {
     }
   }, [member]);
 
-  // 🔥 프로필 연동 콜백 처리
+  // 🔥 프로필 연동 콜백 처리 - 한 번만 실행
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const kakaoLogin = urlParams.get("kakao_login");
     const naverLogin = urlParams.get("naver_login");
     const userData = urlParams.get("user_data");
     const error = urlParams.get("error");
+
+    // URL에 연동 관련 파라미터가 없으면 early return
+    if (!kakaoLogin && !naverLogin && !error) {
+      return;
+    }
 
     if (error) {
       alert(`연동 실패: ${decodeURIComponent(error)}`);
@@ -110,33 +115,43 @@ export default function ProfileUpdatePageClient() {
     }
 
     if (kakaoLogin === "success" && userData) {
-      const userInfo = JSON.parse(decodeURIComponent(userData));
-      const socialData = {
-        socialEmail: userInfo.email,
-        socialId: userInfo.kakaoId.toString(),
-        socialType: "KAKAO",
-        socialAccessToken: userInfo.accessToken || "",
-      };
-      setPendingSocialData(socialData);
-      handleSocialIntegration(socialData);
+      try {
+        const userInfo = JSON.parse(decodeURIComponent(userData));
+        const socialData = {
+          socialEmail: userInfo.email,
+          socialId: userInfo.kakaoId.toString(),
+          socialType: "KAKAO",
+          socialAccessToken: userInfo.accessToken || "",
+        };
+        setPendingSocialData(socialData);
+        handleSocialIntegration(socialData);
+      } catch (error) {
+        console.error("카카오 연동 데이터 처리 실패:", error);
+        alert("연동 처리 중 오류가 발생했습니다.");
+      }
       // URL 정리
       window.history.replaceState({}, "", window.location.pathname);
     }
 
     if (naverLogin === "success" && userData) {
-      const userInfo = JSON.parse(decodeURIComponent(userData));
-      const socialData = {
-        socialEmail: userInfo.email,
-        socialId: userInfo.naverId.toString(),
-        socialType: "NAVER",
-        socialAccessToken: userInfo.accessToken || "",
-      };
-      setPendingSocialData(socialData);
-      handleSocialIntegration(socialData);
+      try {
+        const userInfo = JSON.parse(decodeURIComponent(userData));
+        const socialData = {
+          socialEmail: userInfo.email,
+          socialId: userInfo.naverId.toString(),
+          socialType: "NAVER",
+          socialAccessToken: userInfo.accessToken || "",
+        };
+        setPendingSocialData(socialData);
+        handleSocialIntegration(socialData);
+      } catch (error) {
+        console.error("네이버 연동 데이터 처리 실패:", error);
+        alert("연동 처리 중 오류가 발생했습니다.");
+      }
       // URL 정리
       window.history.replaceState({}, "", window.location.pathname);
     }
-  }, []);
+  }, []); // 🔥 빈 의존성 배열로 한 번만 실행
 
   // 프로필 사진 변경
   const handleImageClick = () => {
@@ -314,7 +329,8 @@ export default function ProfileUpdatePageClient() {
         gender: updatedProfile.gender,
       });
 
-      router.back();
+      // 🔥 router.back() 대신 명시적으로 프로필 페이지로 이동
+      router.push("/profile");
     } catch (err) {
       console.error("Profile update failed:", err);
       alert(err.message || "프로필 수정에 실패했습니다. ");
@@ -680,34 +696,28 @@ export default function ProfileUpdatePageClient() {
     }
   };
 
-  // 소셜 연동 처리
-  const handleSocialIntegration = async (socialData: {
+  // 🔥 소셜 연동 처리 - useCallback으로 메모이제이션
+  const handleSocialIntegration = useCallback(async (socialData: {
     socialEmail: string;
     socialId: string;
     socialType: string;
     socialAccessToken: string;
   }) => {
     try {
+      console.log("소셜 연동 시도:", socialData); // 디버깅용
+
       await integrateSocial({
         socialEmail: socialData.socialEmail,
         socialId: socialData.socialId,
         socialType: socialData.socialType,
       });
 
-      // 🔥 로컬 상태 업데이트 - 조건 수정
-      if (member) {
-        const currentSocialTypes = member.socialTypes || [];
-        const newSocialType = socialData.socialType as SocialType;
-
-        // 중복 체크 후 추가
-        if (!currentSocialTypes.includes(newSocialType)) {
-          const updatedSocialTypes = [...currentSocialTypes, newSocialType];
-          updateMember({ socialTypes: updatedSocialTypes });
-        }
-      }
+      console.log("소셜 연동 API 성공"); // 디버깅용
 
       // 🔥 백엔드에서 최신 회원 정보 다시 불러오기 (확실한 동기화)
       await fetchMember();
+
+      console.log("회원 정보 갱신 완료"); // 디버깅용
 
       alert(
         `${getSocialDisplayName(
@@ -718,16 +728,41 @@ export default function ProfileUpdatePageClient() {
       // 연동 완료 후 pendingSocialData 초기화
       setPendingSocialData(null);
     } catch (error) {
-      alert(
-        error ||
-          `${getSocialDisplayName(
-            socialData.socialType as SocialType
-          )} 연동 중 오류가 발생했습니다.`
-      );
+      console.error("소셜 연동 실패:", error); // 디버깅용
+
+      // 🔥 409 에러(이미 연동된 계정)인 경우 회원 정보 갱신하여 토글 상태 동기화
+      if (error.message && (error.message.includes("409") || error.message.includes("이미 연동된") || error.message.includes("이미 존재"))) {
+        console.log("이미 연동된 계정 감지 - 회원 정보 갱신 중..."); // 디버깅용
+
+        try {
+          await fetchMember(); // 회원 정보 다시 가져오기
+          console.log("회원 정보 갱신 완료 - 토글 상태 동기화됨"); // 디버깅용
+
+          alert(
+            `${getSocialDisplayName(
+              socialData.socialType as SocialType
+            )} 계정이 이미 연동되어 있습니다.`
+          );
+        } catch (fetchError) {
+          console.error("회원 정보 갱신 실패:", fetchError);
+          alert("연동 상태 확인 중 오류가 발생했습니다.");
+        }
+      } else {
+        // 다른 에러인 경우 기존 처리
+        alert(
+          error ||
+            `${getSocialDisplayName(
+              socialData.socialType as SocialType
+            )} 연동 중 오류가 발생했습니다.`
+        );
+      }
+
+      // 연동 완료 후 pendingSocialData 초기화
+      setPendingSocialData(null);
     } finally {
       setIsUpdatingSocial(false);
     }
-  };
+  }, [fetchMember, updateMember]);
 
   // 소셜 연동 토글 핸들러
   const handleSocialToggle = async (
