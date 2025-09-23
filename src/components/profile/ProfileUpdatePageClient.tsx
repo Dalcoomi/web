@@ -694,14 +694,20 @@ export default function ProfileUpdatePageClient() {
         socialType: socialData.socialType,
       });
 
-      // 로컬 상태 업데이트
-      if (member?.socialTypes) {
-        const updatedSocialTypes = [
-          ...member.socialTypes,
-          socialData.socialType as SocialType,
-        ];
-        updateMember({ socialTypes: updatedSocialTypes });
+      // 🔥 로컬 상태 업데이트 - 조건 수정
+      if (member) {
+        const currentSocialTypes = member.socialTypes || [];
+        const newSocialType = socialData.socialType as SocialType;
+
+        // 중복 체크 후 추가
+        if (!currentSocialTypes.includes(newSocialType)) {
+          const updatedSocialTypes = [...currentSocialTypes, newSocialType];
+          updateMember({ socialTypes: updatedSocialTypes });
+        }
       }
+
+      // 🔥 백엔드에서 최신 회원 정보 다시 불러오기 (확실한 동기화)
+      await fetchMember();
 
       alert(
         `${getSocialDisplayName(
