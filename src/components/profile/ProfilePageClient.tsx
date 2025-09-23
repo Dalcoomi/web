@@ -182,23 +182,24 @@ export default function ProfilePageClient() {
     setShowReasonModal(true);
   };
 
-  // 개별 그룹 처리 (그룹장이면 권한 이양 모달, 아니면 바로 다음 그룹)
+  // 🔥 개별 그룹 처리 (그룹장이면 권한 이양 모달, 아니면 바로 다음 그룹)
   const handleProcessCurrentGroup = () => {
     if (!currentGroupInfo || currentGroupIndex >= myGroups.length) return;
 
     const isLeader = currentGroupInfo.leaderNickname === member?.nickname;
     const isLastMember = currentGroupInfo.members.length === 1;
+    const newLeaderAlreadySet = getCurrentGroupNewLeader();
 
-    if (isLeader && !isLastMember) {
-      // 그룹장이고 다른 멤버가 있는 경우 - 권한 이양 모달 표시
+    if (isLeader && !isLastMember && !newLeaderAlreadySet) {
+      // 그룹장이고 다른 멤버가 있는데 아직 새 그룹장이 지정되지 않은 경우 - 권한 이양 모달 표시
       setShowLeaderSelectModal(true);
     } else {
-      // 일반 멤버이거나 마지막 멤버인 경우 - 다음 그룹으로
+      // 일반 멤버이거나 마지막 멤버이거나 이미 새 그룹장이 지정된 경우 - 다음 그룹으로
       moveToNextGroup();
     }
   };
 
-  // 그룹장 권한 이양 정보 저장 후 다음 그룹으로
+  // 🔥 그룹장 권한 이양 정보 저장 후 그룹 모달로 돌아가기
   const handleLeaderTransfer = (nextLeaderNickname: string) => {
     if (!currentGroupInfo || !selectedNewLeader) return;
 
@@ -213,7 +214,7 @@ export default function ProfilePageClient() {
 
     setShowLeaderSelectModal(false);
     setSelectedNewLeader("");
-    moveToNextGroup();
+    // 🔥 바로 다음 그룹으로 가지 않고 그룹 모달로 돌아가기
   };
 
   // 다음 그룹으로 이동하거나 완료 처리
@@ -323,6 +324,15 @@ export default function ProfilePageClient() {
     return currentGroupInfo.members.filter(
       (member) => member.nickname !== currentGroupInfo.leaderNickname
     );
+  };
+
+  // 🔥 현재 그룹에 이미 새 그룹장이 지정되었는지 확인
+  const getCurrentGroupNewLeader = () => {
+    if (!currentGroupInfo) return null;
+    const transferInfo = leaderTransferInfos.find(
+      (info) => info.teamId === Number(currentGroupInfo.teamId)
+    );
+    return transferInfo?.nextLeaderNickname || null;
   };
 
   // 로그인 상태가 아니거나 회원 정보가 없는 경우
@@ -700,6 +710,16 @@ export default function ProfilePageClient() {
                             </p>
                             <p className="text-md text-red-600 mt-1">
                               그룹이 삭제됩니다
+                            </p>
+                          </div>
+                        ) : getCurrentGroupNewLeader() ? (
+                          // 🔥 새 그룹장이 이미 지정된 경우
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p className="text-sm text-green-600 mb-1">
+                              ✅ 새 그룹장이 지정되었습니다
+                            </p>
+                            <p className="text-sm font-medium text-gray-800">
+                              새 그룹장: {getCurrentGroupNewLeader()}
                             </p>
                           </div>
                         ) : (
