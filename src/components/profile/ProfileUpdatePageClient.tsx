@@ -1084,37 +1084,24 @@ export default function ProfileUpdatePageClient() {
               소셜 계정 연동 설정
             </label>
             <div className="space-y-3">
-              {/* 카카오 연동 */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs px-2 py-1 rounded bg-[#fae100] text-[#3f211e]">
-                    카카오
-                  </span>
-                  <span className="text-sm text-gray-600">카카오</span>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={
-                      member.socialTypes?.includes(SocialType.KAKAO) || false
-                    }
-                    onChange={(e) =>
-                      handleSocialToggle(SocialType.KAKAO, e.target.checked)
-                    }
-                    disabled={isUpdatingSocial}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EABFF]"></div>
-                </label>
-              </div>
-
               {/* 네이버 연동 */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs px-2 py-1 rounded bg-green-500 text-white">
-                    네이버
-                  </span>
-                  <span className="text-sm text-gray-600">네이버</span>
+                  <Image
+                    src="/images/auth/네이버_로그인.png"
+                    alt="네이버"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">네이버</span>
+                    {member.currentLoginSocial === SocialType.NAVER && (
+                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full">
+                        현재 로그인
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -1124,6 +1111,41 @@ export default function ProfileUpdatePageClient() {
                     }
                     onChange={(e) =>
                       handleSocialToggle(SocialType.NAVER, e.target.checked)
+                    }
+                    disabled={isUpdatingSocial}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0EABFF]"></div>
+                </label>
+              </div>
+
+              {/* 카카오 연동 */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/images/auth/카카오_로그인.png"
+                    alt="카카오"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">카카오</span>
+                    {member.currentLoginSocial === SocialType.KAKAO && (
+                      <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full">
+                        현재 로그인
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={
+                      member.socialTypes?.includes(SocialType.KAKAO) || false
+                    }
+                    onChange={(e) =>
+                      handleSocialToggle(SocialType.KAKAO, e.target.checked)
                     }
                     disabled={isUpdatingSocial}
                     className="sr-only peer"

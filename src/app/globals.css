@@ -141,6 +141,17 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.pb-safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 1.5rem);
+}
+
+/* PWA 환경에서 바텀 시트 고정 */
+@media (display-mode: standalone) {
+  .pb-safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 2rem);
+  }
+}
+
 .font-title-light {
   font-family: var(--font-title-light);
 }
