@@ -515,7 +515,7 @@ export default function LoginPageClient() {
       </div>
 
       {/* 로그인 버튼 */}
-      <div className="fixed w-full max-w-[390px] bottom-10 pb-safe-bottom pb-6 flex flex-col items-center z-10 bg-gradient-to-t from-white via-white to-transparent pt-4" style={{ bottom: `max(40px, env(keyboard-inset-height, 0px))` }}>
+      <div className="absolute w-full max-w-[390px] flex flex-col items-center z-10 bg-gradient-to-t from-white via-white to-transparent pt-4" style={{ bottom: '40px', left: '50%', transform: 'translateX(-50%)', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
         {/* 간편 로그인 제목과 구분선 */}
         <div className="flex items-center w-[320px] mb-6">
           <div className="flex-1 h-px bg-gray-300"></div>
