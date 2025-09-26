@@ -515,7 +515,7 @@ export default function LoginPageClient() {
       </div>
 
       {/* 로그인 버튼 */}
-      <div className="absolute w-full bottom-15 flex flex-col items-center z-10">
+      <div className="fixed w-full max-w-[390px] bottom-10 pb-safe-bottom pb-6 flex flex-col items-center z-10 bg-gradient-to-t from-white via-white to-transparent pt-4">
         {/* 간편 로그인 제목과 구분선 */}
         <div className="flex items-center w-[320px] mb-6">
           <div className="flex-1 h-px bg-gray-300"></div>
