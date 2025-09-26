@@ -12,6 +12,7 @@ export enum SocialType {
 // 멤버 타입 정의
 export interface Member {
   socialTypes: SocialType[]; // 연동된 소셜 계정 리스트
+  currentLoginSocial?: SocialType; // 현재 로그인에 사용한 소셜 타입
   email: string;
   name: string;
   nickname: string;
@@ -49,6 +50,16 @@ export const useMemberStore = create<MemberStore>()(
         try {
           set({ isLoading: true, error: null });
           const memberData = await getMember();
+
+          // localStorage에서 currentLoginSocial 확인 후 적용
+          const savedLoginSocial = localStorage.getItem("currentLoginSocial");
+          if (savedLoginSocial) {
+            const currentLoginSocial = savedLoginSocial === "KAKAO" ? SocialType.KAKAO : SocialType.NAVER;
+            memberData.currentLoginSocial = currentLoginSocial;
+            // localStorage에서 제거 (한번만 적용)
+            localStorage.removeItem("currentLoginSocial");
+          }
+
           set({ member: memberData, isLoading: false });
         } catch (error) {
           set({

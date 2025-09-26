@@ -8,11 +8,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
 import { connectSocial } from "@/services/memberService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
+import { useMemberStore, SocialType } from "@/stores/useMemberStore";
 
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const { updateMember } = useMemberStore();
   const [isLoading, setIsLoading] = useState(false);
 
   // 소셜 연동 모달 상태
@@ -305,6 +307,9 @@ export default function LoginPageClient() {
         // 로그인 성공 시 토큰 저장
         login(response.accessToken, response.refreshToken);
 
+        // 현재 로그인 소셜 타입을 임시 저장 (회원 정보 로드 후 적용하기 위해)
+        localStorage.setItem("currentLoginSocial", socialType);
+
         router.push("/transaction/my");
       } catch (error) {
         if (
@@ -355,6 +360,10 @@ export default function LoginPageClient() {
       });
 
       login(response.accessToken, response.refreshToken);
+
+      // 현재 로그인 소셜 타입을 임시 저장 (회원 정보 로드 후 적용하기 위해)
+      localStorage.setItem("currentLoginSocial", pendingSocialData.socialType);
+
       setShowIntegrateModal(false);
       setPendingSocialData(null);
       router.push("/transaction/my");
@@ -506,36 +515,46 @@ export default function LoginPageClient() {
       </div>
 
       {/* 로그인 버튼 */}
-      <div className="absolute w-full bottom-15 flex flex-col items-center space-y-4 z-10">
-        {/* 네이버 로그인 버튼 */}
-        <button
-          className="w-[180px] cursor-pointer"
-          onClick={handleNaverLogin}
-          disabled={isLoading}
-        >
-          <Image
-            src="/images/auth/네이버_버튼.svg"
-            alt="네이버 로그인"
-            width={180}
-            height={40}
-            className="w-full"
-          />
-        </button>
+      <div className="fixed w-full max-w-[390px] bottom-10 pb-safe-bottom pb-6 flex flex-col items-center z-10 bg-gradient-to-t from-white via-white to-transparent pt-4">
+        {/* 간편 로그인 제목과 구분선 */}
+        <div className="flex items-center w-[320px] mb-6">
+          <div className="flex-1 h-px bg-gray-300"></div>
+          <span className="px-4 text-sm text-gray-400">간편 로그인</span>
+          <div className="flex-1 h-px bg-gray-300"></div>
+        </div>
 
-        {/* 카카오 로그인 버튼 */}
-        <button
-          className="w-[180px] cursor-pointer"
-          onClick={handleKakaoLogin}
-          disabled={isLoading}
-        >
-          <Image
-            src="/images/auth/카카오_버튼.svg"
-            alt="카카오 로그인"
-            width={180}
-            height={41}
-            className="w-full"
-          />
-        </button>
+        {/* 소셜 로그인 버튼들 (가로 배치) */}
+        <div className="flex items-center space-x-4">
+          {/* 네이버 로그인 버튼 */}
+          <button
+            className="w-[50px] cursor-pointer"
+            onClick={handleNaverLogin}
+            disabled={isLoading}
+          >
+            <Image
+              src="/images/auth/네이버_로그인.png"
+              alt="네이버 로그인"
+              width={150}
+              height={33}
+              className="w-full"
+            />
+          </button>
+
+          {/* 카카오 로그인 버튼 */}
+          <button
+            className="w-[50px] cursor-pointer"
+            onClick={handleKakaoLogin}
+            disabled={isLoading}
+          >
+            <Image
+              src="/images/auth/카카오_로그인.png"
+              alt="카카오 로그인"
+              width={150}
+              height={34}
+              className="w-full"
+            />
+          </button>
+        </div>
       </div>
 
       {/* 소셜 연동 확인 모달 */}
