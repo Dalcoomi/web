@@ -52,7 +52,7 @@ export default function MyTransactionPageClient() {
       fetchMember();
       hasFetchedMember.current = true;
     }
-  }, []);
+  }, [fetchMember]);
 
   // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
@@ -86,9 +86,24 @@ export default function MyTransactionPageClient() {
           const response = await getTransactions(criteria);
           setResponse(response);
 
-          if (!currentCategoryFilter && allCategories.length === 0) {
+          // 전체 카테고리 목록을 위해 필터 없이 별도 조회
+          if (!currentCategoryFilter) {
+            // 필터가 없을 때만 전체 카테고리 목록 갱신
             const uniqueCategories = Array.from(
               new Set(response.transactions.map((t) => t.categoryName))
+            );
+            setAllCategories(uniqueCategories);
+          } else if (allCategories.length === 0) {
+            // 카테고리 목록이 비어있을 때만 전체 조회
+            const allCriteria: TransactionSearchCriteria = {
+              teamId: null,
+              year,
+              month,
+              categoryName: null,
+            };
+            const allResponse = await getTransactions(allCriteria);
+            const uniqueCategories = Array.from(
+              new Set(allResponse.transactions.map((t) => t.categoryName))
             );
             setAllCategories(uniqueCategories);
           }
@@ -116,7 +131,22 @@ export default function MyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [selectedDate, currentCategoryFilter, allCategories.length]); // loadTransactions 의존성 완전 제거
+  }, [selectedDate, currentCategoryFilter]); // allCategories.length 의존성 제거로 중복 호출 방지
+
+  // 필터링된 거래 내역 가져오기
+  const getFilteredTransactions = () => {
+    return response.transactions.filter((transaction) => {
+      // 카테고리 필터
+      if (
+        currentCategoryFilter &&
+        transaction.categoryName !== currentCategoryFilter
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  };
 
   // 날짜 변경 핸들러 (필터 유지)
   const handleDateChange = (date: Date) => {
@@ -377,9 +407,11 @@ export default function MyTransactionPageClient() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-[#666]">필터</span>
-                  <span className="px-2 py-1 bg-[#FFF3E0] text-[#F57C00] text-xs rounded border">
-                    📂 {currentCategoryFilter}
-                  </span>
+                  {currentCategoryFilter && (
+                    <span className="px-2 py-1 bg-[#FFF3E0] text-[#F57C00] text-xs rounded border">
+                      📂 {currentCategoryFilter}
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={handleResetFilters}
@@ -440,7 +472,7 @@ export default function MyTransactionPageClient() {
                 </div>
 
                 {/* 카테고리 목록 */}
-                <div className="max-h-[90px] overflow-y-auto">
+                <div className="max-h-[150px] overflow-y-auto">
                   {allCategories.map((category, index) => (
                     <div
                       key={index}
@@ -479,45 +511,48 @@ export default function MyTransactionPageClient() {
           <div className="flex items-center justify-center h-40">
             <div className="text-gray-500">로딩 중...</div>
           </div>
-        ) : response.transactions.length > 0 ? (
-          response.transactions.map((transaction, index) => {
-            // 현재 거래의 날짜
-            const currentDate = formatDateToMMDD(transaction.transactionDate);
-
-            // 이전 거래와 날짜가 같은지 확인
-            const prevDate =
-              index > 0
-                ? formatDateToMMDD(
-                    response.transactions[index - 1].transactionDate
-                  )
-                : null;
-
-            // 이전 거래와 날짜가 같으면 날짜를 숨김
-            const shouldShowDate = prevDate !== currentDate;
-
-            return (
-              <MyTransactionItem
-                key={transaction.transactionId}
-                date={shouldShowDate ? currentDate : ""}
-                category={transaction.categoryName}
-                description={transaction.content}
-                amount={
-                  transaction.transactionType === "EXPENSE"
-                    ? -transaction.amount
-                    : transaction.amount
-                }
-                transactionId={transaction.transactionId}
-              />
-            );
-          })
         ) : (
-          <div className="flex items-center justify-center h-40">
-            <div className="text-gray-500">
-              {currentCategoryFilter
-                ? "필터 조건에 맞는 거래 내역이 없습니다."
-                : "거래 내역이 없습니다."}
-            </div>
-          </div>
+          (() => {
+            const filteredTransactions = getFilteredTransactions();
+            return filteredTransactions.length > 0 ? (
+              filteredTransactions.map((transaction, index) => {
+                // 현재 거래의 날짜
+                const currentDate = formatDateToMMDD(
+                  transaction.transactionDate
+                );
+
+                // 이전 거래와 날짜가 같은지 확인
+                const prevDate =
+                  index > 0
+                    ? formatDateToMMDD(
+                        filteredTransactions[index - 1].transactionDate
+                      )
+                    : null;
+
+                // 이전 거래와 날짜가 같으면 날짜를 숨김
+                const shouldShowDate = prevDate !== currentDate;
+
+                return (
+                  <MyTransactionItem
+                    key={transaction.transactionId}
+                    date={shouldShowDate ? currentDate : ""}
+                    category={transaction.categoryName}
+                    description={transaction.content}
+                    amount={
+                      transaction.transactionType === "EXPENSE"
+                        ? -transaction.amount
+                        : transaction.amount
+                    }
+                    transactionId={transaction.transactionId}
+                  />
+                );
+              })
+            ) : (
+              <div className="flex items-center justify-center h-40">
+                <div className="text-gray-500">거래 내역이 없습니다.</div>
+              </div>
+            );
+          })()
         )}
       </div>
 
