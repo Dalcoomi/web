@@ -1,7 +1,7 @@
 // components/transaction/group/GroupTransactionPageClient.tsx
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   getTransactions,
@@ -63,104 +63,8 @@ export default function MyTransactionPageClient() {
     setShowCategoryFilter(false);
   };
 
-  // 트랜잭션 데이터 로드
-  const loadTransactions = useCallback(
-    async (
-      teamId: string,
-      year: number,
-      month: number,
-      memberFilter?: string | null,
-      categoryFilter?: string | null
-    ) => {
-      const requestKey = `${year}-${month}-${memberFilter || ""}-${
-        categoryFilter || ""
-      }`;
 
-      // 같은 요청이 진행 중이면 무시
-      if (
-        isRequestInProgressRef.current &&
-        lastRequestRef.current === requestKey
-      ) {
-        return;
-      }
-
-      // 새로운 요청이면 이전 요청 상태 초기화
-      if (lastRequestRef.current !== requestKey) {
-        isRequestInProgressRef.current = false;
-      }
-
-      // 요청 시작
-      isRequestInProgressRef.current = true;
-      lastRequestRef.current = requestKey;
-      setIsLoading(true);
-
-      try {
-        const criteria: TransactionSearchCriteria = {
-          teamId: parseInt(teamId),
-          year,
-          month,
-          creatorNickname: memberFilter,
-          categoryName: categoryFilter,
-        };
-
-        const response = await getTransactions(criteria);
-        setResponse(response);
-
-        // 필터가 없는 경우에만 전체 멤버와 카테고리 목록 갱신
-        if (!memberFilter && !categoryFilter) {
-          const uniqueMembers = Array.from(
-            new Set(response.transactions.map((t) => t.creatorNickname))
-          );
-          const uniqueCategories = Array.from(
-            new Set(response.transactions.map((t) => t.categoryName))
-          );
-
-          setAllMembers(uniqueMembers);
-          setAllCategories(uniqueCategories);
-        } else {
-          // 필터가 적용된 경우, 전체 데이터를 별도로 조회해서 필터 옵션 갱신
-          const allDataCriteria: TransactionSearchCriteria = {
-            teamId: parseInt(teamId),
-            year,
-            month,
-            creatorNickname: null,
-            categoryName: null,
-          };
-
-          const allDataResponse = await getTransactions(allDataCriteria);
-          const uniqueMembers = Array.from(
-            new Set(allDataResponse.transactions.map((t) => t.creatorNickname))
-          );
-          const uniqueCategories = Array.from(
-            new Set(allDataResponse.transactions.map((t) => t.categoryName))
-          );
-
-          setAllMembers(uniqueMembers);
-          setAllCategories(uniqueCategories);
-        }
-      } catch (error) {
-        // 401 에러면 루트(로그인)로 리다이렉트
-        if (error instanceof Error && error.message.includes("401")) {
-          router.replace("/");
-          return;
-        }
-
-        // 기타 오류 처리
-        setResponse({
-          income: 0,
-          expense: 0,
-          total: 0,
-          transactions: [],
-        });
-      } finally {
-        setIsLoading(false);
-        isRequestInProgressRef.current = false;
-      }
-    },
-    [router]
-  );
-
-  // 초기 데이터 로드 및 날짜 변경 시 (현재 필터 유지)
+  // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
     if (!teamId) {
       router.replace("/group");
@@ -170,24 +74,99 @@ export default function MyTransactionPageClient() {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
 
-    // 디바운스 추가
     const timeoutId = setTimeout(() => {
-      // 현재 선택된 필터들을 유지하여 로드
-      loadTransactions(
-        teamId,
-        year,
-        month,
-        currentMemberFilter,
-        currentCategoryFilter
-      );
-    }, 100);
+      // loadTransactions 직접 호출하지 않고 내부 로직 실행
+      const requestKey = `${year}-${month}-${currentMemberFilter || ""}-${currentCategoryFilter || ""}`;
 
-    const timeoutId2 = setTimeout(async () => {
-      if (!teamId) {
-        router.replace("/group");
+      if (
+        isRequestInProgressRef.current &&
+        lastRequestRef.current === requestKey
+      ) {
         return;
       }
 
+      isRequestInProgressRef.current = true;
+      lastRequestRef.current = requestKey;
+      setIsLoading(true);
+
+      const fetchData = async () => {
+        try {
+          const criteria: TransactionSearchCriteria = {
+            teamId: parseInt(teamId),
+            year,
+            month,
+            creatorNickname: currentMemberFilter,
+            categoryName: currentCategoryFilter,
+          };
+
+          const response = await getTransactions(criteria);
+          setResponse(response);
+
+          // 전체 멤버와 카테고리 목록을 위해 필터 없이 별도 조회
+          if (!currentMemberFilter && !currentCategoryFilter) {
+            // 필터가 없을 때만 전체 목록 갱신
+            const uniqueMembers = Array.from(
+              new Set(response.transactions.map((t) => t.creatorNickname))
+            );
+            const uniqueCategories = Array.from(
+              new Set(response.transactions.map((t) => t.categoryName))
+            );
+            setAllMembers(uniqueMembers);
+            setAllCategories(uniqueCategories);
+          } else if (allMembers.length === 0 || allCategories.length === 0) {
+            // 목록이 비어있을 때만 전체 조회
+            const allCriteria: TransactionSearchCriteria = {
+              teamId: parseInt(teamId),
+              year,
+              month,
+              creatorNickname: null,
+              categoryName: null,
+            };
+            const allResponse = await getTransactions(allCriteria);
+            const uniqueMembers = Array.from(
+              new Set(allResponse.transactions.map((t) => t.creatorNickname))
+            );
+            const uniqueCategories = Array.from(
+              new Set(allResponse.transactions.map((t) => t.categoryName))
+            );
+            setAllMembers(uniqueMembers);
+            setAllCategories(uniqueCategories);
+          }
+        } catch (error) {
+          // 401 에러면 루트(로그인)로 리다이렉트
+          if (error instanceof Error && error.message.includes("401")) {
+            router.replace("/");
+            return;
+          }
+
+          // 기타 오류 처리
+          setResponse({
+            income: 0,
+            expense: 0,
+            total: 0,
+            transactions: [],
+          });
+        } finally {
+          setIsLoading(false);
+          isRequestInProgressRef.current = false;
+        }
+      };
+
+      fetchData();
+    }, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [selectedDate, teamId, router, currentMemberFilter, currentCategoryFilter]); // groupInfo 의존성 제거로 중복 호출 방지
+
+  // 그룹 정보 로딩을 별도의 useEffect로 분리
+  useEffect(() => {
+    if (!teamId || groupInfo) {
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
       try {
         const response = await getGroupInfo(teamId);
         setGroupInfo(response);
@@ -199,16 +178,8 @@ export default function MyTransactionPageClient() {
 
     return () => {
       clearTimeout(timeoutId);
-      clearTimeout(timeoutId2);
     };
-  }, [
-    selectedDate,
-    teamId,
-    router,
-    loadTransactions,
-    currentMemberFilter,
-    currentCategoryFilter,
-  ]);
+  }, [teamId, router, groupInfo]); // groupInfo 포함하되, early return으로 중복 방지
 
   // 외부 클릭 감지
   useEffect(() => {
@@ -232,6 +203,8 @@ export default function MyTransactionPageClient() {
       ) {
         setShowCategoryFilter(false);
       }
+
+      // 거래 유형 필터 관련 코드 제거됨
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -263,13 +236,9 @@ export default function MyTransactionPageClient() {
 
     setSelectedMembers(newSelection);
 
-    // 바로 필터링 적용
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
+    // 필터 상태만 업데이트 (useEffect가 자동으로 API 호출)
     const memberFilter = newSelection.length > 0 ? newSelection[0] : null;
-
     setCurrentMemberFilter(memberFilter);
-    loadTransactions(teamId, year, month, memberFilter, currentCategoryFilter);
 
     // 드롭다운 닫기
     setShowMemberFilter(false);
@@ -286,13 +255,9 @@ export default function MyTransactionPageClient() {
 
     setSelectedCategories(newSelection);
 
-    // 바로 필터링 적용
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
+    // 필터 상태만 업데이트 (useEffect가 자동으로 API 호출)
     const categoryFilter = newSelection.length > 0 ? newSelection[0] : null;
-
     setCurrentCategoryFilter(categoryFilter);
-    loadTransactions(teamId, year, month, currentMemberFilter, categoryFilter);
 
     // 드롭다운 닫기
     setShowCategoryFilter(false);
@@ -303,11 +268,6 @@ export default function MyTransactionPageClient() {
     setSelectedMembers([]);
     setCurrentMemberFilter(null);
 
-    // 바로 필터링 적용
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
-    loadTransactions(teamId, year, month, null, currentCategoryFilter);
-
     // 드롭다운 닫기
     setShowMemberFilter(false);
   };
@@ -316,11 +276,6 @@ export default function MyTransactionPageClient() {
   const handleClearCategories = () => {
     setSelectedCategories([]);
     setCurrentCategoryFilter(null);
-
-    // 바로 필터링 적용
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
-    loadTransactions(teamId, year, month, currentMemberFilter, null);
 
     // 드롭다운 닫기
     setShowCategoryFilter(false);
@@ -332,10 +287,29 @@ export default function MyTransactionPageClient() {
     setSelectedCategories([]);
     setCurrentMemberFilter(null);
     setCurrentCategoryFilter(null);
+  };
 
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
-    loadTransactions(teamId, year, month, null, null);
+  // 필터링된 거래 내역 가져오기
+  const getFilteredTransactions = () => {
+    return response.transactions.filter((transaction) => {
+      // 멤버 필터
+      if (
+        currentMemberFilter &&
+        transaction.creatorNickname !== currentMemberFilter
+      ) {
+        return false;
+      }
+
+      // 카테고리 필터
+      if (
+        currentCategoryFilter &&
+        transaction.categoryName !== currentCategoryFilter
+      ) {
+        return false;
+      }
+
+      return true;
+    });
   };
 
   // 날짜를 "MM.DD" 형식으로 변환
@@ -605,7 +579,7 @@ export default function MyTransactionPageClient() {
                 </div>
 
                 {/* 카테고리 목록 */}
-                <div className="max-h-[90px] overflow-y-auto">
+                <div className="max-h-[150px] overflow-y-auto">
                   {allCategories.map((category, index) => (
                     <div
                       key={index}
@@ -676,7 +650,7 @@ export default function MyTransactionPageClient() {
                 </div>
 
                 {/* 멤버 목록 */}
-                <div className="max-h-[90px] overflow-y-auto">
+                <div className="max-h-[150px] overflow-y-auto">
                   {allMembers.map((member, index) => (
                     <div
                       key={index}
@@ -712,47 +686,50 @@ export default function MyTransactionPageClient() {
           <div className="flex items-center justify-center h-40">
             <div className="text-gray-500">로딩 중...</div>
           </div>
-        ) : response.transactions.length > 0 ? (
-          response.transactions.map((transaction, index) => {
-            // 현재 거래의 날짜
-            const currentDate = formatDateToMMDD(transaction.transactionDate);
-
-            // 이전 거래와 날짜가 같은지 확인
-            const prevDate =
-              index > 0
-                ? formatDateToMMDD(
-                    response.transactions[index - 1].transactionDate
-                  )
-                : null;
-
-            // 이전 거래와 날짜가 같으면 날짜를 숨김
-            const shouldShowDate = prevDate !== currentDate;
-
-            return (
-              <GroupTransactionItem
-                key={transaction.transactionId}
-                teamId={teamId}
-                date={shouldShowDate ? currentDate : ""}
-                category={transaction.categoryName}
-                description={transaction.content}
-                creator={transaction.creatorNickname}
-                amount={
-                  transaction.transactionType === "EXPENSE"
-                    ? -transaction.amount
-                    : transaction.amount
-                }
-                transactionId={transaction.transactionId}
-              />
-            );
-          })
         ) : (
-          <div className="flex items-center justify-center h-40">
-            <div className="text-gray-500">
-              {currentMemberFilter || currentCategoryFilter
-                ? "필터 조건에 맞는 거래 내역이 없습니다."
-                : "거래 내역이 없습니다."}
-            </div>
-          </div>
+          (() => {
+            const filteredTransactions = getFilteredTransactions();
+            return filteredTransactions.length > 0 ? (
+              filteredTransactions.map((transaction, index) => {
+                // 현재 거래의 날짜
+                const currentDate = formatDateToMMDD(
+                  transaction.transactionDate
+                );
+
+                // 이전 거래와 날짜가 같은지 확인
+                const prevDate =
+                  index > 0
+                    ? formatDateToMMDD(
+                        filteredTransactions[index - 1].transactionDate
+                      )
+                    : null;
+
+                // 이전 거래와 날짜가 같으면 날짜를 숨김
+                const shouldShowDate = prevDate !== currentDate;
+
+                return (
+                  <GroupTransactionItem
+                    key={transaction.transactionId}
+                    teamId={teamId}
+                    date={shouldShowDate ? currentDate : ""}
+                    category={transaction.categoryName}
+                    description={transaction.content}
+                    creator={transaction.creatorNickname}
+                    amount={
+                      transaction.transactionType === "EXPENSE"
+                        ? -transaction.amount
+                        : transaction.amount
+                    }
+                    transactionId={transaction.transactionId}
+                  />
+                );
+              })
+            ) : (
+              <div className="flex items-center justify-center h-40">
+                <div className="text-gray-500">거래 내역이 없습니다.</div>
+              </div>
+            );
+          })()
         )}
       </div>
 
