@@ -190,8 +190,11 @@ const refreshAccessToken = async (): Promise<boolean> => {
     });
 
     if (!response.ok) {
-      // 리프레시 토큰도 만료된 경우
-      clearTokens();
+      // 401 Unauthorized: 리프레시 토큰 만료/무효 → 토큰 삭제
+      if (response.status === 401) {
+        clearTokens();
+      }
+      // 그 외 에러(500, 502 등)는 토큰 유지 (일시적 서버 에러 가능성)
       return false;
     }
 
@@ -199,6 +202,7 @@ const refreshAccessToken = async (): Promise<boolean> => {
 
     // 응답 데이터 검증
     if (!data.accessToken) {
+      // 응답은 성공했지만 토큰이 없음 → 비정상 상황, 토큰 삭제
       clearTokens();
       return false;
     }
@@ -217,7 +221,7 @@ const refreshAccessToken = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    clearTokens();
+    // 네트워크 에러 등 예외 상황 → 토큰 유지 (일시적 에러 가능성)
     return false;
   }
 };
