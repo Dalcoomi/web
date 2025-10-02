@@ -67,16 +67,7 @@ export const apiClient = async (
     if (response.status === 401) {
       // 🔥 로그인 페이지에서는 조용히 실패 (UI 깜빡임 방지)
       if (typeof window !== 'undefined' && window.location.pathname === '/') {
-        // 리프레시 토큰이 있으면 백그라운드에서 갱신 시도
-        const refreshToken = getRefreshToken();
-        if (refreshToken) {
-          // 조용히 토큰 갱신 (UI 업데이트 없음)
-          refreshAccessToken().catch(() => {
-            clearTokens();
-          });
-        } else {
-          clearTokens();
-        }
+        clearTokens();
         throw new Error("AUTH_ERROR");
       }
       // 이미 리프레시 중이면 대기열에 추가
@@ -185,6 +176,7 @@ const refreshAccessToken = async (): Promise<boolean> => {
   const refreshToken = getRefreshToken();
 
   if (!refreshToken) {
+    clearTokens();
     return false;
   }
 
@@ -199,6 +191,7 @@ const refreshAccessToken = async (): Promise<boolean> => {
 
     if (!response.ok) {
       // 리프레시 토큰도 만료된 경우
+      clearTokens();
       return false;
     }
 
@@ -206,6 +199,7 @@ const refreshAccessToken = async (): Promise<boolean> => {
 
     // 응답 데이터 검증
     if (!data.accessToken) {
+      clearTokens();
       return false;
     }
 
@@ -223,6 +217,7 @@ const refreshAccessToken = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
+    clearTokens();
     return false;
   }
 };
