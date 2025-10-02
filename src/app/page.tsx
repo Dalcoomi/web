@@ -58,9 +58,10 @@ export default async function RootPage() {
   // 서버에서 인증 확인
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken");
+  const refreshToken = cookieStore.get("refreshToken");
 
-  // 이미 로그인된 경우 개인 거래 페이지로 리다이렉트
-  if (accessToken) {
+  // 🔥 리프레시 토큰이 있으면 로그인된 상태로 간주 (액세스 토큰은 클라이언트에서 재발급)
+  if (refreshToken) {
     redirect("/transaction/my");
   }
 

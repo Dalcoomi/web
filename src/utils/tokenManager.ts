@@ -9,8 +9,8 @@ export const saveTokens = (accessToken: string, refreshToken?: string) => {
   setCookie("accessToken", accessToken, 1 / 24);
 
   if (refreshToken) {
-    // 리프레시 토큰: 7일
-    setCookie("refreshToken", refreshToken, 7);
+    // 리프레시 토큰: 3일
+    setCookie("refreshToken", refreshToken, 3);
   }
 };
 
