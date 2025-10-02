@@ -193,7 +193,7 @@ const refreshAccessToken = async (): Promise<boolean> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${refreshToken}`,
+        "Refresh-Token": refreshToken,
       },
     });
 
