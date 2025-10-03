@@ -1,30 +1,18 @@
 // utils/tokenManager.ts
 import { setCookie, getCookie, eraseCookie } from "./cookieManager";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 // 토큰 저장
 export const saveTokens = (accessToken: string, refreshToken?: string) => {
-  if (typeof window === "undefined") return; // 서버 사이드에서 실행 방지
+  if (typeof window === "undefined") return;
 
-  // 🔥 액세스 토큰: 1시간 (1/24일)
+  // Zustand persist store에 저장 (가장 안정적)
+  useAuthStore.getState().setTokens(accessToken, refreshToken);
+
+  // 쿠키에도 저장 (서버 사이드 렌더링 대비)
   setCookie("accessToken", accessToken, 1 / 24);
-
-  // localStorage에도 백업 저장 (쿠키가 사라질 경우 대비)
-  try {
-    localStorage.setItem("accessToken", accessToken);
-  } catch (e) {
-    // 저장 실패 시 무시
-  }
-
   if (refreshToken) {
-    // 리프레시 토큰: 3일
     setCookie("refreshToken", refreshToken, 3);
-
-    // localStorage에도 백업 저장 (쿠키가 사라질 경우 대비)
-    try {
-      localStorage.setItem("refreshToken", refreshToken);
-    } catch (e) {
-      // 저장 실패 시 무시
-    }
   }
 };
 
@@ -36,16 +24,11 @@ export const getAccessToken = () => {
   const cookieToken = getCookie("accessToken");
   if (cookieToken) return cookieToken;
 
-  // 쿠키에 없으면 localStorage에서 복구
-  try {
-    const localToken = localStorage.getItem("accessToken");
-    if (localToken) {
-      // localStorage에서 복구했으면 쿠키에도 다시 저장
-      setCookie("accessToken", localToken, 1 / 24);
-      return localToken;
-    }
-  } catch (e) {
-    console.warn("localStorage에서 accessToken 읽기 실패:", e);
+  // Zustand store에서 복구
+  const storeToken = useAuthStore.getState().getAccessToken();
+  if (storeToken) {
+    setCookie("accessToken", storeToken, 1 / 24);
+    return storeToken;
   }
 
   return null;
@@ -59,16 +42,11 @@ export const getRefreshToken = () => {
   const cookieToken = getCookie("refreshToken");
   if (cookieToken) return cookieToken;
 
-  // 쿠키에 없으면 localStorage에서 복구
-  try {
-    const localToken = localStorage.getItem("refreshToken");
-    if (localToken) {
-      // localStorage에서 복구했으면 쿠키에도 다시 저장
-      setCookie("refreshToken", localToken, 3);
-      return localToken;
-    }
-  } catch (e) {
-    // 복구 실패 시 무시
+  // Zustand store에서 복구
+  const storeToken = useAuthStore.getState().getRefreshToken();
+  if (storeToken) {
+    setCookie("refreshToken", storeToken, 3);
+    return storeToken;
   }
 
   return null;
@@ -78,17 +56,12 @@ export const getRefreshToken = () => {
 export const clearTokens = () => {
   if (typeof window === "undefined") return;
 
+  // Zustand store 삭제
+  useAuthStore.getState().clearTokens();
+
   // 쿠키 삭제
   eraseCookie("accessToken");
   eraseCookie("refreshToken");
-
-  // localStorage도 삭제
-  try {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-  } catch (e) {
-    // 삭제 실패 시 무시
-  }
 };
 
 // 🔥 인증 상태 확인 로직 변경: 리프레시 토큰 기준
