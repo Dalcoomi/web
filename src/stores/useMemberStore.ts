@@ -51,6 +51,9 @@ export const useMemberStore = create<MemberStore>()(
           set({ isLoading: true, error: null });
           const memberData = await getMember();
 
+          // 기존 currentLoginSocial 값 보존
+          const existingLoginSocial = get().member?.currentLoginSocial;
+
           // localStorage에서 currentLoginSocial 확인 후 적용
           const savedLoginSocial = localStorage.getItem("currentLoginSocial");
           if (savedLoginSocial) {
@@ -58,6 +61,9 @@ export const useMemberStore = create<MemberStore>()(
             memberData.currentLoginSocial = currentLoginSocial;
             // localStorage에서 제거 (한번만 적용)
             localStorage.removeItem("currentLoginSocial");
+          } else if (existingLoginSocial) {
+            // localStorage에 없으면 기존 값 유지
+            memberData.currentLoginSocial = existingLoginSocial;
           }
 
           set({ member: memberData, isLoading: false });

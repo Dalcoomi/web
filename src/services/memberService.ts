@@ -10,6 +10,7 @@ export enum SocialType {
 // 멤버 타입 정의
 export interface Member {
   socialTypes: SocialType[]; // 연동된 소셜 계정 리스트
+  currentLoginSocial?: SocialType; // 현재 로그인에 사용한 소셜 타입
   email: string;
   name: string;
   nickname: string;

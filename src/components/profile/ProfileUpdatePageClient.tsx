@@ -697,14 +697,8 @@ export default function ProfileUpdatePageClient() {
           }
         }
 
-        // 🔥 currentLoginSocial 정보를 보존하면서 백엔드 데이터 가져오기
-        const currentLoginSocial = member?.currentLoginSocial;
+        // 🔥 백엔드와 동기화를 위해 강제로 회원 정보 다시 가져오기 (currentLoginSocial은 store에서 자동 보존)
         await fetchMember(true);
-
-        // currentLoginSocial 정보 복원
-        if (currentLoginSocial) {
-          updateMember({ currentLoginSocial });
-        }
 
         alert(
           `${getSocialDisplayName(
@@ -728,14 +722,8 @@ export default function ProfileUpdatePageClient() {
 
         if (isDuplicateError) {
           try {
-            // 🔥 currentLoginSocial 정보를 보존하면서 백엔드 데이터 가져오기
-            const currentLoginSocial = member?.currentLoginSocial;
+            // 🔥 백엔드와 동기화를 위해 강제로 회원 정보 다시 가져오기 (currentLoginSocial은 store에서 자동 보존)
             await fetchMember(true);
-
-            // currentLoginSocial 정보 복원
-            if (currentLoginSocial) {
-              updateMember({ currentLoginSocial });
-            }
 
             alert(
               `${getSocialDisplayName(
