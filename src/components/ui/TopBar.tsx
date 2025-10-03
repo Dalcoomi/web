@@ -126,6 +126,7 @@ export default function TopBar({
               width={120}
               height={140}
               priority
+              unoptimized
             />
           </div>
         </div>
