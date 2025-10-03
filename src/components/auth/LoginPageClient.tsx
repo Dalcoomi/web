@@ -309,7 +309,8 @@ export default function LoginPageClient() {
         // 현재 로그인 소셜 타입을 임시 저장 (회원 정보 로드 후 적용하기 위해)
         localStorage.setItem("currentLoginSocial", socialType);
 
-        router.push("/transaction/my");
+        // 이미지 깨짐 방지를 위해 hard navigation 사용
+        window.location.href = "/transaction/my";
       } catch (error) {
         if (
           error.message === "존재하지 않는 회원입니다." ||
@@ -366,7 +367,9 @@ export default function LoginPageClient() {
 
       setShowIntegrateModal(false);
       setPendingSocialData(null);
-      router.push("/transaction/my");
+
+      // 이미지 깨짐 방지를 위해 hard navigation 사용
+      window.location.href = "/transaction/my";
     } catch (error) {
       alert(`소셜 연동 실패: ${error.message}`);
     } finally {
@@ -504,12 +507,13 @@ export default function LoginPageClient() {
       </div>
 
       {/* 배경 이미지 */}
-      <div className="absolute inset-0 w-full h-full z-0">
+      <div className="absolute inset-0 w-full h-full z-0" style={{ backgroundColor: '#ffffff' }}>
         <img
-          src="/images/auth/login-background.svg"
+          src="/images/auth/login-background.svg?v=1"
           alt="로그인 배경"
           className="w-full h-full object-cover"
           loading="eager"
+          style={{ display: 'block' }}
         />
       </div>
 
@@ -531,12 +535,13 @@ export default function LoginPageClient() {
             disabled={isLoading}
           >
             <img
-              src="/images/auth/네이버_로그인.png"
+              src="/images/auth/네이버_로그인.png?v=1"
               alt="네이버 로그인"
               width={150}
               height={33}
               className="w-full"
               loading="eager"
+              style={{ display: 'block' }}
             />
           </button>
 
@@ -547,12 +552,13 @@ export default function LoginPageClient() {
             disabled={isLoading}
           >
             <img
-              src="/images/auth/카카오_로그인.png"
+              src="/images/auth/카카오_로그인.png?v=1"
               alt="카카오 로그인"
               width={150}
               height={34}
               className="w-full"
               loading="eager"
+              style={{ display: 'block' }}
             />
           </button>
         </div>

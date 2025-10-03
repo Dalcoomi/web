@@ -121,11 +121,12 @@ export default function TopBar({
             onClick={handleLogoClick}
           >
             <img
-              src="/images/메인로고.svg"
+              src="/images/메인로고.svg?v=1"
               alt="Dalcoomi"
               width={120}
               height={140}
               loading="eager"
+              style={{ display: 'block' }}
             />
           </div>
         </div>
