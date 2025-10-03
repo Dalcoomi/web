@@ -38,10 +38,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-  ],
+  themeColor: "#ffffff",
   minimumScale: 1,
   initialScale: 1,
   width: "device-width",
@@ -75,7 +72,7 @@ export default async function RootLayout({
         {/* PWA 메타 태그 */}
         <meta name="application-name" content="달쿠미" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="달쿠미" />
         <meta name="apple-touch-fullscreen" content="yes" />
         <meta name="format-detection" content="telephone=no" />
