@@ -161,9 +161,9 @@ export default async function RootLayout({
           media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
         />
       </head>
-      <body className="flex justify-center items-center min-h-screen">
+      <body className="flex justify-center items-center min-h-screen bg-white">
         <ViewportFixer />
-        <div className="w-full max-w-[390px] h-screen-safe max-h-[844px] relative overflow-hidden shadow-lg">
+        <div className="w-full max-w-[390px] h-screen-safe max-h-[844px] relative overflow-hidden shadow-lg bg-white">
           <ClientProviders isLoggedIn={isLoggedIn}>{children}</ClientProviders>
         </div>
       </body>

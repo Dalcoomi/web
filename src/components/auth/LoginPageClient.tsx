@@ -505,13 +505,11 @@ export default function LoginPageClient() {
 
       {/* 배경 이미지 */}
       <div className="absolute inset-0 w-full h-full z-0">
-        <Image
+        <img
           src="/images/auth/login-background.svg"
           alt="로그인 배경"
-          fill
-          className="object-cover"
-          priority
-          unoptimized
+          className="w-full h-full object-cover"
+          loading="eager"
         />
       </div>
 
@@ -532,13 +530,13 @@ export default function LoginPageClient() {
             onClick={handleNaverLogin}
             disabled={isLoading}
           >
-            <Image
+            <img
               src="/images/auth/네이버_로그인.png"
               alt="네이버 로그인"
               width={150}
               height={33}
               className="w-full"
-              unoptimized
+              loading="eager"
             />
           </button>
 
@@ -548,13 +546,13 @@ export default function LoginPageClient() {
             onClick={handleKakaoLogin}
             disabled={isLoading}
           >
-            <Image
+            <img
               src="/images/auth/카카오_로그인.png"
               alt="카카오 로그인"
               width={150}
               height={34}
               className="w-full"
-              unoptimized
+              loading="eager"
             />
           </button>
         </div>
