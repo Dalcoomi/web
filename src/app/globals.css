@@ -185,3 +185,19 @@ input[type="date"] {
   position: relative;
   cursor: pointer;
 }
+
+/* iOS Safari input 자동 확대 방지 - font-size 16px 이상 필수 */
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+select,
+textarea {
+  font-size: 16px;
+}
