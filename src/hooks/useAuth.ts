@@ -104,29 +104,29 @@ export function useAuth() {
         }
 
         // 🔥 액세스 토큰이 없지만 리프레시 토큰이 있는 경우
-        // 🔥 일단 로그인 상태로 설정하고 로딩 해제 (사용자 경험 개선)
-        setIsLoggedIn(true);
-        setIsLoading(false);
+        // 🔥 즉시 토큰 리프레시 시도 (로딩 상태 유지)
+        const success = await refreshAccessToken();
 
-        // 🔥 백그라운드에서 토큰 리프레시 (비동기)
-        refreshAccessToken().then((success) => {
-          if (!success) {
-            clearTokens();
-            clearMember(); // 회원 정보도 제거
-            setIsLoggedIn(false);
+        if (success) {
+          setIsLoggedIn(true);
+          setIsLoading(false);
+        } else {
+          clearTokens();
+          clearMember(); // 회원 정보도 제거
+          setIsLoggedIn(false);
+          setIsLoading(false);
 
-            // 보호된 페이지에 있다면 메인으로 이동
-            const currentPath = window.location.pathname;
-            const protectedPaths = ["/transaction", "/group"];
-            const isProtectedPath = protectedPaths.some((path) =>
-              currentPath.startsWith(path)
-            );
+          // 보호된 페이지에 있다면 메인으로 이동
+          const currentPath = window.location.pathname;
+          const protectedPaths = ["/transaction", "/group"];
+          const isProtectedPath = protectedPaths.some((path) =>
+            currentPath.startsWith(path)
+          );
 
-            if (isProtectedPath) {
-              router.replace("/");
-            }
+          if (isProtectedPath) {
+            router.replace("/");
           }
-        });
+        }
       } catch (error) {
         setIsLoggedIn(false);
         clearTokens();
