@@ -764,6 +764,15 @@ export default function ProfileUpdatePageClient() {
     try {
       if (!checked) {
         // 토글을 끄는 경우 = 연동 해제
+
+        // 1. 현재 로그인에 사용 중인 소셜 계정인지 확인
+        if (member?.currentLoginSocial === socialType) {
+          alert("현재 로그인에 사용 중인 소셜 계정입니다. 다른 소셜 계정으로 로그인 후 해제해주세요.");
+          setIsUpdatingSocial(false);
+          return;
+        }
+
+        // 2. 마지막 연동 계정인지 확인
         if (member?.socialTypes && member.socialTypes.length <= 1) {
           alert("마지막 연동 계정은 해제할 수 없습니다.");
           setIsUpdatingSocial(false);

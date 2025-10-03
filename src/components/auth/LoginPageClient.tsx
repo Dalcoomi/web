@@ -349,6 +349,7 @@ export default function LoginPageClient() {
         socialEmail: pendingSocialData.socialEmail,
         socialId: pendingSocialData.socialId,
         socialType: pendingSocialData.socialType,
+        socialRefreshToken: pendingSocialData.socialRefreshToken
       });
 
       // 연동 성공 후 다시 로그인 시도
