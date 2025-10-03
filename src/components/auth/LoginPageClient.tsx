@@ -8,13 +8,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
 import { connectSocial } from "@/services/memberService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
-import { useMemberStore, SocialType } from "@/stores/useMemberStore";
+import { useMemberStore } from "@/stores/useMemberStore";
 
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
-  const { updateMember } = useMemberStore();
   const [isLoading, setIsLoading] = useState(false);
 
   // 소셜 연동 모달 상태
@@ -512,6 +511,7 @@ export default function LoginPageClient() {
           fill
           className="object-cover"
           priority
+          unoptimized
         />
       </div>
 
@@ -538,6 +538,7 @@ export default function LoginPageClient() {
               width={150}
               height={33}
               className="w-full"
+              unoptimized
             />
           </button>
 
@@ -553,6 +554,7 @@ export default function LoginPageClient() {
               width={150}
               height={34}
               className="w-full"
+              unoptimized
             />
           </button>
         </div>
