@@ -1,15 +1,10 @@
 // utils/tokenManager.ts
 import { setCookie, getCookie, eraseCookie } from "./cookieManager";
-import { useAuthStore } from "@/stores/useAuthStore";
 
 // 토큰 저장
 export const saveTokens = (accessToken: string, refreshToken?: string) => {
   if (typeof window === "undefined") return;
 
-  // Zustand persist store에 저장 (가장 안정적)
-  useAuthStore.getState().setTokens(accessToken, refreshToken);
-
-  // 쿠키에도 저장 (서버 사이드 렌더링 대비)
   setCookie("accessToken", accessToken, 1 / 24);
   if (refreshToken) {
     setCookie("refreshToken", refreshToken, 3);
@@ -19,47 +14,19 @@ export const saveTokens = (accessToken: string, refreshToken?: string) => {
 // 액세스 토큰 가져오기
 export const getAccessToken = () => {
   if (typeof window === "undefined") return null;
-
-  // 쿠키에서 먼저 시도
-  const cookieToken = getCookie("accessToken");
-  if (cookieToken) return cookieToken;
-
-  // Zustand store에서 복구
-  const storeToken = useAuthStore.getState().getAccessToken();
-  if (storeToken) {
-    setCookie("accessToken", storeToken, 1 / 24);
-    return storeToken;
-  }
-
-  return null;
+  return getCookie("accessToken");
 };
 
 // 리프레시 토큰 가져오기
 export const getRefreshToken = () => {
   if (typeof window === "undefined") return null;
-
-  // 쿠키에서 먼저 시도
-  const cookieToken = getCookie("refreshToken");
-  if (cookieToken) return cookieToken;
-
-  // Zustand store에서 복구
-  const storeToken = useAuthStore.getState().getRefreshToken();
-  if (storeToken) {
-    setCookie("refreshToken", storeToken, 3);
-    return storeToken;
-  }
-
-  return null;
+  return getCookie("refreshToken");
 };
 
 // 토큰 삭제 (로그아웃)
 export const clearTokens = () => {
   if (typeof window === "undefined") return;
 
-  // Zustand store 삭제
-  useAuthStore.getState().clearTokens();
-
-  // 쿠키 삭제
   eraseCookie("accessToken");
   eraseCookie("refreshToken");
 };
