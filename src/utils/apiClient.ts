@@ -65,11 +65,6 @@ export const apiClient = async (
 
     // 인증 오류(401) 발생 시 토큰 리프레시 시도
     if (response.status === 401) {
-      // 🔥 로그인 페이지에서는 조용히 실패 (UI 깜빡임 방지)
-      if (typeof window !== 'undefined' && window.location.pathname === '/') {
-        clearTokens();
-        throw new Error("AUTH_ERROR");
-      }
       // 이미 리프레시 중이면 대기열에 추가
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
