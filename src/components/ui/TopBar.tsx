@@ -120,13 +120,12 @@ export default function TopBar({
             className="flex cursor-pointer items-center"
             onClick={handleLogoClick}
           >
-            <Image
+            <img
               src="/images/메인로고.svg"
               alt="Dalcoomi"
               width={120}
               height={140}
-              priority
-              unoptimized
+              loading="eager"
             />
           </div>
         </div>
