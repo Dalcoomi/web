@@ -49,4 +49,18 @@ export default withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
+  buildExcludes: [/middleware-manifest\.json$/],
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.*\.(png|jpg|jpeg|svg|gif|webp)$/,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "image-cache",
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 60 * 60 * 24, // 24 hours
+        },
+      },
+    },
+  ],
 })(nextConfig);
