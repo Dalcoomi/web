@@ -1,22 +1,17 @@
 // utils/apiClient.ts
+import { getAccessToken, clearTokens } from "./tokenManager";
 import {
-  getAccessToken,
-  getRefreshToken,
-  saveTokens,
-  clearTokens,
-} from "./tokenManager";
+  refreshAccessToken,
+  isTokenRefreshing,
+} from "./refreshTokenManager";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// 토큰 리프레시 중복 방지를 위한 플래그
-let isRefreshing = false;
+// 대기 중인 요청들을 위한 큐
 let failedQueue: Array<{
   resolve: (value: any) => void;
   reject: (reason: any) => void;
 }> = [];
-
-// 🔥 에러 메시지 중복 표시 방지
-let hasShownAuthError = false;
 
 // 대기 중인 요청들을 처리하는 함수
 const processQueue = (error: any, token: string | null = null) => {
@@ -66,7 +61,7 @@ export const apiClient = async (
     // 인증 오류(401) 발생 시 토큰 리프레시 시도
     if (response.status === 401) {
       // 이미 리프레시 중이면 대기열에 추가
-      if (isRefreshing) {
+      if (isTokenRefreshing()) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -77,12 +72,10 @@ export const apiClient = async (
               headers["Authorization"] = `Bearer ${newAccessToken}`;
               return fetch(url, { ...config, headers });
             }
-            throw new Error("토큰 리프레시 실패");
+            throw new Error("AUTH_ERROR");
           })
           .then(handleResponse);
       }
-
-      isRefreshing = true;
 
       try {
         const refreshed = await refreshAccessToken();
@@ -97,19 +90,13 @@ export const apiClient = async (
           return handleResponse(retryResponse);
         } else {
           // 리프레시 실패 시에만 로그아웃 처리
-          processQueue(new Error("토큰 리프레시 실패"), null);
+          processQueue(new Error("AUTH_ERROR"), null);
           handleLogout();
-
-          // 🔥 에러 메시지 중복 방지
-          if (!hasShownAuthError) {
-            hasShownAuthError = true;
-            throw new Error("인증이 만료되었습니다. 다시 로그인해주세요.");
-          } else {
-            throw new Error("AUTH_ERROR"); // 조용히 실패
-          }
+          throw new Error("AUTH_ERROR");
         }
-      } finally {
-        isRefreshing = false;
+      } catch (error) {
+        processQueue(error, null);
+        throw error;
       }
     }
 
@@ -153,71 +140,13 @@ const handleResponse = async (response: Response) => {
   return text;
 };
 
-// 🔥 로그아웃 처리 개선 - 즉시 리다이렉트 제거
+// 로그아웃 처리
 const handleLogout = () => {
   clearTokens();
 
   if (typeof window !== "undefined") {
-    // 🔥 auth-error 이벤트 발생 (useAuth에서 처리)
+    // auth-error 이벤트 발생 (useAuth에서 처리)
     window.dispatchEvent(new CustomEvent("auth-error"));
-
-    // 🔥 즉시 리다이렉트 완전 제거
-    // useAuth에서 이벤트를 받아서 처리하도록 위임
-  }
-};
-
-// 토큰 리프레시 함수
-const refreshAccessToken = async (): Promise<boolean> => {
-  const refreshToken = getRefreshToken();
-
-  if (!refreshToken) {
-    clearTokens();
-    return false;
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/api/auth/reissue`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Refresh-Token": refreshToken,
-      },
-    });
-
-    if (!response.ok) {
-      // 401 Unauthorized: 리프레시 토큰 만료/무효 → 토큰 삭제
-      if (response.status === 401) {
-        clearTokens();
-      }
-      // 그 외 에러(500, 502 등)는 토큰 유지 (일시적 서버 에러 가능성)
-      return false;
-    }
-
-    const data = await response.json();
-
-    // 응답 데이터 검증
-    if (!data.accessToken) {
-      // 응답은 성공했지만 토큰이 없음 → 비정상 상황, 토큰 삭제
-      clearTokens();
-      return false;
-    }
-
-    // 새로운 토큰 저장
-    const newRefreshToken = data.refreshToken || refreshToken;
-    saveTokens(data.accessToken, newRefreshToken);
-
-    // 🔥 토큰 갱신 성공 시 에러 상태 리셋
-    hasShownAuthError = false;
-
-    // 🔥 토큰 갱신 성공 이벤트 발생
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("token-refreshed"));
-    }
-
-    return true;
-  } catch (error) {
-    // 네트워크 에러 등 예외 상황 → 토큰 유지 (일시적 에러 가능성)
-    return false;
   }
 };
 
