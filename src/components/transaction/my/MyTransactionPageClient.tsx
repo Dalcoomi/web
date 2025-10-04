@@ -303,8 +303,15 @@ export default function MyTransactionPageClient() {
             <div
               className="relative cursor-pointer"
               onClick={(e) => {
+                e.stopPropagation();
                 const input = e.currentTarget.querySelector('input[type="month"]') as HTMLInputElement;
-                if (input) input.showPicker();
+                if (input) {
+                  if (typeof input.showPicker === 'function') {
+                    input.showPicker();
+                  } else {
+                    input.click();
+                  }
+                }
               }}
             >
               <span className={`text-m text-[#534E4E] px-2 py-0.5 rounded ${
@@ -319,8 +326,8 @@ export default function MyTransactionPageClient() {
                 type="month"
                 value={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}`}
                 onChange={handleMonthInputChange}
-                className="absolute opacity-0 pointer-events-none"
-                style={{ width: '1px', height: '1px', left: 0, top: '100%' }}
+                className="absolute opacity-0"
+                style={{ width: '100%', height: '100%', left: 0, top: 0, pointerEvents: 'none' }}
               />
             </div>
 
