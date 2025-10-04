@@ -5,10 +5,15 @@ import { setCookie, getCookie, eraseCookie } from "./cookieManager";
 export const saveTokens = (accessToken: string, refreshToken?: string) => {
   if (typeof window === "undefined") return;
 
+  console.log("[saveTokens] 토큰 저장 시작", {
+    accessToken: accessToken ? "있음" : "없음",
+    refreshToken: refreshToken ? "있음" : "없음"
+  });
   setCookie("accessToken", accessToken, 1 / 24);
   if (refreshToken) {
     setCookie("refreshToken", refreshToken, 3);
   }
+  console.log("[saveTokens] 토큰 저장 완료");
 };
 
 // 액세스 토큰 가져오기
@@ -27,6 +32,7 @@ export const getRefreshToken = () => {
 export const clearTokens = () => {
   if (typeof window === "undefined") return;
 
+  console.log("[clearTokens] 토큰 삭제 호출됨", new Error().stack);
   eraseCookie("accessToken");
   eraseCookie("refreshToken");
 };
