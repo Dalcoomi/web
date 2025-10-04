@@ -1,7 +1,7 @@
 // hooks/useAuth.ts
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   getAccessToken,
@@ -9,6 +9,10 @@ import {
   saveTokens,
   clearTokens,
 } from "@/utils/tokenManager";
+import {
+  refreshAccessToken,
+  isTokenRefreshing,
+} from "@/utils/refreshTokenManager";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { logout as logoutAPI } from "@/services/authService";
 
@@ -19,124 +23,25 @@ export function useAuth() {
   const [mounted, setMounted] = useState(false);
   const { clearMember } = useMemberStore();
 
-  // 🔥 토큰 리프레시 진행 상태와 중복 방지
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
-
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // 🔥 토큰 리프레시 함수 - 중복 호출 방지
-  const refreshAccessToken = useCallback(async (): Promise<boolean> => {
-    // 이미 리프레시 중이면 기존 Promise 반환
-    if (refreshPromiseRef.current) {
-      return refreshPromiseRef.current;
-    }
-
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) {
-      return false;
-    }
-
-    // 새로운 리프레시 Promise 생성
-    refreshPromiseRef.current = (async () => {
-      try {
-        setIsRefreshing(true);
-
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
-        const response = await fetch(`${API_URL}/api/auth/reissue`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Refresh-Token": refreshToken,
-          },
-        });
-
-        if (!response.ok) {
-          return false;
-        }
-
-        const data = await response.json();
-        if (!data.accessToken) {
-          return false;
-        }
-
-        const newRefreshToken = data.refreshToken || refreshToken;
-        saveTokens(data.accessToken, newRefreshToken);
-
-        return true;
-      } catch (error) {
-        return false;
-      } finally {
-        setIsRefreshing(false);
-        // Promise 완료 후 참조 제거
-        refreshPromiseRef.current = null;
-      }
-    })();
-
-    return refreshPromiseRef.current;
-  }, []);
-
-  // 🔥 초기 인증 상태 확인 - 매우 빠르게 처리
+  // 🔥 초기 인증 상태 확인 - 토큰 존재 여부만 확인 (재발급은 API 호출 시 자동 처리)
   useEffect(() => {
     if (!mounted) return;
 
-    const checkAuth = async () => {
-      try {
-        const accessToken = getAccessToken();
-        const refreshToken = getRefreshToken();
+    const refreshToken = getRefreshToken();
 
-        // 🔥 리프레시 토큰이 없으면 즉시 로그아웃 상태 설정
-        if (!refreshToken) {
-          clearTokens();
-          clearMember(); // 회원 정보도 제거
-          setIsLoggedIn(false);
-          setIsLoading(false);
-          return;
-        }
+    if (refreshToken) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+      clearMember();
+    }
 
-        // 🔥 액세스 토큰이 있으면 즉시 로그인 상태 설정
-        if (accessToken) {
-          setIsLoggedIn(true);
-          setIsLoading(false);
-          return;
-        }
-
-        // 🔥 액세스 토큰이 없지만 리프레시 토큰이 있는 경우
-        // 🔥 즉시 토큰 리프레시 시도 (로딩 상태 유지)
-        const success = await refreshAccessToken();
-
-        if (success) {
-          setIsLoggedIn(true);
-          setIsLoading(false);
-        } else {
-          clearTokens();
-          clearMember(); // 회원 정보도 제거
-          setIsLoggedIn(false);
-          setIsLoading(false);
-
-          // 보호된 페이지에 있다면 메인으로 이동
-          const currentPath = window.location.pathname;
-          const protectedPaths = ["/transaction", "/group"];
-          const isProtectedPath = protectedPaths.some((path) =>
-            currentPath.startsWith(path)
-          );
-
-          if (isProtectedPath) {
-            router.replace("/");
-          }
-        }
-      } catch (error) {
-        setIsLoggedIn(false);
-        clearTokens();
-        clearMember(); // 회원 정보도 제거
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [mounted, refreshAccessToken, router, clearMember]);
+    setIsLoading(false);
+  }, [mounted, clearMember]);
 
   // 로그인 함수
   const login = useCallback((accessToken: string, refreshToken?: string) => {
@@ -186,11 +91,11 @@ export function useAuth() {
       // 🔥 리프레시 토큰이 있으면 일단 접근 허용
       // 액세스 토큰 확인 및 필요시 백그라운드 리프레시
       const accessToken = getAccessToken();
-      if (!accessToken && !isRefreshing) {
+      if (!accessToken && !isTokenRefreshing()) {
         refreshAccessToken().then((success) => {
           if (!success) {
             clearTokens();
-            clearMember(); // 회원 정보도 제거
+            clearMember();
             setIsLoggedIn(false);
             router.replace("/");
           }
@@ -201,7 +106,7 @@ export function useAuth() {
         callback();
       }
     },
-    [isLoading, isRefreshing, router, refreshAccessToken, clearMember]
+    [isLoading, router, clearMember]
   );
 
   // 🔥 requireUnauth - 리프레시 토큰 기준
@@ -306,7 +211,7 @@ export function useAuth() {
 
   return {
     isLoggedIn,
-    isLoading: isLoading, // 🔥 리프레시 상태는 로딩에 포함하지 않음
+    isLoading,
     mounted,
     login,
     logout,
@@ -316,6 +221,5 @@ export function useAuth() {
     getRefreshToken,
     checkTokenValidity,
     refreshAuthState,
-    refreshAccessToken,
   };
 }
