@@ -11,14 +11,11 @@ let refreshPromise: Promise<boolean> | null = null;
 export const refreshAccessToken = async (): Promise<boolean> => {
   // 이미 리프레시 중이면 기존 Promise 반환
   if (refreshPromise) {
-    console.log("[refreshAccessToken] 이미 리프레시 중");
     return refreshPromise;
   }
 
   const refreshToken = getRefreshToken();
-  console.log("[refreshAccessToken] 리프레시 토큰:", refreshToken ? "있음" : "없음");
   if (!refreshToken) {
-    console.log("[refreshAccessToken] 리프레시 토큰 없음 - 실패");
     return false;
   }
 
@@ -36,27 +33,22 @@ export const refreshAccessToken = async (): Promise<boolean> => {
         },
       });
 
-      console.log("[refreshAccessToken] API 응답 상태:", response.status);
       if (!response.ok) {
         // 401 Unauthorized: 리프레시 토큰 만료/무효 → 토큰 삭제
         if (response.status === 401) {
-          console.log("[refreshAccessToken] 401 에러 - 리프레시 토큰 만료/무효");
           clearTokens();
         }
         return false;
       }
 
       const data = await response.json();
-      console.log("[refreshAccessToken] 응답 데이터:", data.accessToken ? "accessToken 있음" : "accessToken 없음");
       if (!data.accessToken) {
-        console.log("[refreshAccessToken] accessToken 없음 - 실패");
         clearTokens();
         return false;
       }
 
       const newRefreshToken = data.refreshToken || refreshToken;
       saveTokens(data.accessToken, newRefreshToken);
-      console.log("[refreshAccessToken] 토큰 재발급 성공");
 
       // 토큰 갱신 성공 이벤트 발생
       if (typeof window !== "undefined") {
@@ -66,7 +58,6 @@ export const refreshAccessToken = async (): Promise<boolean> => {
       return true;
     } catch (error) {
       // 네트워크 에러 등 예외 상황 → 토큰 유지 (일시적 에러 가능성)
-      console.log("[refreshAccessToken] 예외 발생:", error);
       return false;
     } finally {
       isRefreshing = false;

@@ -72,9 +72,12 @@ export const apiClient = async (
               headers["Authorization"] = `Bearer ${newAccessToken}`;
               return fetch(url, { ...config, headers });
             }
-            throw new Error("AUTH_ERROR");
+            return null;
           })
-          .then(handleResponse);
+          .then((response) => {
+            if (!response) return null;
+            return handleResponse(response);
+          });
       }
 
       try {
@@ -92,10 +95,13 @@ export const apiClient = async (
           // 리프레시 실패 시에만 로그아웃 처리
           processQueue(new Error("AUTH_ERROR"), null);
           handleLogout();
-          throw new Error("AUTH_ERROR");
+          return null;
         }
       } catch (error) {
         processQueue(error, null);
+        if (error instanceof Error && error.message === "AUTH_ERROR") {
+          return null;
+        }
         throw error;
       }
     }

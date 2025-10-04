@@ -361,12 +361,14 @@ export default function MyTransactionPageClient() {
     handleDateChange(newDate);
   };
 
-  const isCurrentMonth = () => {
-    const now = new Date();
-    return (
-      selectedDate.getFullYear() === now.getFullYear() &&
-      selectedDate.getMonth() === now.getMonth()
-    );
+  // 달력 입력 핸들러
+  const handleMonthInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value; // "YYYY-MM" 형식
+    if (value) {
+      const [year, month] = value.split("-").map(Number);
+      const newDate = new Date(year, month - 1, 1);
+      handleDateChange(newDate);
+    }
   };
 
   const formatNumber = (num: number): string => {
@@ -401,21 +403,39 @@ export default function MyTransactionPageClient() {
               />
             </button>
 
-            <div className="text-m font-light text-[#534E4E]">
-              {formatDateForDisplay(selectedDate)}
+            <div
+              className="relative cursor-pointer"
+              onClick={(e) => {
+                const input = e.currentTarget.querySelector('input[type="month"]') as HTMLInputElement;
+                if (input) input.showPicker();
+              }}
+            >
+              <span className={`text-m text-[#534E4E] px-2 py-0.5 rounded ${
+                selectedDate.getFullYear() === new Date().getFullYear() &&
+                selectedDate.getMonth() === new Date().getMonth()
+                  ? 'font-bold bg-[#B3E5FC]'
+                  : 'font-light'
+              }`}>
+                {formatDateForDisplay(selectedDate)}
+              </span>
+              <input
+                type="month"
+                value={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}`}
+                onChange={handleMonthInputChange}
+                className="absolute opacity-0 pointer-events-none"
+                style={{ width: '1px', height: '1px', left: 0, top: '100%' }}
+              />
             </div>
 
             <button
               onClick={handleNextMonth}
               className="p-0 ml-4 cursor-pointer"
-              disabled={isCurrentMonth()}
             >
               <Image
                 src="/images/transaction/화살표_오른쪽.svg"
                 alt="다음 달"
                 width={11}
                 height={11}
-                style={{ opacity: isCurrentMonth() ? 0.3 : 1 }}
               />
             </button>
 
