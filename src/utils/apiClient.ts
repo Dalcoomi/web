@@ -65,9 +65,8 @@ export const apiClient = async (
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then(() => {
+          .then((newAccessToken) => {
             // 리프레시 완료 후 원래 요청 재시도
-            const newAccessToken = getAccessToken();
             if (newAccessToken) {
               headers["Authorization"] = `Bearer ${newAccessToken}`;
               return fetch(url, { ...config, headers });
@@ -81,10 +80,9 @@ export const apiClient = async (
       }
 
       try {
-        const refreshed = await refreshAccessToken();
+        const newAccessToken = await refreshAccessToken();
 
-        if (refreshed) {
-          const newAccessToken = getAccessToken();
+        if (newAccessToken) {
           processQueue(null, newAccessToken);
 
           // 원래 요청 재시도
