@@ -92,8 +92,8 @@ export function useAuth() {
       // 액세스 토큰 확인 및 필요시 백그라운드 리프레시
       const accessToken = getAccessToken();
       if (!accessToken && !isTokenRefreshing()) {
-        refreshAccessToken().then((success) => {
-          if (!success) {
+        refreshAccessToken().then((newToken) => {
+          if (!newToken) {
             clearTokens();
             clearMember();
             setIsLoggedIn(false);
@@ -136,9 +136,9 @@ export function useAuth() {
     const handleAuthError = async (event: Event) => {
       const refreshToken = getRefreshToken();
       if (refreshToken) {
-        const refreshed = await refreshAccessToken();
+        const newToken = await refreshAccessToken();
 
-        if (refreshed) {
+        if (newToken) {
           setIsLoggedIn(true);
           return;
         }
@@ -193,8 +193,8 @@ export function useAuth() {
 
     const accessToken = getAccessToken();
     if (!accessToken) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
         setIsLoggedIn(true);
         return true;
       } else {

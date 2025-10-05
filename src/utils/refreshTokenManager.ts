@@ -3,12 +3,13 @@ import { getRefreshToken, saveTokens, clearTokens } from "./tokenManager";
 
 // 토큰 리프레시 중복 방지를 위한 전역 상태
 let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
+let refreshPromise: Promise<string | null> | null = null;
 
 /**
  * 전역 토큰 리프레시 함수 - 중복 호출 방지
+ * @returns 새로운 액세스 토큰 또는 null
  */
-export const refreshAccessToken = async (): Promise<boolean> => {
+export const refreshAccessToken = async (): Promise<string | null> => {
   // 이미 리프레시 중이면 기존 Promise 반환
   if (refreshPromise) {
     return refreshPromise;
@@ -16,7 +17,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
 
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
-    return false;
+    return null;
   }
 
   // 새로운 리프레시 Promise 생성
@@ -34,17 +35,20 @@ export const refreshAccessToken = async (): Promise<boolean> => {
       });
 
       if (!response.ok) {
-        // 401 Unauthorized: 리프레시 토큰 만료/무효 → 토큰 삭제
-        if (response.status === 401) {
+        // 401: 리프레시 토큰 만료/무효 → 토큰 삭제
+        // 4xx: 클라이언트 에러 → 토큰 삭제
+        // 5xx: 서버 에러 → 토큰 유지 (일시적 에러 가능성)
+        if (response.status === 401 || (response.status >= 400 && response.status < 500)) {
           clearTokens();
         }
-        return false;
+        return null;
       }
 
       const data = await response.json();
       if (!data.accessToken) {
+        // 응답은 성공했지만 토큰이 없음 → 백엔드 오류, 토큰 삭제
         clearTokens();
-        return false;
+        return null;
       }
 
       const newRefreshToken = data.refreshToken || refreshToken;
@@ -55,10 +59,10 @@ export const refreshAccessToken = async (): Promise<boolean> => {
         window.dispatchEvent(new CustomEvent("token-refreshed"));
       }
 
-      return true;
+      return data.accessToken;
     } catch (error) {
       // 네트워크 에러 등 예외 상황 → 토큰 유지 (일시적 에러 가능성)
-      return false;
+      return null;
     } finally {
       isRefreshing = false;
       // Promise 완료 후 참조 제거
