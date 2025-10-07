@@ -301,6 +301,8 @@ export default function UpdateMyTransactionPageClient() {
             }}
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
+            autoComplete="off"
+            enterKeyHint="done"
           />
         </div>
         {amountError && amountTouched && (
@@ -317,6 +319,9 @@ export default function UpdateMyTransactionPageClient() {
           placeholder="내용을 입력해주세요"
           value={content}
           onChange={handleContentChange}
+          inputMode="text"
+          autoComplete="off"
+          enterKeyHint="done"
         />
       </div>
 

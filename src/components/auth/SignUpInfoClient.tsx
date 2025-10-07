@@ -334,6 +334,8 @@ export default function SignUpInfoClient() {
               value={userInfo.name}
               onChange={handleInputChange}
               placeholder="ex. 홍길동"
+              inputMode="text"
+              autoComplete="name"
               className={`w-full p-1 border-b ${
                 nameError
                   ? "border-red-500 focus:border-red-500"
@@ -356,6 +358,8 @@ export default function SignUpInfoClient() {
               value={userInfo.birthdate}
               onChange={handleInputChange}
               placeholder="ex. 2001/01/01"
+              inputMode="numeric"
+              autoComplete="bday"
               className={`w-full p-1 border-b ${
                 birthdateError
                   ? "border-red-500 focus:border-red-500"

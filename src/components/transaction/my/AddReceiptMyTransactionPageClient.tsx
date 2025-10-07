@@ -428,6 +428,9 @@ export default function AddReceiptMyTransactionPageClient() {
                         handleItemChange(item.id, "content", e.target.value)
                       }
                       placeholder="내용 입력하기"
+                      inputMode="text"
+                      autoComplete="off"
+                      enterKeyHint="done"
                     />
                   </div>
 
@@ -442,6 +445,8 @@ export default function AddReceiptMyTransactionPageClient() {
                       }
                       placeholder="금액은 필수입니다"
                       inputMode="numeric"
+                      autoComplete="off"
+                      enterKeyHint="done"
                     />
                   </div>
                 </div>

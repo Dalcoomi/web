@@ -132,6 +132,9 @@ export default function JoinGroupPageClient() {
             }}
             maxLength={8}
             autoCapitalize="characters"
+            inputMode="text"
+            autoComplete="off"
+            enterKeyHint="done"
           />
           {((inviteCodeError && inviteCodeTouched) || errorMessage) && (
             <p className="text-red-500 text-xs mt-1 ml-2">
