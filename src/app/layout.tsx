@@ -163,7 +163,7 @@ export default async function RootLayout({
       </head>
       <body className="flex justify-center items-center min-h-screen bg-white">
         <ViewportFixer />
-        <div className="w-full max-w-[390px] h-screen-safe max-h-[844px] relative overflow-hidden shadow-lg bg-white">
+        <div className="w-full max-w-[390px] h-screen-safe max-h-[844px] relative shadow-lg bg-white">
           <ClientProviders isLoggedIn={isLoggedIn}>{children}</ClientProviders>
         </div>
       </body>
