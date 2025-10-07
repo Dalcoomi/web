@@ -143,6 +143,9 @@ export default function CreateGroupPageClient() {
               }
             }}
             onFocus={() => setGroupNameTouched(true)}
+            inputMode="text"
+            autoComplete="off"
+            enterKeyHint="done"
           />
           {groupNameError && groupNameTouched && (
             <p className="text-red-500 text-xs mt-1 ml-2">
@@ -173,6 +176,8 @@ export default function CreateGroupPageClient() {
             }}
             onFocus={() => setMemberLimitTouched(true)}
             inputMode="numeric"
+            autoComplete="off"
+            enterKeyHint="done"
             maxLength={2}
           />
           {memberLimitError && memberLimitTouched && (
@@ -191,6 +196,9 @@ export default function CreateGroupPageClient() {
             placeholder="목표를 입력해주세요"
             value={purpose}
             onChange={handlePurposeChange}
+            inputMode="text"
+            autoComplete="off"
+            enterKeyHint="done"
           />
         </div>
       </div>

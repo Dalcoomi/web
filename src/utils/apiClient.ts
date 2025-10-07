@@ -29,17 +29,20 @@ const processQueue = (error: any, token: string | null = null) => {
 // API 요청 함수
 export const apiClient = async (
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { skipAuthRefresh?: boolean } = {}
 ): Promise<any> => {
   const url = `${API_URL}${endpoint}`;
 
+  // skipAuthRefresh 플래그 추출 (RequestInit에는 없는 커스텀 속성)
+  const { skipAuthRefresh, ...fetchOptions } = options;
+
   // 기본 헤더 설정
   const headers: Record<string, string> = {
-    ...options.headers,
+    ...(fetchOptions.headers as Record<string, string>),
   };
 
   // body가 FormData가 아닐 때만 Content-Type을 application/json으로 설정
-  if (!(options.body instanceof FormData)) {
+  if (!(fetchOptions.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -51,15 +54,15 @@ export const apiClient = async (
 
   // 요청 설정
   const config: RequestInit = {
-    ...options,
+    ...fetchOptions,
     headers,
   };
 
   try {
     const response = await fetch(url, config);
 
-    // 인증 오류(401) 발생 시 토큰 리프레시 시도
-    if (response.status === 401) {
+    // 인증 오류(401) 발생 시 토큰 리프레시 시도 (skipAuthRefresh가 true면 스킵)
+    if (response.status === 401 && !skipAuthRefresh) {
       // 이미 리프레시 중이면 대기열에 추가
       if (isTokenRefreshing()) {
         return new Promise((resolve, reject) => {
@@ -155,24 +158,26 @@ const handleLogout = () => {
 };
 
 // API 메서드 헬퍼 함수
-export const get = (endpoint: string, options?: RequestInit) =>
+type ApiClientOptions = RequestInit & { skipAuthRefresh?: boolean };
+
+export const get = (endpoint: string, options?: ApiClientOptions) =>
   apiClient(endpoint, { ...options, method: "GET" });
 
-export const post = (endpoint: string, data?: any, options?: RequestInit) =>
+export const post = (endpoint: string, data?: any, options?: ApiClientOptions) =>
   apiClient(endpoint, {
     ...options,
     method: "POST",
     body: data ? JSON.stringify(data) : undefined,
   });
 
-export const put = (endpoint: string, data?: any, options?: RequestInit) =>
+export const put = (endpoint: string, data?: any, options?: ApiClientOptions) =>
   apiClient(endpoint, {
     ...options,
     method: "PUT",
     body: data ? JSON.stringify(data) : undefined,
   });
 
-export const patch = (endpoint: string, data?: any, options?: RequestInit) => {
+export const patch = (endpoint: string, data?: any, options?: ApiClientOptions) => {
   // FormData인 경우, JSON.stringify를 하지 않고 바로 반환
   if (data instanceof FormData) {
     return apiClient(endpoint, {
@@ -189,7 +194,7 @@ export const patch = (endpoint: string, data?: any, options?: RequestInit) => {
   });
 };
 
-export const del = (endpoint: string, data?: any, options?: RequestInit) =>
+export const del = (endpoint: string, data?: any, options?: ApiClientOptions) =>
   apiClient(endpoint, {
     ...options,
     method: "DELETE",

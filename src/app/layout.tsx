@@ -81,7 +81,7 @@ export default async function RootLayout({
         {/* Viewport */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover, user-scalable=no"
+          content="width=device-width, initial-scale=1, maximum-scale=5, shrink-to-fit=no, viewport-fit=cover"
         />
 
         {/* 구조화된 데이터 (JSON-LD) */}

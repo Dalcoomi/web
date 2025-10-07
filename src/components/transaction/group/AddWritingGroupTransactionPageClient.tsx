@@ -272,6 +272,8 @@ export default function AddWritingGroupTransactionPageClient() {
             }}
             onFocus={() => setAmountTouched(true)}
             inputMode="numeric"
+            autoComplete="off"
+            enterKeyHint="done"
           />
         </div>
         {amountError && amountTouched && (
@@ -288,6 +290,9 @@ export default function AddWritingGroupTransactionPageClient() {
           placeholder="내용을 입력해 주세요(최대 50자)"
           value={content}
           onChange={handleContentChange}
+          inputMode="text"
+          autoComplete="off"
+          enterKeyHint="done"
         />
       </div>
 

@@ -988,6 +988,9 @@ export default function ProfileUpdatePageClient() {
                 className="flex-1 min-w-0 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 placeholder="닉네임을 입력하세요"
                 maxLength={6}
+                inputMode="text"
+                autoComplete="off"
+                enterKeyHint="done"
               />
               <button
                 type="button"
@@ -1025,6 +1028,9 @@ export default function ProfileUpdatePageClient() {
               value={member.email}
               disabled
               className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+              inputMode="email"
+              autoComplete="email"
+              enterKeyHint="done"
             />
           </div>
 
@@ -1040,6 +1046,9 @@ export default function ProfileUpdatePageClient() {
               className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               placeholder="이름을 입력하세요"
               maxLength={30}
+              inputMode="text"
+              autoComplete="off"
+              enterKeyHint="done"
             />
 
             {nameError && (

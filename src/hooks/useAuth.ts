@@ -51,27 +51,22 @@ export function useAuth() {
 
   // 로그아웃 함수
   const logout = useCallback(async () => {
-    try {
-      // 백엔드 로그아웃 API 호출
-      await logoutAPI();
-    } catch (error) {
-      // 로그아웃 API 실패해도 클라이언트 로그아웃은 진행
-      console.error("로그아웃 API 호출 실패:", error);
-    } finally {
-      // 클라이언트 상태 정리
-      clearTokens();
-      clearMember(); // 회원 정보도 제거
-      setIsLoggedIn(false);
+    // 백엔드 로그아웃 API 호출 (내부에서 에러 처리하므로 항상 성공)
+    await logoutAPI();
 
-      const currentPath = window.location.pathname;
-      const protectedPaths = ["/transaction", "/group", "/profile"];
-      const isProtectedPath = protectedPaths.some((path) =>
-        currentPath.startsWith(path)
-      );
+    // 클라이언트 상태 정리
+    clearTokens();
+    clearMember(); // 회원 정보도 제거
+    setIsLoggedIn(false);
 
-      if (isProtectedPath) {
-        router.push("/");
-      }
+    const currentPath = window.location.pathname;
+    const protectedPaths = ["/transaction", "/group", "/profile"];
+    const isProtectedPath = protectedPaths.some((path) =>
+      currentPath.startsWith(path)
+    );
+
+    if (isProtectedPath) {
+      router.push("/");
     }
   }, [router, clearMember]);
 
