@@ -54,6 +54,8 @@ export default function MyTransactionPageClient() {
   // 필터 드롭다운 외부 클릭 감지를 위한 ref
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const memberButtonRef = useRef<HTMLButtonElement>(null);
+  const categoryButtonRef = useRef<HTMLButtonElement>(null);
 
   // 날짜 변경 핸들러 (필터 유지)
   const handleDateChange = (date: Date) => {
@@ -220,15 +222,27 @@ export default function MyTransactionPageClient() {
     };
   }, []);
 
+  // 드롭다운 위치 상태
+  const [memberDropdownPosition, setMemberDropdownPosition] = useState({ left: 0 });
+  const [categoryDropdownPosition, setCategoryDropdownPosition] = useState({ left: 0 });
+
   // 멤버 필터 토글
   const handleMemberFilterToggle = () => {
     setShowCategoryFilter(false);
+    if (!showMemberFilter && memberButtonRef.current) {
+      const rect = memberButtonRef.current.getBoundingClientRect();
+      setMemberDropdownPosition({ left: rect.left });
+    }
     setShowMemberFilter((prev) => !prev);
   };
 
   // 카테고리 필터 토글
   const handleCategoryFilterToggle = () => {
     setShowMemberFilter(false);
+    if (!showCategoryFilter && categoryButtonRef.current) {
+      const rect = categoryButtonRef.current.getBoundingClientRect();
+      setCategoryDropdownPosition({ left: rect.left });
+    }
     setShowCategoryFilter((prev) => !prev);
   };
 
@@ -583,6 +597,7 @@ export default function MyTransactionPageClient() {
         <div className="flex py-2 px-6">
           <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-4 relative">
             <button
+              ref={categoryButtonRef}
               onClick={handleCategoryFilterToggle}
               className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0"
               data-category-filter
@@ -615,7 +630,7 @@ export default function MyTransactionPageClient() {
                 className="fixed mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
                 style={{
                   top: "auto",
-                  left: "16px",
+                  left: `${categoryDropdownPosition.left}px`,
                   zIndex: 9999,
                 }}
               >
@@ -630,7 +645,7 @@ export default function MyTransactionPageClient() {
                 </div>
 
                 {/* 카테고리 목록 */}
-                <div className="max-h-[150px] overflow-y-auto">
+                <div className="max-h-[200px] overflow-y-auto">
                   {allCategories.map((category, index) => (
                     <div
                       key={index}
@@ -659,6 +674,7 @@ export default function MyTransactionPageClient() {
           </div>
           <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-7 relative">
             <button
+              ref={memberButtonRef}
               onClick={handleMemberFilterToggle}
               className="flex items-center cursor-pointer bg-transparent border-none p-0"
               data-member-filter
@@ -691,7 +707,7 @@ export default function MyTransactionPageClient() {
                 className="fixed mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
                 style={{
                   top: "auto",
-                  right: "80px",
+                  left: `${memberDropdownPosition.left}px`,
                   zIndex: 9999,
                 }}
               >
@@ -706,7 +722,7 @@ export default function MyTransactionPageClient() {
                 </div>
 
                 {/* 멤버 목록 */}
-                <div className="max-h-[150px] overflow-y-auto">
+                <div className="max-h-[200px] overflow-y-auto">
                   {allMembers.map((member, index) => (
                     <div
                       key={index}
