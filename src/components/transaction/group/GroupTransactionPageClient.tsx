@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   getTransactions,
   MonthlyTransactionsResponse,
@@ -54,6 +55,12 @@ export default function MyTransactionPageClient() {
   // 필터 드롭다운 외부 클릭 감지를 위한 ref
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const memberButtonRef = useRef<HTMLButtonElement>(null);
+  const categoryButtonRef = useRef<HTMLButtonElement>(null);
+
+  // 드롭다운 위치
+  const [memberDropdownPos, setMemberDropdownPos] = useState({ top: 0, left: 0 });
+  const [categoryDropdownPos, setCategoryDropdownPos] = useState({ top: 0, left: 0 });
 
   // 날짜 변경 핸들러 (필터 유지)
   const handleDateChange = (date: Date) => {
@@ -223,12 +230,26 @@ export default function MyTransactionPageClient() {
   // 멤버 필터 토글
   const handleMemberFilterToggle = () => {
     setShowCategoryFilter(false);
+    if (!showMemberFilter && memberButtonRef.current) {
+      const rect = memberButtonRef.current.getBoundingClientRect();
+      setMemberDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left + rect.width / 2 - 70
+      });
+    }
     setShowMemberFilter((prev) => !prev);
   };
 
   // 카테고리 필터 토글
   const handleCategoryFilterToggle = () => {
     setShowMemberFilter(false);
+    if (!showCategoryFilter && categoryButtonRef.current) {
+      const rect = categoryButtonRef.current.getBoundingClientRect();
+      setCategoryDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left + rect.width / 2 - 70
+      });
+    }
     setShowCategoryFilter((prev) => !prev);
   };
 
@@ -583,6 +604,7 @@ export default function MyTransactionPageClient() {
         <div className="flex py-2 px-6">
           <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-4 relative">
             <button
+              ref={categoryButtonRef}
               onClick={handleCategoryFilterToggle}
               className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0"
               data-category-filter
@@ -607,53 +629,13 @@ export default function MyTransactionPageClient() {
                 />
               </svg>
             </button>
-
-            {/* 카테고리 필터 드롭다운 */}
-            {showCategoryFilter && (
-              <div
-                ref={categoryDropdownRef}
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px] z-[9999]"
-              >
-                {/* 전체 해제 */}
-                <div className="p-2 border-b border-[#E5E5E5]">
-                  <button
-                    onClick={handleClearCategories}
-                    className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
-                  >
-                    전체 해제
-                  </button>
-                </div>
-
-                {/* 카테고리 목록 */}
-                <div className="max-h-[200px] overflow-y-auto">
-                  {allCategories.map((category, index) => (
-                    <div
-                      key={index}
-                      className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
-                    >
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="categoryFilter"
-                          checked={selectedCategories.includes(category)}
-                          onChange={() => handleCategorySelect(category)}
-                          className="mr-2 w-3 h-3"
-                        />
-                        <span className="text-xs font-light text-[#534E4E]">
-                          {category}
-                        </span>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
           <div className="flex-1 text-left text-sm font-light text-[#959595] translate-x-3 relative">
             내용
           </div>
           <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-7 relative">
             <button
+              ref={memberButtonRef}
               onClick={handleMemberFilterToggle}
               className="flex items-center cursor-pointer bg-transparent border-none p-0"
               data-member-filter
@@ -678,47 +660,6 @@ export default function MyTransactionPageClient() {
                 />
               </svg>
             </button>
-
-            {/* 멤버 필터 드롭다운 */}
-            {showMemberFilter && (
-              <div
-                ref={filterDropdownRef}
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px] z-[9999]"
-              >
-                {/* 전체 해제 */}
-                <div className="p-2 border-b border-[#E5E5E5]">
-                  <button
-                    onClick={handleClearMembers}
-                    className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
-                  >
-                    전체 해제
-                  </button>
-                </div>
-
-                {/* 멤버 목록 */}
-                <div className="max-h-[200px] overflow-y-auto">
-                  {allMembers.map((member, index) => (
-                    <div
-                      key={index}
-                      className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
-                    >
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="memberFilter"
-                          checked={selectedMembers.includes(member)}
-                          onChange={() => handleMemberSelect(member)}
-                          className="mr-2 w-3 h-3"
-                        />
-                        <span className="text-xs font-light text-[#534E4E]">
-                          {member}
-                        </span>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
           <div className="flex-1 text-right text-sm font-light text-[#959595]">
             금액
@@ -780,6 +721,100 @@ export default function MyTransactionPageClient() {
       </div>
 
       <BottomBar />
+
+      {/* 카테고리 필터 드롭다운 (Portal) */}
+      {showCategoryFilter && typeof window !== 'undefined' && createPortal(
+        <div
+          ref={categoryDropdownRef}
+          className="fixed bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
+          style={{
+            top: `${categoryDropdownPos.top}px`,
+            left: `${categoryDropdownPos.left}px`,
+            zIndex: 9999,
+          }}
+        >
+          {/* 전체 해제 */}
+          <div className="p-2 border-b border-[#E5E5E5]">
+            <button
+              onClick={handleClearCategories}
+              className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
+            >
+              전체 해제
+            </button>
+          </div>
+
+          {/* 카테고리 목록 */}
+          <div className="max-h-[200px] overflow-y-auto">
+            {allCategories.map((category, index) => (
+              <div
+                key={index}
+                className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
+              >
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="categoryFilter"
+                    checked={selectedCategories.includes(category)}
+                    onChange={() => handleCategorySelect(category)}
+                    className="mr-2 w-3 h-3"
+                  />
+                  <span className="text-xs font-light text-[#534E4E]">
+                    {category}
+                  </span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 멤버 필터 드롭다운 (Portal) */}
+      {showMemberFilter && typeof window !== 'undefined' && createPortal(
+        <div
+          ref={filterDropdownRef}
+          className="fixed bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
+          style={{
+            top: `${memberDropdownPos.top}px`,
+            left: `${memberDropdownPos.left}px`,
+            zIndex: 9999,
+          }}
+        >
+          {/* 전체 해제 */}
+          <div className="p-2 border-b border-[#E5E5E5]">
+            <button
+              onClick={handleClearMembers}
+              className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
+            >
+              전체 해제
+            </button>
+          </div>
+
+          {/* 멤버 목록 */}
+          <div className="max-h-[200px] overflow-y-auto">
+            {allMembers.map((member, index) => (
+              <div
+                key={index}
+                className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
+              >
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="memberFilter"
+                    checked={selectedMembers.includes(member)}
+                    onChange={() => handleMemberSelect(member)}
+                    className="mr-2 w-3 h-3"
+                  />
+                  <span className="text-xs font-light text-[#534E4E]">
+                    {member}
+                  </span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
