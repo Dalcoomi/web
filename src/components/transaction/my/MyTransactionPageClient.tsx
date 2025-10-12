@@ -304,9 +304,11 @@ export default function MyTransactionPageClient() {
               className="relative cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
-                const input = e.currentTarget.querySelector('input[type="month"]') as HTMLInputElement;
+                const input = e.currentTarget.querySelector(
+                  'input[type="month"]'
+                ) as HTMLInputElement;
                 if (input) {
-                  if (typeof input.showPicker === 'function') {
+                  if (typeof input.showPicker === "function") {
                     input.showPicker();
                   } else {
                     input.click();
@@ -314,20 +316,30 @@ export default function MyTransactionPageClient() {
                 }
               }}
             >
-              <span className={`text-m text-[#534E4E] px-2 py-0.5 rounded ${
-                selectedDate.getFullYear() === new Date().getFullYear() &&
-                selectedDate.getMonth() === new Date().getMonth()
-                  ? 'font-bold bg-[#B3E5FC]'
-                  : 'font-light'
-              }`}>
+              <span
+                className={`text-m text-[#534E4E] px-2 py-0.5 rounded ${
+                  selectedDate.getFullYear() === new Date().getFullYear() &&
+                  selectedDate.getMonth() === new Date().getMonth()
+                    ? "bg-[#B3E5FC]"
+                    : "font-light"
+                }`}
+              >
                 {formatDateForDisplay(selectedDate)}
               </span>
               <input
                 type="month"
-                value={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}`}
+                value={`${selectedDate.getFullYear()}-${String(
+                  selectedDate.getMonth() + 1
+                ).padStart(2, "0")}`}
                 onChange={handleMonthInputChange}
                 className="absolute opacity-0"
-                style={{ width: '100%', height: '100%', left: 0, top: 0, pointerEvents: 'none' }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  left: 0,
+                  top: 0,
+                  pointerEvents: "none",
+                }}
               />
             </div>
 
@@ -486,7 +498,12 @@ export default function MyTransactionPageClient() {
             {showCategoryFilter && (
               <div
                 ref={categoryDropdownRef}
-                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 w-[140px]"
+                className="fixed mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
+                style={{
+                  top: "auto",
+                  left: "28px",
+                  zIndex: 9999,
+                }}
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">

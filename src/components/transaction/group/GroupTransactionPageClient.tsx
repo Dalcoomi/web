@@ -63,7 +63,6 @@ export default function MyTransactionPageClient() {
     setShowCategoryFilter(false);
   };
 
-
   // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
     if (!teamId) {
@@ -76,7 +75,9 @@ export default function MyTransactionPageClient() {
 
     const timeoutId = setTimeout(() => {
       // loadTransactions 직접 호출하지 않고 내부 로직 실행
-      const requestKey = `${year}-${month}-${currentMemberFilter || ""}-${currentCategoryFilter || ""}`;
+      const requestKey = `${year}-${month}-${currentMemberFilter || ""}-${
+        currentCategoryFilter || ""
+      }`;
 
       if (
         isRequestInProgressRef.current &&
@@ -158,7 +159,13 @@ export default function MyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [selectedDate, teamId, router, currentMemberFilter, currentCategoryFilter]); // groupInfo 의존성 제거로 중복 호출 방지
+  }, [
+    selectedDate,
+    teamId,
+    router,
+    currentMemberFilter,
+    currentCategoryFilter,
+  ]); // groupInfo 의존성 제거로 중복 호출 방지
 
   // 그룹 정보 로딩을 별도의 useEffect로 분리
   useEffect(() => {
@@ -407,9 +414,11 @@ export default function MyTransactionPageClient() {
               className="relative cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
-                const input = e.currentTarget.querySelector('input[type="month"]') as HTMLInputElement;
+                const input = e.currentTarget.querySelector(
+                  'input[type="month"]'
+                ) as HTMLInputElement;
                 if (input) {
-                  if (typeof input.showPicker === 'function') {
+                  if (typeof input.showPicker === "function") {
                     input.showPicker();
                   } else {
                     input.click();
@@ -417,20 +426,30 @@ export default function MyTransactionPageClient() {
                 }
               }}
             >
-              <span className={`text-m text-[#534E4E] px-2 py-0.5 rounded ${
-                selectedDate.getFullYear() === new Date().getFullYear() &&
-                selectedDate.getMonth() === new Date().getMonth()
-                  ? 'font-bold bg-[#B3E5FC]'
-                  : 'font-light'
-              }`}>
+              <span
+                className={`text-m text-[#534E4E] px-2 py-0.5 rounded ${
+                  selectedDate.getFullYear() === new Date().getFullYear() &&
+                  selectedDate.getMonth() === new Date().getMonth()
+                    ? "bg-[#B3E5FC]"
+                    : "font-light"
+                }`}
+              >
                 {formatDateForDisplay(selectedDate)}
               </span>
               <input
                 type="month"
-                value={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}`}
+                value={`${selectedDate.getFullYear()}-${String(
+                  selectedDate.getMonth() + 1
+                ).padStart(2, "0")}`}
                 onChange={handleMonthInputChange}
                 className="absolute opacity-0"
-                style={{ width: '100%', height: '100%', left: 0, top: 0, pointerEvents: 'none' }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  left: 0,
+                  top: 0,
+                  pointerEvents: "none",
+                }}
               />
             </div>
 
@@ -593,7 +612,12 @@ export default function MyTransactionPageClient() {
             {showCategoryFilter && (
               <div
                 ref={categoryDropdownRef}
-                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 w-[140px]"
+                className="fixed mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
+                style={{
+                  top: "auto",
+                  left: "16px",
+                  zIndex: 9999,
+                }}
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">
@@ -664,7 +688,12 @@ export default function MyTransactionPageClient() {
             {showMemberFilter && (
               <div
                 ref={filterDropdownRef}
-                className="absolute top-full left-0 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg z-40 w-[140px]"
+                className="fixed mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
+                style={{
+                  top: "auto",
+                  right: "80px",
+                  zIndex: 9999,
+                }}
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">
