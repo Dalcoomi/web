@@ -44,7 +44,6 @@ export default function MyTransactionPageClient() {
 
   // 필터 드롭다운 외부 클릭 감지를 위한 ref
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
-  const categoryButtonRef = useRef<HTMLButtonElement>(null);
 
   const hasFetchedMember = useRef(false);
 
@@ -177,15 +176,8 @@ export default function MyTransactionPageClient() {
     };
   }, []);
 
-  // 드롭다운 위치 상태
-  const [categoryDropdownPosition, setCategoryDropdownPosition] = useState({ left: 0 });
-
   // 카테고리 필터 토글
   const handleCategoryFilterToggle = () => {
-    if (!showCategoryFilter && categoryButtonRef.current) {
-      const rect = categoryButtonRef.current.getBoundingClientRect();
-      setCategoryDropdownPosition({ left: rect.left });
-    }
     setShowCategoryFilter((prev) => !prev);
   };
 
@@ -477,7 +469,6 @@ export default function MyTransactionPageClient() {
         <div className="flex py-2 px-7">
           <div className="flex-1 text-center text-sm font-light text-[#959595] translate-x-5 relative">
             <button
-              ref={categoryButtonRef}
               onClick={handleCategoryFilterToggle}
               className="flex items-center justify-center cursor-pointer bg-transparent border-none p-0"
               data-category-filter
@@ -507,12 +498,7 @@ export default function MyTransactionPageClient() {
             {showCategoryFilter && (
               <div
                 ref={categoryDropdownRef}
-                className="fixed mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
-                style={{
-                  top: "auto",
-                  left: `${categoryDropdownPosition.left}px`,
-                  zIndex: 9999,
-                }}
+                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px] z-[9999]"
               >
                 {/* 전체 해제 */}
                 <div className="p-2 border-b border-[#E5E5E5]">
