@@ -81,7 +81,7 @@ export const signUp = async (signUpData: SignUpRequest) => {
   return post("/api/members/sign-up", signUpData);
 };
 
-// 소셜 연동 API
+// 비회원 소셜 연동 API
 export const connectSocial = async (data: {
   socialEmail: string;
   socialId: string;
@@ -89,6 +89,16 @@ export const connectSocial = async (data: {
   socialRefreshToken?: string;
 }) => {
   return post("/api/members/connect", data);
+};
+
+// 회원 소셜 연동 API
+export const linkSocial = async (data: {
+  socialEmail: string;
+  socialId: string;
+  socialType: string;
+  socialRefreshToken?: string;
+}) => {
+  return post("/api/members/social-link", data);
 };
 
 // 회원 조회
