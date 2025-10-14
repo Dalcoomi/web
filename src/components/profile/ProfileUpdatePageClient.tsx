@@ -12,7 +12,7 @@ import {
   checkNicknameAvailability,
   SocialType,
   disconnectSocial,
-  connectSocial,
+  linkSocial,
   getSocialRefreshToken,
 } from "@/services/memberService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
@@ -679,7 +679,7 @@ export default function ProfileUpdatePageClient() {
     }) => {
       // 일반 연동 처리
       try {
-        await connectSocial({
+        await linkSocial({
           socialEmail: socialData.socialEmail,
           socialId: socialData.socialId,
           socialType: socialData.socialType,
@@ -767,7 +767,9 @@ export default function ProfileUpdatePageClient() {
 
         // 1. 현재 로그인에 사용 중인 소셜 계정인지 확인
         if (member?.currentLoginSocial === socialType) {
-          alert("현재 로그인에 사용 중인 소셜 계정입니다. 다른 소셜 계정으로 로그인 후 해제해주세요.");
+          alert(
+            "현재 로그인에 사용 중인 소셜 계정입니다. 다른 소셜 계정으로 로그인 후 해제해주세요."
+          );
           setIsUpdatingSocial(false);
           return;
         }

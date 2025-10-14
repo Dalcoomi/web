@@ -3,12 +3,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
 import { connectSocial } from "@/services/memberService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
-import { useMemberStore } from "@/stores/useMemberStore";
 
 export default function LoginPageClient() {
   const router = useRouter();
