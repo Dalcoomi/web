@@ -10,7 +10,6 @@ export const metadata = {
 export default async function SuccessGroupPage() {
   // 서버에서 인증 확인
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get("accessToken");
   const refreshToken = cookieStore.get("refreshToken");
 
   // 🔥 리프레시 토큰이 없으면 로그인 페이지로
