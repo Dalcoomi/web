@@ -93,7 +93,11 @@ export default function AddWritingMyTransactionPageClient() {
 
   // 내용 입력 핸들러
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setContent(e.target.value);
+    const value = e.target.value;
+    // 최대 50자 제한
+    if (value.length <= 50) {
+      setContent(value);
+    }
   };
 
   // 날짜 입력 핸들러
@@ -242,16 +246,20 @@ export default function AddWritingMyTransactionPageClient() {
 
       {/* 내용 입력 */}
       <div className="px-4">
-        <label className="block font-medium text-md mb-1">내용</label>
+        <label className="block font-medium text-md mb-1">
+          내용
+          <span className="text-xs text-gray-500 ml-2">({content.length}/50)</span>
+        </label>
         <input
           type="text"
           className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해 주세요(최대 50자)"
+          placeholder="내용을 입력해 주세요 (최대 50자)"
           value={content}
           onChange={handleContentChange}
           inputMode="text"
           autoComplete="off"
           enterKeyHint="done"
+          maxLength={50}
         />
       </div>
 
