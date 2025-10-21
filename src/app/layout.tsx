@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import ClientProviders from "./providers";
 import type { Metadata, Viewport } from "next";
 import ViewportFixer from "@/components/common/ViewportFixer";
+import AppContainer from "@/components/common/AppContainer";
 
 export const metadata: Metadata = {
   title: {
@@ -161,11 +162,11 @@ export default async function RootLayout({
           media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
         />
       </head>
-      <body className="flex justify-center items-center min-h-screen bg-white">
+      <body className="flex justify-center items-center min-h-screen bg-white overflow-hidden">
         <ViewportFixer />
-        <div className="w-full max-w-[390px] h-screen-safe max-h-[844px] relative shadow-lg bg-white">
+        <AppContainer>
           <ClientProviders isLoggedIn={isLoggedIn}>{children}</ClientProviders>
-        </div>
+        </AppContainer>
       </body>
     </html>
   );

@@ -2,7 +2,6 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import Image from "next/image";
 import { useCallback, useState, useRef, useEffect } from "react";
 
 interface TopBarProps {
@@ -82,7 +81,7 @@ export default function TopBar({
   };
 
   const handleContactUs = () => {
-    alert("서비스 준비 중입니다.");
+    window.open("https://forms.gle/ucj6CNNx25wzB9a88", "_blank");
   };
 
   return (
@@ -126,7 +125,7 @@ export default function TopBar({
               width={120}
               height={40}
               loading="eager"
-              style={{ display: 'block' }}
+              style={{ display: "block" }}
             />
           </div>
         </div>
