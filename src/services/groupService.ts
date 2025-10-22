@@ -1,5 +1,5 @@
 // services/groupService.ts
-import { get, post, put, del } from "@/utils/apiClient";
+import { get, post, put, del, patch } from "@/utils/apiClient";
 
 // 그룹 타입 정의
 export interface Group {
@@ -29,9 +29,21 @@ export interface GroupMember {
   profileImageUrl: string;
 }
 
+// 그룹 생성/수정 요청 DTO
+export interface GroupRequestDto {
+  teamId: string | null; // 생성 시 null, 수정 시 teamId
+  title: string;
+  memberLimit: number;
+  purpose: string | null;
+}
+
 // 그룹 생성 API
-export const createGroup = async (groupData: any) => {
-  return post("/api/teams", groupData);
+export const createGroup = async (groupData: Omit<GroupRequestDto, 'teamId'>) => {
+  const requestData: GroupRequestDto = {
+    teamId: null, // 생성 시 null
+    ...groupData,
+  };
+  return post("/api/teams", requestData);
 };
 
 // 그룹 참가 API
@@ -60,6 +72,15 @@ export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
     const response = await get(`/api/teams/${teamId}`);
 
     return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// 그룹 수정 API
+export const updateGroup = async (groupData: GroupRequestDto): Promise<void> => {
+  try {
+    await patch("/api/teams", groupData);
   } catch (error) {
     throw error;
   }

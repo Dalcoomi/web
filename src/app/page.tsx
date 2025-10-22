@@ -1,7 +1,9 @@
-// app/page.tsx (루트 페이지 - 로그인)
+// app/page.tsx (루트 페이지 - 랜딩 + 로그인)
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import LoginPageClient from "@/components/auth/LoginPageClient";
+import LandingContent from "@/components/landing/LandingContent";
+import PWAInstallPrompt from "@/components/common/PWAInstallPrompt";
 
 export const metadata = {
   description:
@@ -57,7 +59,6 @@ export const metadata = {
 export default async function RootPage() {
   // 서버에서 인증 확인
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get("accessToken");
   const refreshToken = cookieStore.get("refreshToken");
 
   // 🔥 리프레시 토큰이 있으면 로그인된 상태로 간주 (액세스 토큰은 클라이언트에서 재발급)
@@ -65,6 +66,31 @@ export default async function RootPage() {
     redirect("/transaction/my");
   }
 
-  // 로그인되지 않은 경우 로그인 페이지 표시
-  return <LoginPageClient />;
+  // 로그인되지 않은 경우 랜딩 + 로그인 페이지 표시
+  return (
+    <>
+      {/* 데스크톱: Split Screen (랜딩 + 로그인) - 중앙 정렬 */}
+      <div className="hidden lg:flex w-full h-screen justify-center bg-gray-100 px-8">
+        <div className="flex w-full max-w-[1000px] h-full shadow-2xl overflow-hidden bg-white">
+          {/* 왼쪽: 랜딩 페이지 */}
+          <div className="flex-1 h-full overflow-y-auto">
+            <LandingContent />
+          </div>
+
+          {/* 오른쪽: 로그인 페이지 (390px 고정) */}
+          <div className="w-[390px] h-full flex-shrink-0 overflow-y-auto relative">
+            <LoginPageClient />
+          </div>
+        </div>
+      </div>
+
+      {/* 모바일: 로그인 페이지만 표시 */}
+      <div className="lg:hidden w-full h-full">
+        <LoginPageClient />
+      </div>
+
+      {/* PWA 설치 프롬프트 */}
+      <PWAInstallPrompt />
+    </>
+  );
 }

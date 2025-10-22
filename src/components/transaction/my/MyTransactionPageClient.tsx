@@ -48,7 +48,10 @@ export default function MyTransactionPageClient() {
   const categoryButtonRef = useRef<HTMLButtonElement>(null);
 
   // 드롭다운 위치
-  const [categoryDropdownPos, setCategoryDropdownPos] = useState({ top: 0, left: 0 });
+  const [categoryDropdownPos, setCategoryDropdownPos] = useState({
+    top: 0,
+    left: 0,
+  });
 
   const hasFetchedMember = useRef(false);
 
@@ -187,7 +190,7 @@ export default function MyTransactionPageClient() {
       const rect = categoryButtonRef.current.getBoundingClientRect();
       setCategoryDropdownPos({
         top: rect.bottom + 4,
-        left: rect.left + rect.width / 2 - 70
+        left: rect.left + rect.width / 2 - 70,
       });
     }
     setShowCategoryFilter((prev) => !prev);
@@ -246,8 +249,8 @@ export default function MyTransactionPageClient() {
   };
 
   const handleReceiptTransaction = () => {
-    alert("서비스 준비 중입니다.");
-    // router.push("/transaction/my/add/receipt");
+    // alert("서비스 준비 중입니다.");
+    router.push("/transaction/my/add/receipt");
   };
 
   // 모달 닫기
@@ -570,51 +573,53 @@ export default function MyTransactionPageClient() {
       <BottomBar />
 
       {/* 카테고리 필터 드롭다운 (Portal) */}
-      {showCategoryFilter && typeof window !== 'undefined' && createPortal(
-        <div
-          ref={categoryDropdownRef}
-          className="fixed bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
-          style={{
-            top: `${categoryDropdownPos.top}px`,
-            left: `${categoryDropdownPos.left}px`,
-            zIndex: 9999,
-          }}
-        >
-          {/* 전체 해제 */}
-          <div className="p-2 border-b border-[#E5E5E5]">
-            <button
-              onClick={handleClearCategories}
-              className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
-            >
-              전체 해제
-            </button>
-          </div>
-
-          {/* 카테고리 목록 */}
-          <div className="max-h-[200px] overflow-y-auto">
-            {allCategories.map((category, index) => (
-              <div
-                key={index}
-                className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
+      {showCategoryFilter &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <div
+            ref={categoryDropdownRef}
+            className="fixed bg-white border border-[#C7C3C3] rounded-[10px] shadow-lg w-[140px]"
+            style={{
+              top: `${categoryDropdownPos.top}px`,
+              left: `${categoryDropdownPos.left}px`,
+              zIndex: 9999,
+            }}
+          >
+            {/* 전체 해제 */}
+            <div className="p-2 border-b border-[#E5E5E5]">
+              <button
+                onClick={handleClearCategories}
+                className="w-full text-left text-xs font-medium text-[#534E4E] cursor-pointer hover:text-[#FF005E]"
               >
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="categoryFilter"
-                    checked={selectedCategories.includes(category)}
-                    onChange={() => handleCategorySelect(category)}
-                    className="mr-2 w-3 h-3"
-                  />
-                  <span className="text-xs font-light text-[#534E4E]">
-                    {category}
-                  </span>
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>,
-        document.body
-      )}
+                전체 해제
+              </button>
+            </div>
+
+            {/* 카테고리 목록 */}
+            <div className="max-h-[200px] overflow-y-auto">
+              {allCategories.map((category, index) => (
+                <div
+                  key={index}
+                  className="p-2 hover:bg-[#F5F5F5] hover:rounded-[10px]"
+                >
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="categoryFilter"
+                      checked={selectedCategories.includes(category)}
+                      onChange={() => handleCategorySelect(category)}
+                      className="mr-2 w-3 h-3"
+                    />
+                    <span className="text-xs font-light text-[#534E4E]">
+                      {category}
+                    </span>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

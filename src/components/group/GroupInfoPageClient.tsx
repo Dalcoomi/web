@@ -3,7 +3,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { getGroupInfo, leaveGroup, GroupInfo } from "@/services/groupService";
+import {
+  getGroupInfo,
+  leaveGroup,
+  updateGroup,
+  GroupInfo,
+} from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
@@ -19,6 +24,13 @@ export default function GroupInfoPageClient() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showLeaderSelectModal, setShowLeaderSelectModal] = useState(false);
   const [selectedNewLeader, setSelectedNewLeader] = useState<string>("");
+
+  // 수정 모드 상태
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editPurpose, setEditPurpose] = useState("");
+  const [editMemberLimit, setEditMemberLimit] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // 회원 정보가 없으면 가져오기
   useEffect(() => {
@@ -40,6 +52,10 @@ export default function GroupInfoPageClient() {
         const response = await getGroupInfo(teamId);
 
         setGroupInfo(response);
+        // 수정 폼 초기값 설정
+        setEditTitle(response.title);
+        setEditPurpose(response.purpose || "");
+        setEditMemberLimit(response.memberLimit.toString());
       } catch (error) {
         alert(error || "그룹 정보를 불러올 수 없습니다.");
 
@@ -65,6 +81,105 @@ export default function GroupInfoPageClient() {
       alert("초대 코드가 복사되었습니다!");
     } catch (error) {
       alert(error || "복사에 실패했습니다. 다시 시도해 주세요.");
+    }
+  };
+
+  // 수정 모드 진입
+  const handleEditClick = () => {
+    setIsEditMode(true);
+  };
+
+  // 수정 취소
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    // 원래 값으로 되돌리기
+    if (groupInfo) {
+      setEditTitle(groupInfo.title);
+      setEditPurpose(groupInfo.purpose || "");
+      setEditMemberLimit(groupInfo.memberLimit.toString());
+    }
+  };
+
+  // 그룹명 입력 핸들러
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.length <= 20) {
+      setEditTitle(value);
+    }
+  };
+
+  // 목표 입력 핸들러
+  const handlePurposeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.length <= 30) {
+      setEditPurpose(value);
+    }
+  };
+
+  // 최대 인원 입력 핸들러
+  const handleMemberLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^\d]/g, ""); // 숫자만 허용
+
+    if (!groupInfo) return;
+
+    const currentMemberCount = groupInfo.members.length;
+    const newLimit = Number(value);
+
+    // 빈 값이거나 현재 인원 이상 10 이하인 경우만 허용
+    if (value === "" || (newLimit >= currentMemberCount && newLimit <= 10)) {
+      setEditMemberLimit(value);
+    }
+  };
+
+  // 그룹 정보 수정 완료
+  const handleUpdateGroup = async () => {
+    if (!groupInfo) return;
+
+    if (editTitle.trim().length === 0) {
+      alert("그룹명을 입력해주세요.");
+      return;
+    }
+
+    if (editMemberLimit.trim() === "") {
+      alert("최대 인원을 입력해주세요.");
+      return;
+    }
+
+    const newMemberLimit = Number(editMemberLimit);
+    const currentMemberCount = groupInfo.members.length;
+
+    if (newMemberLimit < currentMemberCount) {
+      alert(
+        `최대 인원은 현재 인원(${currentMemberCount}명)보다 작을 수 없습니다.`
+      );
+      return;
+    }
+
+    if (newMemberLimit < 1 || newMemberLimit > 10) {
+      alert("최대 인원은 1명에서 10명 사이여야 합니다.");
+      return;
+    }
+
+    setIsUpdating(true);
+
+    try {
+      await updateGroup({
+        teamId: teamId,
+        title: editTitle.trim(),
+        memberLimit: newMemberLimit,
+        purpose: editPurpose.trim() || null,
+      });
+
+      // 성공 시 그룹 정보 다시 로드
+      const response = await getGroupInfo(teamId);
+      setGroupInfo(response);
+      setEditMemberLimit(response.memberLimit.toString());
+      setIsEditMode(false);
+      alert("그룹 정보가 수정되었습니다.");
+    } catch (error) {
+      alert(error || "그룹 정보 수정 중 오류가 발생했습니다.");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -176,10 +291,28 @@ export default function GroupInfoPageClient() {
       <div className="flex-1 px-5 py-5 space-y-3">
         {/* 그룹명 */}
         <div>
-          <h3 className="text-md font-medium py-1">그룹명</h3>
-          <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
-            {groupInfo.title}
-          </p>
+          <h3 className="text-md font-medium py-1">
+            그룹명
+            {isEditMode && (
+              <span className="text-xs text-gray-500 ml-2">
+                ({editTitle.length}/20)
+              </span>
+            )}
+          </h3>
+          {isEditMode ? (
+            <input
+              type="text"
+              className="w-full text-sm border-b border-blue-500 text-gray-700 px-1 py-1 focus:outline-none"
+              value={editTitle}
+              onChange={handleTitleChange}
+              maxLength={20}
+              placeholder="그룹명을 입력해 주세요"
+            />
+          ) : (
+            <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
+              {groupInfo.title}
+            </p>
+          )}
         </div>
 
         {/* 초대 코드 */}
@@ -200,18 +333,60 @@ export default function GroupInfoPageClient() {
 
         {/* 목표 */}
         <div>
-          <h3 className="text-md font-medium py-1">목표</h3>
-          <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
-            {groupInfo.purpose || "-"}
-          </p>
+          <h3 className="text-md font-medium py-1">
+            목표
+            {isEditMode && (
+              <span className="text-xs text-gray-500 ml-2">
+                ({editPurpose.length}/30)
+              </span>
+            )}
+          </h3>
+          {isEditMode ? (
+            <input
+              type="text"
+              className="w-full text-sm border-b border-blue-500 text-gray-700 px-1 py-1 focus:outline-none"
+              value={editPurpose}
+              onChange={handlePurposeChange}
+              maxLength={30}
+              placeholder="목표를 입력해 주세요"
+            />
+          ) : (
+            <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
+              {groupInfo.purpose || "-"}
+            </p>
+          )}
         </div>
 
         {/* 인원 수 */}
         <div>
-          <h3 className="text-md font-medium py-1">인원 수</h3>
-          <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
-            {groupInfo.members.length} / {groupInfo.memberLimit}
-          </p>
+          <h3 className="text-md font-medium py-1">
+            인원 수
+            {isEditMode && (
+              <span className="text-xs text-gray-500 ml-2">
+                (현재 {groupInfo.members.length}명)
+              </span>
+            )}
+          </h3>
+          {isEditMode ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-700">
+                {groupInfo.members.length} /
+              </span>
+              <input
+                type="text"
+                className="w-20 text-xs border-b border-blue-500 text-gray-700 px-1 py-1 focus:outline-none text-center"
+                value={editMemberLimit}
+                onChange={handleMemberLimitChange}
+                maxLength={2}
+                placeholder="최대 10명"
+                inputMode="numeric"
+              />
+            </div>
+          ) : (
+            <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
+              {groupInfo.members.length} / {groupInfo.memberLimit}
+            </p>
+          )}
         </div>
 
         {/* 참여자 */}
@@ -266,11 +441,13 @@ export default function GroupInfoPageClient() {
         </div>
       </div>
 
-      {/* 그룹 떠나기 버튼 - 바텀 시트로부터 고정 위치 */}
-      <div className="absolute bottom-18 left-5">
+      {/* 하단 버튼 영역 - 바텀 시트로부터 고정 위치 */}
+      <div className="absolute bottom-18 left-5 right-5 flex items-center justify-between">
+        {/* 그룹 떠나기 버튼 */}
         <button
           onClick={handleLeaveGroupClick}
           className="cursor-pointer hover:opacity-50 transition-opacity"
+          disabled={isEditMode}
         >
           <Image
             src="/images/group/그룹_떠나기.svg"
@@ -280,6 +457,44 @@ export default function GroupInfoPageClient() {
             priority
           />
         </button>
+
+        {/* 수정 버튼 영역 - 그룹장만 보임 */}
+        {isCurrentUserLeader() && (
+          <div className="flex gap-2">
+            {isEditMode ? (
+              <>
+                {/* 수정 취소 버튼 */}
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={isUpdating}
+                  className="px-4 py-2 bg-gray-300 text-white rounded-lg text-sm font-medium hover:bg-gray-400 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  취소
+                </button>
+                {/* 수정 완료 버튼 */}
+                <button
+                  onClick={handleUpdateGroup}
+                  disabled={
+                    isUpdating ||
+                    editTitle.trim().length === 0 ||
+                    editMemberLimit.trim().length === 0
+                  }
+                  className="px-4 py-2 bg-[#0EABFF] text-white rounded-lg text-sm font-medium hover:bg-blue-600 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdating ? "처리 중..." : "완료"}
+                </button>
+              </>
+            ) : (
+              /* 수정 버튼 */
+              <button
+                onClick={handleEditClick}
+                className="px-4 py-2 bg-[#0EABFF] text-white rounded-lg text-sm font-medium hover:bg-blue-600 cursor-pointer transition-colors"
+              >
+                수정
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 첫 번째 모달: 그룹 떠나기 확인 */}

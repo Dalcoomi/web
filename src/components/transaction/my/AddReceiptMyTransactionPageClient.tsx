@@ -14,6 +14,7 @@ import { getMyCategories, Category } from "@/services/categoryService";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
+import { formatDateToDisplay, parseDisplayDate } from "@/utils/dateUtils";
 
 interface ReceiptItem {
   id: number;
@@ -131,7 +132,7 @@ export default function AddReceiptMyTransactionPageClient() {
       const convertedItems: ReceiptItem[] = response.transactions.map(
         (item, index) => ({
           id: index + 1,
-          transactionDate: item.transactionDate,
+          transactionDate: formatDateToDisplay(item.transactionDate), // YY/MM/DD 형식으로 변환
           categoryName: item.categoryName,
           content: item.content,
           amount: item.amount.toLocaleString("ko-KR"),
@@ -173,11 +174,66 @@ export default function AddReceiptMyTransactionPageClient() {
               : "";
             return { ...item, [field]: formattedValue };
           }
+          // 내용 필드인 경우 최대 50자 제한
+          if (field === "content") {
+            if (value.length <= 50) {
+              return { ...item, [field]: value };
+            }
+            return item; // 50자 초과 시 변경하지 않음
+          }
+          // 날짜 필드인 경우 자동 슬래시 입력
+          if (field === "transactionDate") {
+            // 숫자만 추출
+            const cleaned = value.replace(/[^\d]/g, "");
+            let formatted = "";
+
+            if (cleaned.length > 0) {
+              // 연도 (YY)
+              formatted = cleaned.substring(0, Math.min(2, cleaned.length));
+
+              // 월 (MM)
+              if (cleaned.length > 2) {
+                formatted +=
+                  "/" + cleaned.substring(2, Math.min(4, cleaned.length));
+              }
+
+              // 일 (DD)
+              if (cleaned.length > 4) {
+                formatted +=
+                  "/" + cleaned.substring(4, Math.min(6, cleaned.length));
+              }
+            }
+
+            return { ...item, [field]: formatted };
+          }
           return { ...item, [field]: value };
         }
         return item;
       })
     );
+  };
+
+  // 항목 삭제 핸들러
+  const handleDeleteItem = (id: number) => {
+    setReceiptItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // 항목 추가 핸들러
+  const handleAddItem = () => {
+    const newId =
+      receiptItems.length > 0
+        ? Math.max(...receiptItems.map((item) => item.id)) + 1
+        : 1;
+
+    const newItem: ReceiptItem = {
+      id: newId,
+      transactionDate: "",
+      categoryName: "",
+      content: "",
+      amount: "",
+    };
+
+    setReceiptItems((prev) => [...prev, newItem]);
   };
 
   // 카테고리 선택 모달 열기
@@ -195,6 +251,42 @@ export default function AddReceiptMyTransactionPageClient() {
     setSelectedItemId(null);
   };
 
+  // 날짜 유효성 검증 함수
+  const validateDate = (dateStr: string): boolean => {
+    if (!dateStr.trim()) {
+      return false;
+    }
+
+    // YY/MM/DD 형식 확인
+    const dateRegex = /^\d{2}\/\d{2}\/\d{2}$/;
+    if (!dateRegex.test(dateStr)) {
+      return false;
+    }
+
+    // 날짜 분해
+    const [yy, mm, dd] = dateStr.split("/").map(Number);
+
+    // 2000년대로 가정 (YY -> YYYY)
+    const currentCentury = Math.floor(new Date().getFullYear() / 100) * 100;
+    const year = currentCentury + yy;
+    const month = mm;
+    const day = dd;
+
+    // Date 객체로 변환하여 유효성 검증
+    const date = new Date(year, month - 1, day);
+
+    // 유효한 날짜인지 확인 (입력한 값과 Date 객체의 값이 같은지 확인)
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() + 1 !== month ||
+      date.getDate() !== day
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
   // 저장 핸들러 - 벌크 API 사용
   const handleSubmit = async () => {
     if (isSubmitting) return;
@@ -204,6 +296,18 @@ export default function AddReceiptMyTransactionPageClient() {
 
     if (emptyAmountItems.length > 0) {
       alert("모든 항목의 금액을 입력해주세요. 금액은 필수입니다.");
+      return;
+    }
+
+    // 날짜 유효성 검증
+    const invalidDateItems = receiptItems.filter(
+      (item) => item.transactionDate && !validateDate(item.transactionDate)
+    );
+
+    if (invalidDateItems.length > 0) {
+      alert(
+        "유효하지 않은 날짜가 있습니다. 날짜를 확인해주세요. (YY/MM/DD 형식)"
+      );
       return;
     }
 
@@ -218,7 +322,7 @@ export default function AddReceiptMyTransactionPageClient() {
     setIsSubmitting(true);
 
     try {
-      // 벌크 거래 데이터 구성
+      // 거래 데이터 구성
       const transactions: TransactionRequest[] = validItems.map((item) => {
         // 카테고리 찾기 (없으면 기본 카테고리 사용)
         const category = categories.find(
@@ -230,12 +334,13 @@ export default function AddReceiptMyTransactionPageClient() {
           throw new Error("카테고리를 찾을 수 없습니다.");
         }
 
-        // 날짜 처리 - 백엔드에서 받은 날짜 사용
+        // 날짜 처리 - YY/MM/DD 형식을 YYYY-MM-DD로 변환 후 Date 객체 생성
         let transactionDateTime: Date;
 
         if (item.transactionDate) {
-          // 백엔드에서 받은 날짜를 사용
-          transactionDateTime = new Date(item.transactionDate);
+          // YY/MM/DD 형식을 YYYY-MM-DD로 변환
+          const isoDate = parseDisplayDate(item.transactionDate);
+          transactionDateTime = new Date(isoDate);
 
           // 시간 정보가 없으면 현재 시간 설정
           if (
@@ -302,11 +407,11 @@ export default function AddReceiptMyTransactionPageClient() {
 
       {/* 영수증 등록 제목 블록 */}
       <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">개인 거래 지출 내역 영수증 작성</h1>
+        <h1 className="text-xl font-light">개인 거래 내역 영수증 작성</h1>
       </div>
 
       {/* 메인 컨텐츠 영역 - flex-1으로 남은 공간 차지 */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 relative">
         {/* 영수증 사진 업로드 버튼 */}
         <div className="px-22 py-3 flex-shrink-0">
           <button
@@ -317,39 +422,14 @@ export default function AddReceiptMyTransactionPageClient() {
             }`}
           >
             <div className="flex items-center">
-              {isUploading ? (
-                <svg
-                  className="animate-spin h-6 w-6 mr-3"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-              ) : (
-                <Image
-                  src="/images/transaction/영수증_AI_등록.svg"
-                  alt="영수증"
-                  width={30}
-                  height={30}
-                  className="-ml-1 mr-3"
-                />
-              )}
-              <span>
-                {isUploading ? "영수증 분석 중..." : "영수증 사진 업로드하기"}
-              </span>
+              <Image
+                src="/images/transaction/영수증_AI_등록.svg"
+                alt="영수증"
+                width={30}
+                height={30}
+                className="-ml-1 mr-3"
+              />
+              <span>영수증 사진 업로드하기</span>
             </div>
           </button>
 
@@ -368,7 +448,7 @@ export default function AddReceiptMyTransactionPageClient() {
           <>
             {/* 테이블 헤더 */}
             <div className="px-3 py-2 flex-shrink-0">
-              <div className="grid grid-cols-12 text-sm text-black">
+              <div className="grid grid-cols-13 text-sm text-black">
                 <div className="col-span-1 text-left">No.</div>
                 <div className="col-span-3 text-center mr-3">날짜</div>
                 <div className="col-span-2 text-left">카테고리</div>
@@ -376,6 +456,7 @@ export default function AddReceiptMyTransactionPageClient() {
                 <div className="col-span-3 text-center ml-4">
                   금액<span className="text-red-500">*</span>
                 </div>
+                <div className="col-span-1"></div>
               </div>
             </div>
 
@@ -384,7 +465,7 @@ export default function AddReceiptMyTransactionPageClient() {
               {receiptItems.map((item, index) => (
                 <div
                   key={item.id}
-                  className="grid grid-cols-12 gap-2 py-0.5 items-center"
+                  className="grid grid-cols-13 gap-2 py-0.5 items-center"
                 >
                   {/* 인덱스 번호 */}
                   <div className="col-span-1 text-center">
@@ -392,10 +473,10 @@ export default function AddReceiptMyTransactionPageClient() {
                   </div>
 
                   {/* 날짜 */}
-                  <div className="col-span-3 -mr-1">
+                  <div className="col-span-3">
                     <input
-                      type="date"
-                      className="w-full p-1 text-xs border border-gray-200 rounded focus:border-[#11ABFF] outline-none"
+                      type="text"
+                      className="w-full text-xs border border-gray-200 rounded focus:border-[#11ABFF] outline-none"
                       value={item.transactionDate}
                       onChange={(e) =>
                         handleItemChange(
@@ -404,14 +485,17 @@ export default function AddReceiptMyTransactionPageClient() {
                           e.target.value
                         )
                       }
+                      placeholder="01/01/01"
+                      maxLength={8}
+                      inputMode="numeric"
                     />
                   </div>
 
                   {/* 카테고리 */}
-                  <div className="col-span-2 -mr-1">
+                  <div className="col-span-2">
                     <button
                       type="button"
-                      className="w-full p-1 text-xs border border-gray-200 rounded text-center focus:border-[#11ABFF] outline-none hover:bg-gray-50 cursor-pointer"
+                      className="w-full p-0.5 text-sm border border-gray-200 rounded text-center focus:border-[#11ABFF] outline-none hover:bg-gray-50 cursor-pointer"
                       onClick={() => openCategoryModal(item.id)}
                     >
                       {item.categoryName || "선택"}
@@ -419,18 +503,19 @@ export default function AddReceiptMyTransactionPageClient() {
                   </div>
 
                   {/* 내용 */}
-                  <div className="col-span-3 -mr-1">
+                  <div className="col-span-3">
                     <input
                       type="text"
-                      className="w-full p-1 text-xs border border-gray-200 rounded focus:border-[#11ABFF] outline-none"
+                      className="w-full text-sm border border-gray-200 rounded focus:border-[#11ABFF] outline-none"
                       value={item.content}
                       onChange={(e) =>
                         handleItemChange(item.id, "content", e.target.value)
                       }
-                      placeholder="내용 입력하기"
+                      placeholder="최대 50자"
                       inputMode="text"
                       autoComplete="off"
                       enterKeyHint="done"
+                      maxLength={50}
                     />
                   </div>
 
@@ -438,19 +523,41 @@ export default function AddReceiptMyTransactionPageClient() {
                   <div className="col-span-3">
                     <input
                       type="text"
-                      className="w-full p-1 text-xs border border-gray-200 rounded focus:border-[#11ABFF] outline-none text-right"
+                      className="w-full text-sm border border-gray-200 rounded focus:border-[#11ABFF] outline-none text-right"
                       value={item.amount}
                       onChange={(e) =>
                         handleItemChange(item.id, "amount", e.target.value)
                       }
-                      placeholder="금액은 필수입니다"
+                      placeholder="금액 필수"
                       inputMode="numeric"
                       autoComplete="off"
                       enterKeyHint="done"
                     />
                   </div>
+
+                  {/* 삭제 버튼 */}
+                  <div className="col-span-1 flex justify-center">
+                    <button
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="text-red-500 hover:text-red-600 text-lg cursor-pointer"
+                      type="button"
+                    >
+                      —
+                    </button>
+                  </div>
                 </div>
               ))}
+            </div>
+
+            {/* 항목 추가 버튼 */}
+            <div className="px-3 py-2 flex-shrink-0 flex justify-center">
+              <button
+                onClick={handleAddItem}
+                className="w-[120px] py-2 border-2 border-[#11ABFF] text-[#11ABFF] rounded-lg text-sm hover:bg-blue-50 transition-colors cursor-pointer"
+                type="button"
+              >
+                + 거래 내역 추가
+              </button>
             </div>
 
             {/* 합계 및 완료 버튼 - 하단 고정 */}
@@ -522,6 +629,42 @@ export default function AddReceiptMyTransactionPageClient() {
               <p className="text-sm">AI가 자동으로 내역을 분석해드립니다</p>
             </div>
           </div>
+        )}
+
+        {/* 업로드 중 오버레이 */}
+        {isUploading && (
+          <>
+            {/* 반투명 오버레이 */}
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex items-center justify-center z-50" />
+
+            {/* 로딩 모달 */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-8 flex flex-col items-center z-50">
+              <svg
+                className="animate-spin h-12 w-12 text-[#11ABFF] mb-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <p className="text-lg font-medium text-gray-800">
+                영수증 분석 중...
+              </p>
+              <p className="text-sm text-gray-500 mt-2">잠시만 기다려주세요</p>
+            </div>
+          </>
         )}
       </div>
 
