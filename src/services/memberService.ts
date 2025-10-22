@@ -144,6 +144,16 @@ export const updateAvatar = async (
 
     return response;
   } catch (error) {
+    // 🔥 413 에러 (파일 크기 초과) 처리
+    if (error instanceof Error && error.message.includes("413")) {
+      throw new Error("파일 크기가 너무 큽니다. 10MB 이하의 파일을 선택해주세요.");
+    }
+
+    // 🔥 네트워크 에러 처리
+    if (error instanceof Error && error.message.includes("네트워크 연결")) {
+      throw new Error("네트워크 연결을 확인하거나, 파일 크기가 너무 크지 않은지 확인해주세요.");
+    }
+
     throw error;
   }
 };

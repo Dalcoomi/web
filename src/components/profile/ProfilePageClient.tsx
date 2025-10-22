@@ -62,12 +62,12 @@ export default function ProfilePageClient() {
   // AI 학습 동의 관련 상태
   const [isUpdatingAiAgreement, setIsUpdatingAiAgreement] = useState(false);
 
-  // 회원 정보가 없으면 가져오기 (단, 로그인된 상태에서만)
+  // 🔥 페이지 진입 시 항상 최신 회원 정보 가져오기 (멀티 디바이스/탭 동기화)
   useEffect(() => {
-    if (!member && isLoggedIn) {
-      fetchMember();
+    if (isLoggedIn) {
+      fetchMember(true); // 강제 갱신
     }
-  }, [member, isLoggedIn, fetchMember]);
+  }, [isLoggedIn, fetchMember]);
 
   // 현재 그룹이 변경될 때마다 그룹 정보 조회
   useEffect(() => {

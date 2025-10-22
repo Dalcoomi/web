@@ -509,7 +509,7 @@ export default function LoginPageClient() {
         <img
           src="/images/auth/로그인 페이지 이미지.png"
           alt="로그인 배경"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain object-center lg:object-cover"
           loading="eager"
           style={{ display: 'block' }}
         />

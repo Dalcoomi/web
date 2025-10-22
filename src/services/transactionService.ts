@@ -109,6 +109,12 @@ export const uploadReceipt = async (
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+
+      // 🔥 413 에러 (Payload Too Large) 처리
+      if (response.status === 413) {
+        throw new Error("파일 크기가 너무 큽니다. 10MB 이하의 파일을 선택해주세요.");
+      }
+
       throw new Error(
         errorData.message ||
           `HTTP ${response.status}: 영수증 업로드에 실패했습니다.`
@@ -117,6 +123,10 @@ export const uploadReceipt = async (
 
     return response.json();
   } catch (error) {
+    // 🔥 네트워크 에러 처리
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new Error("네트워크 연결을 확인하거나, 파일 크기가 너무 크지 않은지 확인해주세요.");
+    }
     throw error;
   }
 };

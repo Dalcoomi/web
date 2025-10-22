@@ -374,7 +374,7 @@ export default function AddReceiptMyTransactionPageClient() {
 
       // 🔥 영수증 업로드에서 받은 taskId 사용
       if (!taskId) {
-        throw new Error("영수증 업로드 정보가 없습니다. 다시 업로드해주세요.");
+        throw new Error("영수증 업로드 정보가 없습니다. 다시 업로드해 주세요.");
       }
 
       // 영수증 데이터 구성
@@ -621,7 +621,7 @@ export default function AddReceiptMyTransactionPageClient() {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-gray-500 mb-50">
               <p className="text-lg mb-2">영수증을 업로드해 주세요</p>
-              <p className="text-sm">AI가 자동으로 내역을 분석해드립니다</p>
+              <p className="text-sm">AI가 자동으로 내역을 분석해 드려요</p>
             </div>
           </div>
         )}

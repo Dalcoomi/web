@@ -643,7 +643,7 @@ export default function AddReceiptMyTransactionPageClient() {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-gray-500 mb-50">
               <p className="text-lg mb-2">영수증을 업로드해 주세요</p>
-              <p className="text-sm">AI가 자동으로 내역을 분석해드립니다</p>
+              <p className="text-sm">AI가 자동으로 내역을 분석해 드려요</p>
             </div>
           </div>
         )}
