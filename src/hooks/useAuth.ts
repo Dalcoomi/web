@@ -51,13 +51,15 @@ export function useAuth() {
 
   // 로그아웃 함수
   const logout = useCallback(async () => {
-    // 백엔드 로그아웃 API 호출 (내부에서 에러 처리하므로 항상 성공)
-    await logoutAPI();
+    // 🔥 1. 먼저 isLoggedIn을 false로 설정 (fetchMember 호출 방지)
+    setIsLoggedIn(false);
 
-    // 클라이언트 상태 정리
+    // 🔥 2. 클라이언트 상태 정리
     clearTokens();
     clearMember(); // 회원 정보도 제거
-    setIsLoggedIn(false);
+
+    // 🔥 3. 백엔드 로그아웃 API 호출 (내부에서 에러 처리하므로 항상 성공)
+    await logoutAPI();
 
     const currentPath = window.location.pathname;
     const protectedPaths = ["/transaction", "/group", "/profile"];

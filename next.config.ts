@@ -67,9 +67,11 @@ export default withPWA({
       // 🔥 모든 API 요청은 Service Worker를 거치지 않고 직접 네트워크로
       // GET, POST, PUT, DELETE, PATCH 모두 포함
       urlPattern: ({ url }) => {
-        return url.pathname.includes('/api/') ||
-               url.hostname.includes('api.dalcoomi.com') ||
-               url.hostname.includes('dalcoomi.s3.ap-northeast-2.amazonaws.com');
+        return (
+          url.pathname.includes("/api/") ||
+          url.hostname.includes("api.dalcoomi.com") ||
+          url.hostname.includes("dalcoomi.s3.ap-northeast-2.amazonaws.com")
+        );
       },
       handler: "NetworkOnly",
     },
