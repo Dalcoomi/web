@@ -480,7 +480,7 @@ export default function LoginPageClient() {
   };
 
   return (
-    <div className="relative w-full h-screen">
+    <div className="relative w-full h-full">
       {/* SEO용 숨김 텍스트 */}
       <div className="sr-only">
         <h1>달쿠미 - 개인과 그룹을 위한 AI 가계부</h1>

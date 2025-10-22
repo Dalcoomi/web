@@ -116,7 +116,7 @@ export default function JoinGroupPageClient() {
                 ? "border-red-500 focus:border-red-500"
                 : "border-gray-300 focus:border-blue-500"
             }`}
-            placeholder="그룹 초대 코드 8자리를 입력해주세요"
+            placeholder="그룹 초대 코드 8자리를 입력해 주세요"
             value={inviteCode}
             onChange={handleInviteCodeChange}
             onBlur={(e) => {
