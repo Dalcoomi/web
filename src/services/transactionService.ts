@@ -102,6 +102,8 @@ export const uploadReceipt = async (
         method: "POST",
         body: formData,
         headers, // Content-Type은 FormData 사용 시 자동 설정
+        credentials: "include", // 쿠키 포함 (PWA 환경에서 필수)
+        mode: "cors", // CORS 모드 명시
       }
     );
 

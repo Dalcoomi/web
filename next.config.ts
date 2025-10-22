@@ -62,5 +62,23 @@ export default withPWA({
         },
       },
     },
+    {
+      // API 요청은 항상 네트워크 우선 (캐싱 제외)
+      urlPattern: /^https?.*\/api\/.*/,
+      handler: "NetworkOnly", // 캐시 사용 안 함
+      method: "POST", // POST 요청만 적용
+    },
+    {
+      // API 요청은 항상 네트워크 우선 (캐싱 제외)
+      urlPattern: /^https?.*\/api\/.*/,
+      handler: "NetworkOnly", // 캐시 사용 안 함
+      method: "PUT", // PUT 요청도 캐시 제외
+    },
+    {
+      // API 요청은 항상 네트워크 우선 (캐싱 제외)
+      urlPattern: /^https?.*\/api\/.*/,
+      handler: "NetworkOnly", // 캐시 사용 안 함
+      method: "DELETE", // DELETE 요청도 캐시 제외
+    },
   ],
 })(nextConfig);

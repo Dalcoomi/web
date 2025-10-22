@@ -1,7 +1,7 @@
 // components/transaction/group/AddWritingGroupTransactionPageClient.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { addTransaction } from "@/services/transactionService";
 import { getTeamCategories, Category } from "@/services/categoryService";
@@ -50,66 +50,83 @@ export default function AddWritingGroupTransactionPageClient() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
-  // 카테고리 로드
-  const loadCategories = useCallback(
-    async (type: "EXPENSE" | "INCOME") => {
-      if (!teamId) return;
+  // 🔥 중복 로딩 방지를 위한 ref
+  const isLoadingRef = useRef(false);
+  const lastLoadedTypeRef = useRef<"EXPENSE" | "INCOME" | null>(null);
+  const hasLoadedGroupInfo = useRef(false);
 
-      setIsLoadingCategories(true);
-
-      try {
-        const categoryList = await getTeamCategories(parseInt(teamId), type);
-        setCategories(categoryList);
-
-        // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
-        if (categoryList.length > 0) {
-          const defaultCategory =
-            categoryList.find((cat) => cat.name === "기타") || categoryList[0];
-          setCategoryId(defaultCategory.id);
-        }
-      } catch (error) {
-        alert(error);
-
-        setCategories([]);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    },
-    [teamId]
-  );
-
-  // teamId 유효성 검사 및 그룹 정보 로드
+  // teamId 유효성 검사 및 그룹 정보 로드 (마운트 시 1번만)
   useEffect(() => {
     if (!teamId) {
-      router.replace("/group"); // teamId가 없으면 그룹 목록으로 리다이렉트
+      router.replace("/group");
       return;
     }
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        const response = await getGroupInfo(teamId);
+    if (hasLoadedGroupInfo.current) return;
+    hasLoadedGroupInfo.current = true;
 
-        setGroupInfo(response);
-      } catch (error) {
-        alert(error || "그룹 정보를 불러올 수 없습니다.");
-        router.replace("/group");
-      }
-    }, 100);
+    const timeoutId = setTimeout(() => {
+      const fetchGroupInfo = async () => {
+        try {
+          const response = await getGroupInfo(teamId);
+          setGroupInfo(response);
+        } catch (error) {
+          alert(error || "그룹 정보를 불러올 수 없습니다.");
+          router.replace("/group");
+          hasLoadedGroupInfo.current = false;
+        }
+      };
 
-    const timeoutId2 = setTimeout(async () => {
-      try {
-        loadCategories(transactionType);
-      } catch (error) {
-        alert(error || "카테고리를 불러올 수 없습니다.");
-        router.replace("/group");
-      }
+      fetchGroupInfo();
     }, 100);
 
     return () => {
       clearTimeout(timeoutId);
-      clearTimeout(timeoutId2);
     };
-  }, [teamId, router, loadCategories, transactionType]);
+  }, [teamId, router]); // teamId와 router를 의존성에 포함
+
+  // transactionType 변경 시 카테고리 로드
+  useEffect(() => {
+    if (!teamId) return;
+
+    // 중복 호출 방지: 같은 타입을 이미 로드했거나 로딩 중이면 무시
+    if (isLoadingRef.current || lastLoadedTypeRef.current === transactionType) {
+      return;
+    }
+
+    isLoadingRef.current = true;
+    lastLoadedTypeRef.current = transactionType;
+
+    const timeoutId = setTimeout(() => {
+      setIsLoadingCategories(true);
+
+      const loadCategories = async () => {
+        try {
+          const categoryList = await getTeamCategories(parseInt(teamId), transactionType);
+          setCategories(categoryList);
+
+          // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
+          if (categoryList.length > 0) {
+            const defaultCategory =
+              categoryList.find((cat) => cat.name === "기타") || categoryList[0];
+            setCategoryId(defaultCategory.id);
+          }
+        } catch (error) {
+          alert(error);
+          setCategories([]);
+        } finally {
+          setIsLoadingCategories(false);
+          isLoadingRef.current = false;
+        }
+      };
+
+      loadCategories();
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [transactionType, teamId]); // teamId도 의존성에 포함
 
   // 폼 유효성 검사
   useEffect(() => {
