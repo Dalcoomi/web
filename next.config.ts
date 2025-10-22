@@ -52,6 +52,7 @@ export default withPWA({
   buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
     {
+      // 이미지 파일만 캐싱 (영수증 업로드는 제외)
       urlPattern: /^https?.*\.(png|jpg|jpeg|svg|gif|webp)$/,
       handler: "NetworkFirst",
       options: {
@@ -63,22 +64,14 @@ export default withPWA({
       },
     },
     {
-      // API 요청은 항상 네트워크 우선 (캐싱 제외)
-      urlPattern: /^https?.*\/api\/.*/,
-      handler: "NetworkOnly", // 캐시 사용 안 함
-      method: "POST", // POST 요청만 적용
-    },
-    {
-      // API 요청은 항상 네트워크 우선 (캐싱 제외)
-      urlPattern: /^https?.*\/api\/.*/,
-      handler: "NetworkOnly", // 캐시 사용 안 함
-      method: "PUT", // PUT 요청도 캐시 제외
-    },
-    {
-      // API 요청은 항상 네트워크 우선 (캐싱 제외)
-      urlPattern: /^https?.*\/api\/.*/,
-      handler: "NetworkOnly", // 캐시 사용 안 함
-      method: "DELETE", // DELETE 요청도 캐시 제외
+      // 🔥 모든 API 요청은 Service Worker를 거치지 않고 직접 네트워크로
+      // GET, POST, PUT, DELETE, PATCH 모두 포함
+      urlPattern: ({ url }) => {
+        return url.pathname.includes('/api/') ||
+               url.hostname.includes('dalcoomi-be') ||
+               url.hostname.includes('amazonaws.com');
+      },
+      handler: "NetworkOnly",
     },
   ],
 })(nextConfig);
