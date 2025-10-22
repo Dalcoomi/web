@@ -73,6 +73,10 @@ jobs:
             # 의존성 설치
             npm ci
 
+            # 🔥 환경 변수 설정
+            cp env-config/.env ./
+            cp env-config/.env.production ./.env.local
+
             # 🔥 EC2에서 프로덕션 빌드 (sw.js 생성)
             NODE_ENV=production npm run build
 

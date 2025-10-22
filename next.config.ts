@@ -68,8 +68,8 @@ export default withPWA({
       // GET, POST, PUT, DELETE, PATCH 모두 포함
       urlPattern: ({ url }) => {
         return url.pathname.includes('/api/') ||
-               url.hostname.includes('dalcoomi-be') ||
-               url.hostname.includes('amazonaws.com');
+               url.hostname.includes('api.dalcoomi.com') ||
+               url.hostname.includes('dalcoomi.s3.ap-northeast-2.amazonaws.com');
       },
       handler: "NetworkOnly",
     },
