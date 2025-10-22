@@ -1,7 +1,7 @@
 // components/transaction/group/AddReceiptGroupTransactionPageClient.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   addReceiptsTransactions,
@@ -45,68 +45,58 @@ export default function AddReceiptMyTransactionPageClient() {
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
-  // 🔥 디바운스를 위한 ref
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // 🔥 중복 로딩 방지를 위한 ref
+  const hasLoadedRef = useRef(false);
 
-  // 🔥 디바운스가 적용된 카테고리 로드 함수
-  const loadCategories = useCallback(async () => {
-    if (!teamId) return;
-
-    setIsLoadingCategories(true);
-
-    try {
-      const categoryList = await getTeamCategories(parseInt(teamId), "EXPENSE");
-      setCategories(categoryList);
-    } catch (error) {
-      alert(error);
-      setCategories([]);
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  }, [teamId]);
-
-  // 🔥 디바운스가 적용된 카테고리 로드
-  const debouncedLoadCategories = useCallback(() => {
-    // 기존 타이머 클리어
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    // 새 타이머 설정 (300ms 디바운스)
-    debounceTimeoutRef.current = setTimeout(() => {
-      loadCategories();
-    }, 300);
-  }, [loadCategories]);
-
-  // 초기 그룹 정보, 카테고리 로드 (디바운스 적용)
+  // 초기 그룹 정보, 카테고리 로드
   useEffect(() => {
     if (!teamId) {
-      router.replace("/group"); // teamId가 없으면 그룹 목록으로 리다이렉트
+      router.replace("/group");
       return;
     }
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        const response = await getGroupInfo(teamId);
+    // 이미 로드했으면 리턴
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
 
-        setGroupInfo(response);
-      } catch (error) {
-        alert(error || "그룹 정보를 불러올 수 없습니다.");
-        router.replace("/group");
-      }
+    const timeoutId = setTimeout(() => {
+      const fetchGroupInfo = async () => {
+        try {
+          const response = await getGroupInfo(teamId);
+          setGroupInfo(response);
+        } catch (error) {
+          alert(error || "그룹 정보를 불러올 수 없습니다.");
+          router.replace("/group");
+          hasLoadedRef.current = false;
+        }
+      };
+
+      const loadCategories = async () => {
+        setIsLoadingCategories(true);
+
+        try {
+          const categoryList = await getTeamCategories(
+            parseInt(teamId),
+            "EXPENSE"
+          );
+          setCategories(categoryList);
+        } catch (error) {
+          alert(error);
+          setCategories([]);
+          hasLoadedRef.current = false;
+        } finally {
+          setIsLoadingCategories(false);
+        }
+      };
+
+      fetchGroupInfo();
+      loadCategories();
     }, 100);
 
-    debouncedLoadCategories();
-
-    // 클린업 함수
     return () => {
       clearTimeout(timeoutId);
-
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
     };
-  }, [teamId, router, debouncedLoadCategories]);
+  }, [teamId, router]); // teamId와 router를 의존성에 포함
 
   // 총 금액 계산
   const totalAmount = receiptItems.reduce((sum, item) => {
@@ -522,7 +512,7 @@ export default function AddReceiptMyTransactionPageClient() {
                   <div className="col-span-2">
                     <button
                       type="button"
-                      className="w-full p-0.5 text-sm border border-gray-200 rounded text-center focus:border-[#11ABFF] outline-none hover:bg-gray-50 cursor-pointer"
+                      className="w-full py-1 text-xs border border-gray-200 rounded text-center focus:border-[#11ABFF] outline-none hover:bg-gray-50 cursor-pointer"
                       onClick={() => openCategoryModal(item.id)}
                     >
                       {item.categoryName || "선택"}

@@ -1,7 +1,7 @@
 // components/transaction/my/AddReceiptMyTransactionPageClient.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   addReceiptsTransactions,
@@ -40,48 +40,43 @@ export default function AddReceiptMyTransactionPageClient() {
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
-  // 🔥 디바운스를 위한 ref
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // 🔥 중복 로딩 방지를 위한 ref (Strict Mode에서도 유지됨)
+  const isLoadingRef = useRef(false);
+  const hasLoadedRef = useRef(false);
 
-  // 🔥 디바운스가 적용된 카테고리 로드 함수
-  const loadCategories = useCallback(async () => {
-    setIsLoadingCategories(true);
-
-    try {
-      const categoryList = await getMyCategories("EXPENSE");
-      setCategories(categoryList);
-    } catch (error) {
-      alert(error);
-      setCategories([]);
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  }, []);
-
-  // 🔥 디바운스가 적용된 카테고리 로드
-  const debouncedLoadCategories = useCallback(() => {
-    // 기존 타이머 클리어
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    // 새 타이머 설정 (300ms 디바운스)
-    debounceTimeoutRef.current = setTimeout(() => {
-      loadCategories();
-    }, 300);
-  }, [loadCategories]);
-
-  // 초기 카테고리 로드 (디바운스 적용)
+  // 초기 카테고리 로드 (한 번만 실행)
   useEffect(() => {
-    debouncedLoadCategories();
+    // 이미 로드 완료했거나 로딩 중인 경우 중복 호출 방지
+    if (hasLoadedRef.current || isLoadingRef.current) {
+      return;
+    }
 
-    // 클린업 함수
+    isLoadingRef.current = true;
+
+    const timeoutId = setTimeout(() => {
+      setIsLoadingCategories(true);
+
+      const loadCategories = async () => {
+        try {
+          const categoryList = await getMyCategories("EXPENSE");
+          setCategories(categoryList);
+          hasLoadedRef.current = true; // 성공 시 완료 플래그 설정
+        } catch (error) {
+          alert(error);
+          setCategories([]);
+        } finally {
+          setIsLoadingCategories(false);
+          isLoadingRef.current = false;
+        }
+      };
+
+      loadCategories();
+    }, 100);
+
     return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
+      clearTimeout(timeoutId);
     };
-  }, [debouncedLoadCategories]);
+  }, []); // 빈 배열로 마운트 시 한 번만 실행
 
   // 총 금액 계산
   const totalAmount = receiptItems.reduce((sum, item) => {
@@ -495,7 +490,7 @@ export default function AddReceiptMyTransactionPageClient() {
                   <div className="col-span-2">
                     <button
                       type="button"
-                      className="w-full p-0.5 text-sm border border-gray-200 rounded text-center focus:border-[#11ABFF] outline-none hover:bg-gray-50 cursor-pointer"
+                      className="w-full py-1 text-xs border border-gray-200 rounded text-center focus:border-[#11ABFF] outline-none hover:bg-gray-50 cursor-pointer"
                       onClick={() => openCategoryModal(item.id)}
                     >
                       {item.categoryName || "선택"}

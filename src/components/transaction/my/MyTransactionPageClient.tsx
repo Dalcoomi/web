@@ -66,11 +66,18 @@ export default function MyTransactionPageClient() {
   useEffect(() => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
+    const requestKey = `${year}-${month}-${currentCategoryFilter || ""}`;
+
+    // 🔥 이미 같은 요청이 진행 중이거나 완료된 경우 즉시 리턴
+    if (
+      isRequestInProgressRef.current &&
+      lastRequestRef.current === requestKey
+    ) {
+      return;
+    }
 
     const timeoutId = setTimeout(() => {
-      // loadTransactions 직접 호출하지 않고 내부 로직 실행
-      const requestKey = `${year}-${month}-${currentCategoryFilter || ""}`;
-
+      // 🔥 타임아웃 후에도 한 번 더 체크
       if (
         isRequestInProgressRef.current &&
         lastRequestRef.current === requestKey
@@ -94,24 +101,10 @@ export default function MyTransactionPageClient() {
           const response = await getTransactions(criteria);
           setResponse(response);
 
-          // 전체 카테고리 목록을 위해 필터 없이 별도 조회
+          // 카테고리 목록 갱신: 필터 없이 조회할 때만 전체 카테고리 추출
           if (!currentCategoryFilter) {
-            // 필터가 없을 때만 전체 카테고리 목록 갱신
             const uniqueCategories = Array.from(
               new Set(response.transactions.map((t) => t.categoryName))
-            );
-            setAllCategories(uniqueCategories);
-          } else if (allCategories.length === 0) {
-            // 카테고리 목록이 비어있을 때만 전체 조회
-            const allCriteria: TransactionSearchCriteria = {
-              teamId: null,
-              year,
-              month,
-              categoryName: null,
-            };
-            const allResponse = await getTransactions(allCriteria);
-            const uniqueCategories = Array.from(
-              new Set(allResponse.transactions.map((t) => t.categoryName))
             );
             setAllCategories(uniqueCategories);
           }
