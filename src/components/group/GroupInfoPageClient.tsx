@@ -306,7 +306,7 @@ export default function GroupInfoPageClient() {
               value={editTitle}
               onChange={handleTitleChange}
               maxLength={20}
-              placeholder="그룹명을 입력해주세요 (최대 20자)"
+              placeholder="그룹명을 입력해 주세요"
             />
           ) : (
             <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
@@ -348,7 +348,7 @@ export default function GroupInfoPageClient() {
               value={editPurpose}
               onChange={handlePurposeChange}
               maxLength={30}
-              placeholder="목표를 입력해주세요 (최대 30자)"
+              placeholder="목표를 입력해 주세요"
             />
           ) : (
             <p className="text-sm border-b border-gray-300 text-gray-400 px-1">

@@ -1,11 +1,57 @@
 // components/landing/LandingContent.tsx
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 export default function LandingContent() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  // BeforeInstallPromptEvent 타입 정의
+  interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+  }
+
+  // PWA 설치 프롬프트 감지
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
+  }, []);
+
+  // PWA 설치 버튼 클릭 핸들러
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      alert(
+        "웹앱 설치는 브라우저의 설치 기능을 이용해주세요.\n" +
+          "PC: 주소창 우측의 설치 아이콘을 클릭하세요.\n" +
+          "모바일: 브라우저 메뉴에서 '홈 화면에 추가'를 선택하세요."
+      );
+      return;
+    }
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === "accepted") {
+      console.log("PWA 설치 완료");
+    }
+
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
   // 로고 클릭 시 맨 위로 스크롤
   const handleLogoClick = () => {
@@ -33,18 +79,21 @@ export default function LandingContent() {
 
   const faqs = [
     {
-      question: "앱 서비스는 없나요?",
-      answer: "iOS 모바일 앱을 개발 중이며, 앱스토어에 조만간 출시 예정입니다.",
+      question: "네이티브 앱은 없나요?",
+      answer:
+        "iOS 전용 모바일 앱은 개발 중이며, 앱스토어에 조만간 출시 예정입니다.\n" +
+        "Android는 아직 일정에 없습니다.\n\n" +
+        "현재는 웹앱을 설치하시면 iOS, Android에서도 앱처럼 사용이 가능합니다.",
     },
     {
       question: "개인 정보나 가계부 정보들이 노출될까 봐 걱정돼요",
       answer:
-        "달쿠미는 개인, 금액 등 민감한 정보 데이터들을 철저히 암호화해서 보관하고 있습니다.",
+        "달쿠미는 개인, 금액 등 민감한 정보 데이터들을 안전하게 암호화해서 보관하고 있습니다.",
     },
     {
       question: "계정에 문제가 있어요",
       answer:
-        "현재 페이지 하단에 Contacts를 통해 문의해 주시면 최대한 빠르게 확인해서 조치해 드리겠습니다.",
+        "현재 페이지 하단에 있는 Contacts를 통해 문의해 주시면 최대한 빠르게 확인해서 조치해 드리겠습니다.",
     },
   ];
 
@@ -104,8 +153,7 @@ export default function LandingContent() {
                 저희는 기존에 복잡한 작성 과정을 해결했어요
               </p>
               <p className="text-md text-green-50">
-                또한 혼자서는 물론이고 친구나 동료와 함께 가계부를 관리할 수
-                있어요
+                그리고 친구나 동료와 함께 가계부를 관리할 수 있어요
               </p>
             </div>
           </div>
@@ -163,16 +211,27 @@ export default function LandingContent() {
                         </div>
                       </div>
                     ) : (
-                      /* 세 번째 카드 */
-                      <div className="p-5 rounded-2xl bg-sky-50 flex flex-col items-center">
-                        <div className="inline-block px-3 py-1 mb-3 bg-yellow-200 rounded-lg shadow-sm">
-                          <h3 className="text-lg text-gray-700">
-                            {feature.title}
-                          </h3>
+                      /* 세 번째 카드(AI 영수증 분석) - 이미지 왼쪽 */
+                      <div className="p-5 rounded-2xl bg-sky-50 flex items-center gap-4">
+                        {/* 왼쪽 - 이미지 */}
+                        <div className="flex-shrink-0">
+                          <img
+                            src="/images/landing/영수증작성예시.jpg"
+                            alt="영수증 작성 예시"
+                            className="w-40 h-auto rounded-lg object-contain"
+                          />
                         </div>
-                        <p className="text-md text-gray-600 leading-relaxed">
-                          {feature.description}
-                        </p>
+                        {/* 오른쪽 - 텍스트 */}
+                        <div className="flex-1 flex flex-col items-start">
+                          <div className="inline-block px-3 py-1 mb-3 bg-yellow-200 rounded-lg shadow-sm">
+                            <h3 className="text-lg text-gray-700">
+                              {feature.title}
+                            </h3>
+                          </div>
+                          <p className="text-md text-gray-600 leading-relaxed">
+                            {feature.description}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -181,7 +240,24 @@ export default function LandingContent() {
             </div>
           </div>
 
-          {/* 4. FAQ 영역 - 흰색 배경 */}
+          {/* 4. PWA 설치 영역 - 하늘색 배경 */}
+          <div className="min-h-[250px] py-12 px-6 bg-sky-400">
+            <div className="max-w-xl mx-auto text-center">
+              <h2 className="text-3xl text-white mb-4">앱처럼 사용하기</h2>
+              <p className="text-md text-white mb-5">
+                달쿠미를 홈 화면에 추가하고 앱처럼 편하게 사용하세요
+              </p>
+              <button
+                onClick={handleInstallClick}
+                className="px-10 py-3 bg-white text-sky-500 rounded-lg text-lg hover:bg-sky-50 transition-colors cursor-pointer shadow-lg"
+              >
+                {isInstallable ? "설치하기" : "설치 방법 보기"}
+              </button>
+              <p className="text-xs text-white mt-4">iOS, Android, PC 지원</p>
+            </div>
+          </div>
+
+          {/* 5. FAQ 영역 - 흰색 배경 */}
           <div className="min-h-[500px] py-10 px-6 bg-sky-50">
             <div className="max-w-xl mx-auto">
               {/* FAQ 제목 */}
@@ -223,7 +299,7 @@ export default function LandingContent() {
                     {/* 답변 - 펼쳐졌을 때만 보임 */}
                     {openFaqIndex === index && (
                       <div className="p-5 pl-7 bg-white">
-                        <p className="text-sm text-gray-600 leading-relaxed">
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                           {faq.answer}
                         </p>
                       </div>

@@ -143,7 +143,7 @@ export default function CreateGroupPageClient() {
                 ? "border-red-500 focus:border-red-500"
                 : "border-gray-300 focus:border-blue-500"
             }`}
-            placeholder="그룹명을 입력해 주세요 (최대 20자)"
+            placeholder="그룹명을 입력해 주세요"
             value={title}
             onChange={handleTitleChange}
             onBlur={(e) => {
@@ -170,7 +170,7 @@ export default function CreateGroupPageClient() {
         <div className="mb-6">
           <label className="block font-medium text-md mb-1">
             인원 수<span className="text-[#FF472F]">*</span>
-            <span className="text-sm ml-1">(최대 10명, 수정 불가)</span>
+            <span className="text-sm text-gray-500 ml-1">(최대 10명)</span>
           </label>
           <input
             type="text"
@@ -210,7 +210,7 @@ export default function CreateGroupPageClient() {
           <input
             type="text"
             className="w-full p-2 border-b border-gray-300 focus:border-blue-500 focus:outline-none text-sm transition-colors"
-            placeholder="목표를 입력해 주세요 (최대 30자)"
+            placeholder="목표를 입력해 주세요"
             value={purpose}
             onChange={handlePurposeChange}
             inputMode="text"
