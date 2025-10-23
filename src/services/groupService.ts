@@ -104,3 +104,19 @@ export const leaveGroup = async (
     throw error;
   }
 };
+
+// 🔥 그룹 순서 변경 API
+export interface GroupOrderItem {
+  teamId: string;
+  displayOrder: number;
+}
+
+export const updateGroupOrder = async (
+  orders: GroupOrderItem[]
+): Promise<void> => {
+  try {
+    await patch("/api/teams/order", { orders });
+  } catch (error) {
+    throw error;
+  }
+};

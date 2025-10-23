@@ -206,9 +206,9 @@ export default function ProfileUpdatePageClient() {
       updateMember({ profileImageUrl: newAvatarUrl });
 
       setProfileImage(newAvatarUrl);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Profile image update failed:", err);
-      alert(err.message || "프로필 사진 변경에 실패했습니다.");
+      alert(err?.message || "프로필 사진 변경에 실패했습니다.");
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -228,9 +228,9 @@ export default function ProfileUpdatePageClient() {
       updateMember({ profileImageUrl: newAvatarUrl });
 
       setProfileImage(newAvatarUrl);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Profile image change failed:", err);
-      alert(err.message || "프로필 사진 변경에 실패했습니다.");
+      alert(err?.message || "프로필 사진 변경에 실패했습니다.");
     }
   };
 

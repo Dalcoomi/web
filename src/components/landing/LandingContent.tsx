@@ -134,8 +134,8 @@ export default function LandingContent() {
               </div>
               {/* 오른쪽 - 타이틀 */}
               <div>
-                <h1 className="text-3xl font-bold text-sky-500">달쿠미</h1>
-                <p className="text-md text-sky-400">
+                <h1 className="text-3xl font-bold text-[#11ABFF]">달쿠미</h1>
+                <p className="text-md text-[#11ABFF]">
                   개인과 그룹을 위한 AI 가계부 서비스
                 </p>
               </div>
@@ -143,7 +143,7 @@ export default function LandingContent() {
           </div>
 
           {/* 2. 서비스 소개 영역 - 연한 파랑 배경 (고정 높이) */}
-          <div className="h-[200px] px-6 bg-sky-400 flex items-center justify-center">
+          <div className="h-[200px] px-6 bg-[#11ABFF] flex items-center justify-center">
             <div className="max-w-xl mx-auto text-center">
               <p className="text-2xl text-green-50 leading-relaxed">
                 간편한 가계부 서비스를 제공해요
@@ -241,7 +241,7 @@ export default function LandingContent() {
           </div>
 
           {/* 4. PWA 설치 영역 - 하늘색 배경 */}
-          <div className="min-h-[250px] py-12 px-6 bg-sky-400">
+          <div className="min-h-[250px] py-12 px-6 bg-[#11ABFF]">
             <div className="max-w-xl mx-auto text-center">
               <h2 className="text-3xl text-white mb-4">앱처럼 사용하기</h2>
               <p className="text-md text-white mb-5">
@@ -249,7 +249,7 @@ export default function LandingContent() {
               </p>
               <button
                 onClick={handleInstallClick}
-                className="px-10 py-3 bg-white text-sky-500 rounded-lg text-lg hover:bg-sky-50 transition-colors cursor-pointer shadow-lg"
+                className="px-10 py-3 bg-white text-[#11ABFF] rounded-lg text-lg hover:bg-sky-50 transition-colors cursor-pointer shadow-lg"
               >
                 {isInstallable ? "설치하기" : "설치 방법 보기"}
               </button>
@@ -281,7 +281,7 @@ export default function LandingContent() {
                     >
                       <div className="flex items-center gap-3">
                         {/* Q 아이콘 */}
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-sky-400 flex items-center justify-center">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#11ABFF] flex items-center justify-center">
                           <span className="text-white font-bold text-sm">
                             Q
                           </span>
