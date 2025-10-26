@@ -1100,9 +1100,7 @@ export default function ProfileUpdatePageClient() {
 
           {/* 소셜 계정 연동 */}
           <div>
-            <label className="block text-sm text-gray-700 mb-2">
-              소셜 계정 연동 설정
-            </label>
+            <label className="block text-sm text-gray-700 mb-2">SNS 연동</label>
             <div className="space-y-3">
               {/* 네이버 연동 */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
