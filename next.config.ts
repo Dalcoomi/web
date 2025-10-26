@@ -52,7 +52,6 @@ export default withPWA({
   buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
     {
-      // 이미지 파일만 캐싱 (영수증 업로드는 제외)
       urlPattern: /^https?.*\.(png|jpg|jpeg|svg|gif|webp)$/,
       handler: "NetworkFirst",
       options: {
@@ -62,18 +61,6 @@ export default withPWA({
           maxAgeSeconds: 60 * 60 * 24, // 24 hours
         },
       },
-    },
-    {
-      // 🔥 모든 API 요청은 Service Worker를 거치지 않고 직접 네트워크로
-      // GET, POST, PUT, DELETE, PATCH 모두 포함
-      urlPattern: ({ url }) => {
-        return (
-          url.pathname.includes("/api/") ||
-          url.hostname.includes("api.dalcoomi.com") ||
-          url.hostname.includes("dalcoomi.s3.ap-northeast-2.amazonaws.com")
-        );
-      },
-      handler: "NetworkOnly",
     },
   ],
 })(nextConfig);
