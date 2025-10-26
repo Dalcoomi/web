@@ -1,6 +1,9 @@
 // services/categoryService.ts
 import { get, post, put, del } from "@/utils/apiClient";
 
+// 🔥 중복 요청 방지를 위한 Promise 캐시
+const pendingCategoryRequests = new Map<string, Promise<Category[]>>();
+
 // 카테고리 타입 정의
 export interface Category {
   id: number;
@@ -18,18 +21,34 @@ export interface GetCategoriesResponse {
 export const getMyCategories = async (
   transactionType: "INCOME" | "EXPENSE"
 ): Promise<Category[]> => {
-  try {
-    const response: GetCategoriesResponse = await get(
-      `/api/categories?transactionType=${transactionType}`
-    );
+  const url = `/api/categories?transactionType=${transactionType}`;
 
-    return response.categories;
-  } catch (error) {
-    alert(error);
-
-    // 에러 발생 시 빈 배열 반환
-    return [];
+  // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
+  if (pendingCategoryRequests.has(url)) {
+    console.log(`[getMyCategories] 중복 요청 방지: ${url}`);
+    return pendingCategoryRequests.get(url)!;
   }
+
+  // 🔥 새로운 요청 시작
+  const requestPromise = (async () => {
+    try {
+      console.log(`[getMyCategories] 새 요청 시작: ${url}`);
+      const response: GetCategoriesResponse = await get(url);
+      return response.categories;
+    } catch (error) {
+      alert(error);
+      return [];
+    } finally {
+      // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
+      setTimeout(() => {
+        pendingCategoryRequests.delete(url);
+        console.log(`[getMyCategories] 캐시 정리 완료: ${url}`);
+      }, 50);
+    }
+  })();
+
+  pendingCategoryRequests.set(url, requestPromise);
+  return requestPromise;
 };
 
 // 거래 유형에 따른 그룹 카테고리 조회
@@ -37,16 +56,32 @@ export const getTeamCategories = async (
   teamId: number,
   transactionType: "INCOME" | "EXPENSE"
 ): Promise<Category[]> => {
-  try {
-    const response: GetCategoriesResponse = await get(
-      `/api/categories?teamId=${teamId}&transactionType=${transactionType}`
-    );
+  const url = `/api/categories?teamId=${teamId}&transactionType=${transactionType}`;
 
-    return response.categories;
-  } catch (error) {
-    alert(error);
-
-    // 에러 발생 시 빈 배열 반환
-    return [];
+  // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
+  if (pendingCategoryRequests.has(url)) {
+    console.log(`[getTeamCategories] 중복 요청 방지: ${url}`);
+    return pendingCategoryRequests.get(url)!;
   }
+
+  // 🔥 새로운 요청 시작
+  const requestPromise = (async () => {
+    try {
+      console.log(`[getTeamCategories] 새 요청 시작: ${url}`);
+      const response: GetCategoriesResponse = await get(url);
+      return response.categories;
+    } catch (error) {
+      alert(error);
+      return [];
+    } finally {
+      // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
+      setTimeout(() => {
+        pendingCategoryRequests.delete(url);
+        console.log(`[getTeamCategories] 캐시 정리 완료: ${url}`);
+      }, 50);
+    }
+  })();
+
+  pendingCategoryRequests.set(url, requestPromise);
+  return requestPromise;
 };

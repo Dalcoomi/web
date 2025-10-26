@@ -88,7 +88,7 @@ export default function LandingContent() {
     {
       question: "개인 정보나 가계부 정보들이 노출될까 봐 걱정돼요",
       answer:
-        "달쿠미는 개인, 금액 등 민감한 정보 데이터들을 안전하게 암호화해서 보관하고 있습니다.",
+        "회원, 금액 등 민감한 정보 데이터들은 안전하게 암호화된 상태로 분리 보관되며, 별도 서버에서 안전하게 관리돼요. 이외 다른 목적으로 절대 사용되지 않기에 안심하셔도 돼요.",
     },
     {
       question: "계정에 문제가 있어요",
@@ -261,8 +261,8 @@ export default function LandingContent() {
           <div className="min-h-[500px] py-10 px-6 bg-sky-50">
             <div className="max-w-xl mx-auto">
               {/* FAQ 제목 */}
-              <h2 className="text-3xl font-bold text-black text-center mb-10">
-                FAQ
+              <h2 className="text-3xl text-black text-center mb-10">
+                자주 묻는 질문
               </h2>
 
               {/* FAQ 아코디언 */}

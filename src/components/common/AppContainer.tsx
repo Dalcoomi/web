@@ -20,26 +20,21 @@ export default function AppContainer({ children }: AppContainerProps) {
 
   // 다른 페이지: 데스크톱에서 랜딩 + 앱 스플릿, 모바일에서 앱만
   return (
-    <>
-      {/* 데스크톱: Split Screen (랜딩 + 앱) */}
-      <div className="hidden lg:flex w-full h-screen justify-center bg-gray-100 px-8">
-        <div className="flex w-full max-w-[1000px] h-full shadow-2xl overflow-hidden bg-white">
-          {/* 왼쪽: 랜딩 페이지 */}
-          <div className="flex-1 h-full overflow-y-auto">
+    <div className="w-full h-screen bg-gray-100">
+      {/* 전체 레이아웃 컨테이너 */}
+      <div className="h-full flex justify-center lg:px-8">
+        <div className="w-full max-w-[390px] lg:max-w-[1000px] h-full lg:shadow-2xl bg-white flex">
+          {/* 왼쪽: 랜딩 페이지 (데스크톱에서만 표시) */}
+          <div className="hidden lg:block lg:flex-1 h-full overflow-y-auto">
             <LandingContent />
           </div>
 
           {/* 오른쪽: 앱 페이지 (390px 고정) */}
-          <div className="w-[390px] h-full flex-shrink-0 overflow-y-auto bg-white relative">
+          <div className="w-full lg:w-[390px] h-full overflow-y-auto bg-white relative shadow-lg lg:shadow-none">
             {children}
           </div>
         </div>
       </div>
-
-      {/* 모바일: 앱 페이지만 표시 */}
-      <div className="lg:hidden w-full h-screen-safe max-h-[844px] relative bg-white">
-        {children}
-      </div>
-    </>
+    </div>
   );
 }

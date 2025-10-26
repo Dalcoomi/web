@@ -1,6 +1,10 @@
 // services/groupService.ts
 import { get, post, put, del, patch } from "@/utils/apiClient";
 
+// 🔥 중복 요청 방지를 위한 Promise 캐시
+let pendingGroupsRequest: Promise<GetMyTeamsResponse> | null = null;
+const pendingGroupInfoRequests = new Map<string, Promise<GroupInfo>>();
+
 // 그룹 타입 정의
 export interface Group {
   teamId: string; // Long을 string으로 처리
@@ -53,28 +57,64 @@ export const joinGroup = async (invitationCode: string) => {
 
 // 내 그룹 리스트 조회 API
 export const getGroups = async (): Promise<GetMyTeamsResponse> => {
-  try {
-    const response = await get("/api/teams");
-
-    return response;
-  } catch (error) {
-    alert(error);
-
-    return {
-      groups: [],
-    };
+  // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
+  if (pendingGroupsRequest) {
+    console.log("[getGroups] 중복 요청 방지");
+    return pendingGroupsRequest;
   }
+
+  // 🔥 새로운 요청 시작
+  pendingGroupsRequest = (async () => {
+    try {
+      console.log("[getGroups] 새 요청 시작");
+      const response = await get("/api/teams");
+      return response;
+    } catch (error) {
+      alert(error);
+      return {
+        groups: [],
+      };
+    } finally {
+      // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
+      setTimeout(() => {
+        pendingGroupsRequest = null;
+        console.log("[getGroups] 캐시 정리 완료");
+      }, 50);
+    }
+  })();
+
+  return pendingGroupsRequest;
 };
 
 // 그룹 정보 조회 API
 export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
-  try {
-    const response = await get(`/api/teams/${teamId}`);
+  const url = `/api/teams/${teamId}`;
 
-    return response;
-  } catch (error) {
-    throw error;
+  // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
+  if (pendingGroupInfoRequests.has(url)) {
+    console.log(`[getGroupInfo] 중복 요청 방지: ${url}`);
+    return pendingGroupInfoRequests.get(url)!;
   }
+
+  // 🔥 새로운 요청 시작
+  const requestPromise = (async () => {
+    try {
+      console.log(`[getGroupInfo] 새 요청 시작: ${url}`);
+      const response = await get(url);
+      return response;
+    } catch (error) {
+      throw error;
+    } finally {
+      // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
+      setTimeout(() => {
+        pendingGroupInfoRequests.delete(url);
+        console.log(`[getGroupInfo] 캐시 정리 완료: ${url}`);
+      }, 50);
+    }
+  })();
+
+  pendingGroupInfoRequests.set(url, requestPromise);
+  return requestPromise;
 };
 
 // 그룹 수정 API

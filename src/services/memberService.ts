@@ -1,6 +1,9 @@
 // services/memberService.ts
 import { get, post, put, del, patch } from "@/utils/apiClient";
 
+// 🔥 중복 요청 방지를 위한 Promise 캐시
+let pendingMemberRequest: Promise<Member> | null = null;
+
 // 소셜 타입 enum 정의
 export enum SocialType {
   KAKAO = "KAKAO",
@@ -103,12 +106,30 @@ export const linkSocial = async (data: {
 
 // 회원 조회
 export const getMember = async (): Promise<Member> => {
-  try {
-    const response = await get("/api/members");
-    return response;
-  } catch (error) {
-    throw error;
+  // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
+  if (pendingMemberRequest) {
+    console.log("[getMember] 중복 요청 방지");
+    return pendingMemberRequest;
   }
+
+  // 🔥 새로운 요청 시작
+  pendingMemberRequest = (async () => {
+    try {
+      console.log("[getMember] 새 요청 시작");
+      const response = await get("/api/members");
+      return response;
+    } catch (error) {
+      throw error;
+    } finally {
+      // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
+      setTimeout(() => {
+        pendingMemberRequest = null;
+        console.log("[getMember] 캐시 정리 완료");
+      }, 50);
+    }
+  })();
+
+  return pendingMemberRequest;
 };
 
 // 닉네임 사용 가능 여부 확인
