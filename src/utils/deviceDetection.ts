@@ -15,3 +15,8 @@ export const isMobile = (): boolean => {
     navigator.userAgent
   );
 };
+
+export const isDesktopPWA = (): boolean => {
+  // PWA이면서 모바일이 아닌 경우 = 데스크톱 PWA
+  return isPWA() && !isMobile();
+};
