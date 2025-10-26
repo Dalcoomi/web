@@ -1,24 +1,10 @@
-// components/common/AppContainer.tsx
+// components/auth/RootPageClient.tsx
 "use client";
 
-import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import LoginPageClient from "@/components/auth/LoginPageClient";
 import LandingContent from "@/components/landing/LandingContent";
 
-interface AppContainerProps {
-  children: ReactNode;
-}
-
-export default function AppContainer({ children }: AppContainerProps) {
-  const pathname = usePathname();
-  const isRootPage = pathname === "/";
-
-  if (isRootPage) {
-    // 루트 페이지: 기존 스플릿 스크린 (page.tsx에서 처리)
-    return <div className="w-full h-screen overflow-hidden">{children}</div>;
-  }
-
-  // 다른 페이지: 데스크톱에서 랜딩 + 앱 스플릿, 모바일에서 앱만
+export default function RootPageClient() {
   return (
     <div className="w-full h-screen bg-gray-100">
       {/* 전체 레이아웃 컨테이너 */}
@@ -29,9 +15,9 @@ export default function AppContainer({ children }: AppContainerProps) {
             <LandingContent />
           </div>
 
-          {/* 오른쪽: 앱 페이지 (390px 고정) */}
+          {/* 오른쪽: 로그인 페이지 (390px 고정) */}
           <div className="w-full lg:w-[390px] h-full overflow-y-auto bg-white relative shadow-lg lg:shadow-none">
-            {children}
+            <LoginPageClient />
           </div>
         </div>
       </div>
