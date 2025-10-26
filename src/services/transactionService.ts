@@ -1,6 +1,9 @@
 // services/transactionService.ts
 import { get, post, put, del } from "@/utils/apiClient";
 
+// 🔥 중복 요청 방지를 위한 Promise 캐시
+const pendingRequests = new Map<string, Promise<MonthlyTransactionsResponse>>();
+
 // 백엔드 응답에 맞춘 트랜잭션 타입 정의
 export interface Transaction {
   transactionId: string;
@@ -135,42 +138,60 @@ export const uploadReceipt = async (
 export const getTransactions = async (
   criteria: TransactionSearchCriteria
 ): Promise<MonthlyTransactionsResponse> => {
-  try {
-    const params = new URLSearchParams();
+  const params = new URLSearchParams();
 
-    // teamId 추가 (null이면 개인 거래)
-    if (criteria.teamId !== null && criteria.teamId !== undefined) {
-      params.append("teamId", criteria.teamId.toString());
-    }
-
-    // year, month는 필수
-    params.append("year", criteria.year.toString());
-    params.append("month", criteria.month.toString());
-
-    // 선택적 필터 조건들
-    if (criteria.categoryName) {
-      params.append("categoryName", criteria.categoryName);
-    }
-
-    if (criteria.creatorNickname) {
-      params.append("creatorNickname", criteria.creatorNickname);
-    }
-
-    const url = `/api/transactions?${params.toString()}`;
-    const response = await get(url);
-
-    return response;
-  } catch (error) {
-    console.error("거래 내역 조회 실패:", error);
-
-    // 기본값 반환
-    return {
-      income: 0,
-      expense: 0,
-      total: 0,
-      transactions: [],
-    };
+  // teamId 추가 (null이면 개인 거래)
+  if (criteria.teamId !== null && criteria.teamId !== undefined) {
+    params.append("teamId", criteria.teamId.toString());
   }
+
+  // year, month는 필수
+  params.append("year", criteria.year.toString());
+  params.append("month", criteria.month.toString());
+
+  // 선택적 필터 조건들
+  if (criteria.categoryName) {
+    params.append("categoryName", criteria.categoryName);
+  }
+
+  if (criteria.creatorNickname) {
+    params.append("creatorNickname", criteria.creatorNickname);
+  }
+
+  const url = `/api/transactions?${params.toString()}`;
+
+  // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
+  if (pendingRequests.has(url)) {
+    console.log(`[getTransactions] 중복 요청 방지: ${url}`);
+    return pendingRequests.get(url)!;
+  }
+
+  // 🔥 새로운 요청 시작
+  const requestPromise = (async () => {
+    try {
+      console.log(`[getTransactions] 새 요청 시작: ${url}`);
+      const response = await get(url);
+      return response;
+    } catch (error) {
+      console.error("거래 내역 조회 실패:", error);
+      // 기본값 반환
+      return {
+        income: 0,
+        expense: 0,
+        total: 0,
+        transactions: [],
+      };
+    } finally {
+      // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
+      setTimeout(() => {
+        pendingRequests.delete(url);
+        console.log(`[getTransactions] 캐시 정리 완료: ${url}`);
+      }, 50);
+    }
+  })();
+
+  pendingRequests.set(url, requestPromise);
+  return requestPromise;
 };
 
 // 특정 거래 내역 조회 API

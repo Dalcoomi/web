@@ -7,6 +7,9 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// 🔥 중복 요청 방지를 위한 Promise 캐시
+const pendingRequests = new Map<string, Promise<any>>();
+
 // 대기 중인 요청들을 위한 큐
 let failedQueue: Array<{
   resolve: (value: any) => void;
@@ -36,6 +39,20 @@ export const apiClient = async (
   // skipAuthRefresh 플래그 추출 (RequestInit에는 없는 커스텀 속성)
   const { skipAuthRefresh, ...fetchOptions } = options;
 
+  // 🔥 중복 요청 방지: 같은 URL + method + body 조합의 요청이 진행 중이면 기존 Promise 반환
+  const method = fetchOptions.method || "GET";
+  const bodyKey = fetchOptions.body instanceof FormData
+    ? "FormData"
+    : typeof fetchOptions.body === "string"
+    ? fetchOptions.body
+    : "";
+  const requestKey = `${method}:${url}:${bodyKey}`;
+
+  if (pendingRequests.has(requestKey)) {
+    console.log(`[apiClient] 중복 요청 방지: ${method} ${endpoint}`);
+    return pendingRequests.get(requestKey)!;
+  }
+
   // 기본 헤더 설정
   const headers: Record<string, string> = {
     ...(fetchOptions.headers as Record<string, string>),
@@ -58,8 +75,11 @@ export const apiClient = async (
     headers,
   };
 
-  try {
-    const response = await fetch(url, config);
+  // 🔥 Promise를 생성하고 캐시에 저장
+  const requestPromise = (async () => {
+    try {
+      console.log(`[apiClient] 새 요청 시작: ${method} ${endpoint}`);
+      const response = await fetch(url, config);
 
     // 인증 오류(401) 발생 시 토큰 리프레시 시도 (skipAuthRefresh가 true면 스킵)
     if (response.status === 401 && !skipAuthRefresh) {
@@ -107,14 +127,25 @@ export const apiClient = async (
       }
     }
 
-    return handleResponse(response);
-  } catch (error) {
-    // 네트워크 에러 등의 경우
-    if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new Error("네트워크 연결을 확인해주세요.");
+      return handleResponse(response);
+    } catch (error) {
+      // 네트워크 에러 등의 경우
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new Error("네트워크 연결을 확인해주세요.");
+      }
+      throw error;
+    } finally {
+      // 🔥 요청 완료 후 캐시에서 제거 (GET은 50ms 후, 나머지는 즉시)
+      const clearDelay = method === "GET" ? 50 : 0;
+      setTimeout(() => {
+        pendingRequests.delete(requestKey);
+        console.log(`[apiClient] 캐시 정리 완료: ${method} ${endpoint}`);
+      }, clearDelay);
     }
-    throw error;
-  }
+  })();
+
+  pendingRequests.set(requestKey, requestPromise);
+  return requestPromise;
 };
 
 // 응답 처리 함수

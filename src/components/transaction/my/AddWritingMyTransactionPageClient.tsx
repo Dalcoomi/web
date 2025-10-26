@@ -42,52 +42,32 @@ export default function AddWritingMyTransactionPageClient() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
-  // 🔥 중복 로딩 방지를 위한 ref
-  const isLoadingRef = useRef(false);
-  const lastLoadedTypeRef = useRef<"EXPENSE" | "INCOME" | null>(null);
-
   // 초기 & transactionType 변경 시 카테고리 로드
   useEffect(() => {
-    // 중복 호출 방지: 같은 타입을 이미 로드했거나 로딩 중이면 무시
-    if (isLoadingRef.current || lastLoadedTypeRef.current === transactionType) {
-      return;
-    }
-
-    isLoadingRef.current = true;
-    lastLoadedTypeRef.current = transactionType;
-
-    const timeoutId = setTimeout(() => {
+    const loadCategories = async () => {
       setIsLoadingCategories(true);
 
-      const loadCategories = async () => {
-        try {
-          const categoryList = await getMyCategories(transactionType);
+      try {
+        const categoryList = await getMyCategories(transactionType);
 
-          setCategories(categoryList);
+        setCategories(categoryList);
 
-          // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
-          if (categoryList.length > 0) {
-            const defaultCategory =
-              categoryList.find((cat) => cat.name === "기타") || categoryList[0];
+        // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
+        if (categoryList.length > 0) {
+          const defaultCategory =
+            categoryList.find((cat) => cat.name === "기타") || categoryList[0];
 
-            setCategoryId(defaultCategory.id);
-          }
-        } catch (error) {
-          alert(error);
-
-          setCategories([]);
-        } finally {
-          setIsLoadingCategories(false);
-          isLoadingRef.current = false;
+          setCategoryId(defaultCategory.id);
         }
-      };
-
-      loadCategories();
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
+      } catch (error) {
+        alert(error);
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
     };
+
+    loadCategories();
   }, [transactionType]); // transactionType 변경 시에만
 
   // 폼 유효성 검사
@@ -125,8 +105,7 @@ export default function AddWritingMyTransactionPageClient() {
 
   // 거래 유형 변경 핸들러
   const handleTransactionTypeChange = (type: "EXPENSE" | "INCOME") => {
-    setTransactionType(type);
-    loadCategories(type); // 거래 유형 변경 시 카테고리 다시 로드
+    setTransactionType(type); // transactionType 변경 시 useEffect가 자동으로 카테고리 로드
   };
 
   // 저장 핸들러

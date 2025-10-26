@@ -50,82 +50,52 @@ export default function AddWritingGroupTransactionPageClient() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
-  // 🔥 중복 로딩 방지를 위한 ref
-  const isLoadingRef = useRef(false);
-  const lastLoadedTypeRef = useRef<"EXPENSE" | "INCOME" | null>(null);
-  const hasLoadedGroupInfo = useRef(false);
-
-  // teamId 유효성 검사 및 그룹 정보 로드 (마운트 시 1번만)
+  // teamId 유효성 검사 및 그룹 정보 로드
   useEffect(() => {
     if (!teamId) {
       router.replace("/group");
       return;
     }
 
-    if (hasLoadedGroupInfo.current) return;
-    hasLoadedGroupInfo.current = true;
-
-    const timeoutId = setTimeout(() => {
-      const fetchGroupInfo = async () => {
-        try {
-          const response = await getGroupInfo(teamId);
-          setGroupInfo(response);
-        } catch (error) {
-          alert(error || "그룹 정보를 불러올 수 없습니다.");
-          router.replace("/group");
-          hasLoadedGroupInfo.current = false;
-        }
-      };
-
-      fetchGroupInfo();
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
+    const fetchGroupInfo = async () => {
+      try {
+        const response = await getGroupInfo(teamId);
+        setGroupInfo(response);
+      } catch (error) {
+        alert(error || "그룹 정보를 불러올 수 없습니다.");
+        router.replace("/group");
+      }
     };
+
+    fetchGroupInfo();
   }, [teamId, router]); // teamId와 router를 의존성에 포함
 
   // transactionType 변경 시 카테고리 로드
   useEffect(() => {
     if (!teamId) return;
 
-    // 중복 호출 방지: 같은 타입을 이미 로드했거나 로딩 중이면 무시
-    if (isLoadingRef.current || lastLoadedTypeRef.current === transactionType) {
-      return;
-    }
-
-    isLoadingRef.current = true;
-    lastLoadedTypeRef.current = transactionType;
-
-    const timeoutId = setTimeout(() => {
+    const loadCategories = async () => {
       setIsLoadingCategories(true);
 
-      const loadCategories = async () => {
-        try {
-          const categoryList = await getTeamCategories(parseInt(teamId), transactionType);
-          setCategories(categoryList);
+      try {
+        const categoryList = await getTeamCategories(parseInt(teamId), transactionType);
+        setCategories(categoryList);
 
-          // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
-          if (categoryList.length > 0) {
-            const defaultCategory =
-              categoryList.find((cat) => cat.name === "기타") || categoryList[0];
-            setCategoryId(defaultCategory.id);
-          }
-        } catch (error) {
-          alert(error);
-          setCategories([]);
-        } finally {
-          setIsLoadingCategories(false);
-          isLoadingRef.current = false;
+        // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
+        if (categoryList.length > 0) {
+          const defaultCategory =
+            categoryList.find((cat) => cat.name === "기타") || categoryList[0];
+          setCategoryId(defaultCategory.id);
         }
-      };
-
-      loadCategories();
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
+      } catch (error) {
+        alert(error);
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
     };
+
+    loadCategories();
   }, [transactionType, teamId]); // teamId도 의존성에 포함
 
   // 폼 유효성 검사
@@ -163,8 +133,7 @@ export default function AddWritingGroupTransactionPageClient() {
 
   // 거래 유형 변경 핸들러
   const handleTransactionTypeChange = (type: "EXPENSE" | "INCOME") => {
-    setTransactionType(type);
-    loadCategories(type); // 거래 유형 변경 시 카테고리 다시 로드
+    setTransactionType(type); // transactionType 변경 시 useEffect가 자동으로 카테고리 로드
   };
 
   // 동기화 체크박스 핸들러
