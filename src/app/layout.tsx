@@ -58,6 +58,14 @@ export default async function RootLayout({
   return (
     <html lang="ko">
       <head>
+        {/* Pretendard 폰트 - 랜딩 페이지용 */}
+        <link
+          rel="stylesheet"
+          as="style"
+          crossOrigin="anonymous"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+        />
+
         {/* Google Search Console 인증 */}
         <meta
           name="google-site-verification"

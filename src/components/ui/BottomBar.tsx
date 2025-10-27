@@ -28,7 +28,14 @@ export default function BottomBar() {
       <div className="bg-white border-t border-gray-200 h-13 flex items-center">
         {/* 개인 버튼 */}
         <button
-          onClick={() => router.push("/transaction/my")}
+          onClick={() => {
+            // 현재 페이지가 /transaction/my 인 경우 강제 새로고침
+            if (pathname === "/transaction/my") {
+              window.location.href = "/transaction/my";
+            } else {
+              router.push("/transaction/my");
+            }
+          }}
           className="flex flex-col items-center justify-center w-1/2 h-full hover:bg-gray-50 transition-colors cursor-pointer"
         >
           <div className="w-6 h-6">
@@ -55,7 +62,14 @@ export default function BottomBar() {
 
         {/* 그룹 버튼 */}
         <button
-          onClick={() => router.push("/group")}
+          onClick={() => {
+            // 현재 페이지가 /group 인 경우 강제 새로고침
+            if (pathname === "/group") {
+              window.location.href = "/group";
+            } else {
+              router.push("/group");
+            }
+          }}
           className="flex flex-col items-center justify-center w-1/2 h-full hover:bg-gray-50 transition-colors cursor-pointer"
         >
           <div className="w-6 h-6">

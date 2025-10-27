@@ -2,7 +2,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import LandingContent from "@/components/landing/LandingContent";
 
 interface AppContainerProps {
@@ -12,6 +12,20 @@ interface AppContainerProps {
 export default function AppContainer({ children }: AppContainerProps) {
   const pathname = usePathname();
   const isRootPage = pathname === "/";
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      const width = window.innerWidth;
+      const isDesktopSize = width >= 1024;
+      setIsDesktop(isDesktopSize);
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   if (isRootPage) {
     // 루트 페이지: 기존 스플릿 스크린 (page.tsx에서 처리)
@@ -22,15 +36,30 @@ export default function AppContainer({ children }: AppContainerProps) {
   return (
     <div className="w-full h-screen bg-gray-100">
       {/* 전체 레이아웃 컨테이너 */}
-      <div className="h-full flex justify-center lg:px-8">
-        <div className="w-full max-w-[390px] lg:max-w-[1000px] h-full lg:shadow-2xl bg-white flex">
+      <div className="h-full flex justify-center" style={{ padding: isDesktop ? '0 2rem' : '0' }}>
+        <div
+          className="h-full bg-white flex"
+          style={{
+            width: '100%',
+            maxWidth: isDesktop ? '1000px' : '390px',
+            boxShadow: isDesktop ? '0 25px 50px -12px rgb(0 0 0 / 0.25)' : 'none'
+          }}
+        >
           {/* 왼쪽: 랜딩 페이지 (화면 1024px 이상에서만 표시) */}
-          <div className="hidden lg:block lg:flex-1 h-full overflow-y-auto">
-            <LandingContent />
-          </div>
+          {isDesktop && (
+            <div className="h-full overflow-y-auto" style={{ flex: 1 }}>
+              <LandingContent />
+            </div>
+          )}
 
           {/* 오른쪽: 앱 페이지 (390px 고정) */}
-          <div className="w-full lg:w-[390px] h-full overflow-y-auto bg-white relative shadow-lg lg:shadow-none">
+          <div
+            className="h-full overflow-y-auto bg-white relative"
+            style={{
+              width: isDesktop ? '390px' : '100%',
+              boxShadow: isDesktop ? 'none' : '0 10px 15px -3px rgb(0 0 0 / 0.1)'
+            }}
+          >
             {children}
           </div>
         </div>
