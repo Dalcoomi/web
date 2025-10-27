@@ -3,11 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import {
-  getGroups,
-  Group,
-  updateGroupOrder,
-} from "@/services/groupService";
+import { getGroups, Group, updateGroupOrder } from "@/services/groupService";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import {
@@ -18,10 +14,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
 } from "@dnd-kit/core";
-import { restrictToVerticalAxis, restrictToFirstScrollableAncestor } from "@dnd-kit/modifiers";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
   arrayMove,
   SortableContext,
@@ -36,7 +30,6 @@ export default function GroupPageClient() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const groupListRef = useRef<HTMLDivElement>(null);
 
   // 드래그&드롭 센서 설정
@@ -112,7 +105,6 @@ export default function GroupPageClient() {
       );
 
       setIsEditMode(false);
-      alert("그룹 순서가 저장되었습니다.");
     } catch (error) {
       alert("그룹 순서 저장에 실패했습니다.");
       console.error(error);
@@ -120,7 +112,7 @@ export default function GroupPageClient() {
   };
 
   // 커스텀 modifier: 그룹 리스트 영역으로만 드래그 제한
-  const restrictToGroupList = ({ transform, draggingNodeRect, containerNodeRect }: any) => {
+  const restrictToGroupList = ({ transform, draggingNodeRect }: any) => {
     if (!groupListRef.current || !draggingNodeRect) {
       return transform;
     }
@@ -136,15 +128,8 @@ export default function GroupPageClient() {
     };
   };
 
-  // 드래그 시작 핸들러
-  const handleDragStart = (event: DragStartEvent) => {
-    setIsDragging(true);
-  };
-
   // 드래그 종료 핸들러
   const handleDragEnd = (event: DragEndEvent) => {
-    setIsDragging(false);
-
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -242,7 +227,6 @@ export default function GroupPageClient() {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             modifiers={[restrictToVerticalAxis, restrictToGroupList]}
           >

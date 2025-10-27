@@ -15,6 +15,7 @@ const config: Config = {
         "title-light": ["Title_Light", "sans-serif"],
         "title-medium": ["Title_Medium", "sans-serif"],
         "title-bold": ["Title_Bold", "sans-serif"],
+        landing: ["Pretendard", "-apple-system", "BlinkMacSystemFont", "system-ui", "Roboto", "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "sans-serif"],
       },
     },
   },

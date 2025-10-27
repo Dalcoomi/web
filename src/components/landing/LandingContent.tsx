@@ -60,45 +60,33 @@ export default function LandingContent() {
     }
   };
 
-  const features = [
-    {
-      title: "빠른 작성",
-      description: "간단한 UI로 빠르게 지출, 수입 내역을 작성할 수 있어요",
-    },
-    {
-      title: "그룹 기능",
-      description:
-        "그룹을 생성하고 초대 코드를 공유하면 가족, 친구, 동료와 함께 공동으로 가계부를 관리할 수 있어요",
-    },
-    {
-      title: "AI 영수증 분석",
-      description:
-        "영수증 사진을 업로드하면 AI가 자동으로 분석하여 가계부 작성을 도와줘요",
-    },
-  ];
-
   const faqs = [
     {
       question: "네이티브 앱은 없나요?",
       answer:
-        "iOS 전용 모바일 앱은 개발 중이며, 앱스토어에 조만간 출시 예정입니다.\n" +
-        "Android는 아직 일정에 없습니다.\n\n" +
-        "현재는 웹앱을 설치하시면 iOS, Android에서도 앱처럼 사용이 가능합니다.",
+        "Android는 아직 일정에 없지만, iOS 모바일 앱이 조만간 앱스토어에 출시될 예정이에요.\n" +
+        "현재는 웹앱 설치만 가능하고, 웹앱은 iOS, Android에서도 앱처럼 이용이 가능해요.",
     },
     {
-      question: "개인 정보나 가계부 정보들이 노출될까 봐 걱정돼요",
+      question: "개인정보 보안 안전한가요?",
       answer:
-        "회원, 금액 등 민감한 정보 데이터들은 안전하게 암호화된 상태로 분리 보관되며, 별도 서버에서 안전하게 관리돼요. 이외 다른 목적으로 절대 사용되지 않기에 안심하셔도 돼요.",
+        "개인정보나 가계부정보 같은 민감한 데이터들은 안전하게 암호화된 상태로 분리 보관되며, 별도 서버에서 안전하게 관리돼요. 이외 다른 목적으로 절대 사용되지 않기에 안심하셔도 돼요.",
     },
     {
-      question: "계정에 문제가 있어요",
+      question: "가계부 데이터 활용 동의가 무엇인가요?",
       answer:
-        "현재 페이지 하단에 있는 Contacts를 통해 문의해 주시면 최대한 빠르게 확인해서 조치해 드리겠습니다.",
+        "동의를 하실 경우, 작성하신 가계부 내역 중 카테고리, 금액 데이터가 AI 서비스 개선을 위해 활용돼요. 이때, 개인정보는 절대 활용되지 않으며 데이터 익명성을 보장해요.",
     },
   ];
 
   return (
-    <div className="flex flex-col h-full">
+    <div
+      className="flex flex-col h-full"
+      style={{
+        fontFamily:
+          "Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif",
+      }}
+    >
       {/* 1. 고정 탑바 */}
       <div className="flex-shrink-0 h-10 bg-blue-50 border-b border-blue-100 flex items-center px-6">
         {/* 왼쪽 - 아이콘과 로고 */}
@@ -109,9 +97,9 @@ export default function LandingContent() {
           <img
             src="/icons/icon-192x192.png"
             alt="달쿠미"
-            className="w-5 h-5 rounded"
+            className="w-6 h-6 rounded"
           />
-          <span className="text-sm text-sky-500">달쿠미</span>
+          <span className="text-md font-semibold text-sky-500">달쿠미</span>
         </button>
 
         {/* 오른쪽 영역 (향후 확장용) */}
@@ -121,8 +109,14 @@ export default function LandingContent() {
       {/* 2. 스크롤 가능한 바디 콘텐츠 */}
       <div className="flex-1 overflow-hidden relative">
         <div ref={scrollRef} className="absolute inset-0 overflow-y-auto">
-          {/* 1. 로고 + 타이틀 영역 - 흰색 배경 (고정 높이) */}
-          <div className="relative h-[200px] px-6 bg-white flex items-center justify-center">
+          {/* 1. 로고 + 타이틀 영역 - 그라데이션 배경 (고정 높이) */}
+          <div
+            className="relative h-[450px] px-6 flex items-center justify-center"
+            style={{
+              background:
+                "linear-gradient(to bottom, #11ABFF, #8DD5FF, #C7E9FF, #E8F6FF, #FFFFFF)",
+            }}
+          >
             <div className="flex items-center gap-7">
               {/* 왼쪽 - 로고 */}
               <div className="flex-shrink-0">
@@ -134,150 +128,171 @@ export default function LandingContent() {
               </div>
               {/* 오른쪽 - 타이틀 */}
               <div>
-                <h1 className="text-3xl font-bold text-[#11ABFF]">달쿠미</h1>
-                <p className="text-md text-[#11ABFF]">
+                <p className="text-2xl font-semibold text-sky-600">
                   개인과 그룹을 위한 AI 가계부 서비스
                 </p>
+                <h1 className="text-4xl font-bold text-sky-600">달쿠미</h1>
               </div>
             </div>
           </div>
 
-          {/* 2. 서비스 소개 영역 - 연한 파랑 배경 (고정 높이) */}
-          <div className="h-[200px] px-6 bg-[#11ABFF] flex items-center justify-center">
+          {/* 2. 서비스 소개 영역 */}
+          <div className="h-[300px] px-6 bg-white flex items-center justify-center">
             <div className="max-w-xl mx-auto text-center">
-              <p className="text-2xl text-green-50 leading-relaxed">
-                간편한 가계부 서비스를 제공해요
+              <p className="text-2xl font-semibold text-gray-800">
+                <span className="text-2xl font-semibold text-[#11ABFF]">
+                  달쿠미
+                </span>
+                는 복잡한 가계부 작성 과정을 해결했어요
+              </p>
+              <p className="text-2xl font-semibold text-gray-800">
+                그리고 가족이나 동료와 함께 가계부를 관리할 수 있어요
+              </p>
+            </div>
+          </div>
+
+          {/* 3. 주요 기능 영역 */}
+          <div
+            className="min-h-[1200px] py-20 px-6"
+            style={{
+              background:
+                "linear-gradient(to bottom, #E0F2FE, #DBEAFE, #E0E7FF, #EDE9FE, #FCE7F3, #f9fafb)",
+            }}
+          >
+            <div className="max-w-xl mx-auto pl-3">
+              <div className="flex flex-col gap-10">
+                {/* 첫 번째 카드(빠른 입력) - 이미지 왼쪽 */}
+                <div className="w-full">
+                  <div className="p-5 rounded-2xl flex gap-10">
+                    {/* 왼쪽 - 텍스트 */}
+                    <div className="flex-1 flex flex-col items-start">
+                      <div className="inline-block mb-3">
+                        <p className="text-2xl text-gray-800 font-semibold">
+                          복잡한 작성은 이제 끝!
+                        </p>
+                        <p className="text-2xl text-gray-800 font-semibold">
+                          <span className="text-[#11ABFF]">
+                            빠른 가계부 작성
+                          </span>
+                          이 가능해요
+                        </p>
+                      </div>
+                      <p className="text-md text-gray-500 font-semibold leading-relaxed">
+                        간단한 UI로 몇 초만에 지출, 수입 내역을 작성할 수
+                        있어요.
+                      </p>
+                    </div>
+                    {/* 오른쪽 - 이미지 */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src="/images/landing/가계부작성예시.jpg"
+                        alt="가계부 작성 예시"
+                        className="w-40 h-auto rounded-2xl object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 두 번째 카드(그룹 가계부) - 이미지 오른쪽 */}
+                <div className="w-full">
+                  <div className="p-5 rounded-2xl flex gap-7">
+                    {/* 왼쪽 - 이미지 */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src="/images/landing/그룹가계부예시.jpg"
+                        alt="그룹 가계부 예시"
+                        className="w-40 h-auto rounded-2xl object-contain"
+                      />
+                    </div>
+                    {/* 오른쪽 - 텍스트 */}
+                    <div className="flex-1 flex flex-col items-end">
+                      <div className="inline-block mb-3 text-right">
+                        <p className="text-2xl text-gray-800 font-semibold">
+                          <span className="text-[#11ABFF]">그룹</span>으로
+                          가계부를 관리해요
+                        </p>
+                      </div>
+                      <p className="text-md text-gray-500 font-semibold leading-relaxed text-right">
+                        가족, 친구, 동료와 함께 가계부를 관리해 보세요!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 세 번째 카드(AI 영수증 분석) - 이미지 왼쪽 */}
+                <div className="w-full">
+                  <div className="p-5 rounded-2xl flex gap-10">
+                    {/* 왼쪽 - 텍스트 */}
+                    <div className="flex-1 flex flex-col items-start">
+                      <div className="inline-block mb-3">
+                        <p className="text-2xl text-gray-800 font-semibold">
+                          직접 작성하기 귀찮다면,
+                        </p>
+                        <p className="text-2xl text-gray-800 font-semibold">
+                          AI에게
+                          <span className="text-[#11ABFF]"> 영수증</span>을
+                          맡겨봐요
+                        </p>
+                      </div>
+                      <p className="text-md text-gray-500 font-semibold leading-relaxed">
+                        영수증 사진을 업로드만 하면 AI가 자동으로 분석하여
+                        가계부 작성을 도와줘요.
+                      </p>
+                    </div>
+                    {/* 오른쪽 - 이미지 */}
+                    <div className="flex-shrink-0">
+                      <img
+                        src="/images/landing/영수증작성예시.jpg"
+                        alt="영수증 작성 예시"
+                        className="w-40 h-auto rounded-2xl object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. PWA 설치 영역 */}
+          <div className="min-h-[400px] py-12 px-6 flex items-center justify-center bg-gray-50">
+            <div className="max-w-xl text-center">
+              <p className="text-2xl text-gray-800 font-semibold mb-5">
+                <span className="text-[#11ABFF]">달쿠미</span>를 홈 화면에
+                추가하고 앱처럼 편하게 사용하세요
               </p>
               <br />
-              <p className="text-md text-green-50">
-                저희는 기존에 복잡한 작성 과정을 해결했어요
-              </p>
-              <p className="text-md text-green-50">
-                그리고 친구나 동료와 함께 가계부를 관리할 수 있어요
-              </p>
-            </div>
-          </div>
-
-          {/* 3. 주요 기능 영역 - 흰색 배경 (나머지 공간 채우기) */}
-          <div className="min-h-[400px] py-10 px-6 bg-white">
-            <div className="max-w-xl mx-auto pl-3">
-              <div className="flex flex-col gap-4">
-                {features.map((feature, index) => (
-                  <div key={index} className="w-full">
-                    {/* 첫 번째 카드(빠른 입력) - 이미지 왼쪽 */}
-                    {index === 0 ? (
-                      <div className="p-5 rounded-2xl bg-sky-50 flex items-center gap-4">
-                        {/* 왼쪽 - 이미지 */}
-                        <div className="flex-shrink-0">
-                          <img
-                            src="/images/landing/가계부작성예시.jpg"
-                            alt="가계부 작성 예시"
-                            className="w-40 h-auto rounded-lg object-contain"
-                          />
-                        </div>
-                        {/* 오른쪽 - 텍스트 */}
-                        <div className="flex-1 flex flex-col items-start">
-                          <div className="inline-block px-3 py-1 mb-3 bg-yellow-200 rounded-lg shadow-sm">
-                            <h3 className="text-lg text-gray-700">
-                              {feature.title}
-                            </h3>
-                          </div>
-                          <p className="text-md text-gray-600 leading-relaxed">
-                            {feature.description}
-                          </p>
-                        </div>
-                      </div>
-                    ) : index === 1 ? (
-                      /* 두 번째 카드(그룹 가계부) - 이미지 오른쪽 */
-                      <div className="p-5 rounded-2xl bg-sky-50 flex items-center gap-4">
-                        {/* 왼쪽 - 텍스트 */}
-                        <div className="flex-1 flex flex-col items-end">
-                          <div className="inline-block px-3 py-1 mb-3 bg-yellow-200 rounded-lg shadow-sm">
-                            <h3 className="text-lg text-gray-700">
-                              {feature.title}
-                            </h3>
-                          </div>
-                          <p className="text-md text-gray-600 leading-relaxed">
-                            {feature.description}
-                          </p>
-                        </div>
-                        {/* 오른쪽 - 이미지 */}
-                        <div className="flex-shrink-0">
-                          <img
-                            src="/images/landing/그룹가계부예시.jpg"
-                            alt="그룹 가계부 예시"
-                            className="w-40 h-auto rounded-lg object-contain"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      /* 세 번째 카드(AI 영수증 분석) - 이미지 왼쪽 */
-                      <div className="p-5 rounded-2xl bg-sky-50 flex items-center gap-4">
-                        {/* 왼쪽 - 이미지 */}
-                        <div className="flex-shrink-0">
-                          <img
-                            src="/images/landing/영수증작성예시.jpg"
-                            alt="영수증 작성 예시"
-                            className="w-40 h-auto rounded-lg object-contain"
-                          />
-                        </div>
-                        {/* 오른쪽 - 텍스트 */}
-                        <div className="flex-1 flex flex-col items-start">
-                          <div className="inline-block px-3 py-1 mb-3 bg-yellow-200 rounded-lg shadow-sm">
-                            <h3 className="text-lg text-gray-700">
-                              {feature.title}
-                            </h3>
-                          </div>
-                          <p className="text-md text-gray-600 leading-relaxed">
-                            {feature.description}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 4. PWA 설치 영역 - 하늘색 배경 */}
-          <div className="min-h-[250px] py-12 px-6 bg-[#11ABFF]">
-            <div className="max-w-xl mx-auto text-center">
-              <h2 className="text-3xl text-white mb-4">앱처럼 사용하기</h2>
-              <p className="text-md text-white mb-5">
-                달쿠미를 홈 화면에 추가하고 앱처럼 편하게 사용하세요
-              </p>
               <button
                 onClick={handleInstallClick}
-                className="px-10 py-3 bg-white text-[#11ABFF] rounded-lg text-lg hover:bg-sky-50 transition-colors cursor-pointer shadow-lg"
+                className="px-10 py-3 text-white bg-[#11ABFF] rounded-4xl text-2xl hover:bg-sky-400 transition-colors cursor-pointer shadow-lg"
               >
                 {isInstallable ? "설치하기" : "설치 방법 보기"}
               </button>
-              <p className="text-xs text-white mt-4">iOS, Android, PC 지원</p>
+              <br />
+              <br />
+              <p className="text-md text-gray-800 font-semibold mt-4">
+                iOS, Android, PC 지원
+              </p>
             </div>
           </div>
 
-          {/* 5. FAQ 영역 - 흰색 배경 */}
-          <div className="min-h-[500px] py-10 px-6 bg-sky-50">
+          {/* 5. FAQ 영역 */}
+          <div className="min-h-[500px] py-20 px-6 bg-sky-50">
             <div className="max-w-xl mx-auto">
               {/* FAQ 제목 */}
-              <h2 className="text-3xl text-black text-center mb-10">
+              <h2 className="text-3xl text-gray-800 font-semibold text-center mb-10">
                 자주 묻는 질문
               </h2>
 
               {/* FAQ 아코디언 */}
               <div className="flex flex-col gap-3">
                 {faqs.map((faq, index) => (
-                  <div
-                    key={index}
-                    className="border border-gray-200 rounded-lg overflow-hidden"
-                  >
+                  <div key={index} className="rounded-lg overflow-hidden">
                     {/* 질문 - 클릭 가능 */}
                     <button
                       onClick={() =>
                         setOpenFaqIndex(openFaqIndex === index ? null : index)
                       }
-                      className="w-full text-left p-4 bg-white hover:bg-sky-100 transition-colors cursor-pointer flex items-center justify-between"
+                      className="w-full text-left p-4 bg-sky-50 hover:transition-colors cursor-pointer flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">
                         {/* Q 아이콘 */}
@@ -287,19 +302,32 @@ export default function LandingContent() {
                           </span>
                         </div>
                         {/* 질문 텍스트 */}
-                        <span className="text-lg text-gray-800">
+                        <span className="text-lg text-gray-800 font-semibold">
                           {faq.question}
                         </span>
                       </div>
-                      <span className="text-gray-400 text-xl">
-                        {openFaqIndex === index ? "−" : "+"}
-                      </span>
+                      {/* 화살표 아이콘 */}
+                      <svg
+                        className={`w-6 h-6 text-gray-400 transition-transform ${
+                          openFaqIndex === index ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
                     </button>
 
                     {/* 답변 - 펼쳐졌을 때만 보임 */}
                     {openFaqIndex === index && (
-                      <div className="p-5 pl-7 bg-white">
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                      <div className="p-8 py-0.5 bg-sky-50">
+                        <p className="text-sm text-gray-600 font-semibold leading-relaxed whitespace-pre-line">
                           {faq.answer}
                         </p>
                       </div>
@@ -322,7 +350,7 @@ export default function LandingContent() {
                 <h3 className="text-xs font-semibold text-gray-800 w-16 flex-shrink-0">
                   Contacts
                 </h3>
-                <div className="flex items-center gap-3">
+                <div className="flex font-semibold items-center gap-3">
                   <a
                     href="mailto:dalcoomi.team@gmail.com"
                     className="text-[11px] text-gray-500 hover:text-blue-600 transition-colors"
@@ -334,7 +362,7 @@ export default function LandingContent() {
                     href="https://forms.gle/ucj6CNNx25wzB9a88"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[11px] text-gray-500 hover:text-blue-600 transition-colors"
+                    className="text-[11px] font-semibold text-gray-500 hover:text-blue-600 transition-colors"
                   >
                     문의하기
                   </a>
@@ -346,12 +374,12 @@ export default function LandingContent() {
                 <h3 className="text-xs font-semibold text-gray-800 w-16 flex-shrink-0">
                   Socials
                 </h3>
-                <div className="flex items-center gap-3">
+                <div className="flex font-semibold items-center gap-3">
                   <a
                     href="https://github.com/Dalcoomi"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[11px] text-gray-500 hover:text-blue-600 transition-colors"
+                    className="text-[11px]  text-gray-500 hover:text-blue-600 transition-colors"
                   >
                     GitHub
                   </a>
@@ -359,7 +387,7 @@ export default function LandingContent() {
               </div>
 
               {/* Copyright 및 약관 - 하단 중앙 */}
-              <div className="flex items-center justify-center gap-2 border-t border-blue-100 pt-2 mt-1">
+              <div className="flex font-semibold items-center justify-center gap-2 border-t border-blue-100 pt-2 mt-1">
                 <a
                   href="https://dalcoomi.notion.site/2326ea725ec880d69db1ecccb049bcf9"
                   target="_blank"

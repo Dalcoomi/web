@@ -72,8 +72,13 @@ export default function TopBar({
 
   // 메뉴 항목 클릭 핸들러들
   const handleMyPage = () => {
-    router.push("/profile");
     setShowSidebar(false);
+    // 현재 페이지가 /profile 인 경우 강제 새로고침
+    if (pathname === "/profile") {
+      window.location.href = "/profile";
+    } else {
+      router.push("/profile");
+    }
   };
 
   const handleNotice = () => {
