@@ -111,7 +111,7 @@ export default function LandingContent() {
         <div ref={scrollRef} className="absolute inset-0 overflow-y-auto">
           {/* 1. 로고 + 타이틀 영역 - 그라데이션 배경 (고정 높이) */}
           <div
-            className="relative h-[450px] px-6 flex items-center justify-center"
+            className="relative h-[600px] px-6 flex items-start justify-center pt-40"
             style={{
               background:
                 "linear-gradient(to bottom, #11ABFF, #8DD5FF, #C7E9FF, #E8F6FF, #FFFFFF)",
@@ -134,10 +134,50 @@ export default function LandingContent() {
                 <h1 className="text-4xl font-bold text-sky-600">달쿠미</h1>
               </div>
             </div>
+
+            {/* 하단 스크롤 안내 화살표 - 푸터 위에 고정 */}
+            <div
+              className="absolute bottom-24 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer"
+              onClick={() => {
+                if (scrollRef.current) {
+                  scrollRef.current.scrollTo({
+                    top: 600,
+                    behavior: "smooth",
+                  });
+                }
+              }}
+            >
+              <svg
+                className="w-8 h-8 text-sky-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+              <svg
+                className="w-8 h-8 text-sky-600 -mt-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
           </div>
 
           {/* 2. 서비스 소개 영역 */}
-          <div className="h-[300px] px-6 bg-white flex items-center justify-center">
+          <div className="h-[400px] px-6 bg-white flex items-center justify-center">
             <div className="max-w-xl mx-auto text-center">
               <p className="text-2xl font-semibold text-gray-800">
                 <span className="text-2xl font-semibold text-[#11ABFF]">
@@ -221,7 +261,7 @@ export default function LandingContent() {
 
                 {/* 세 번째 카드(AI 영수증 분석) - 이미지 왼쪽 */}
                 <div className="w-full">
-                  <div className="p-5 rounded-2xl flex gap-10">
+                  <div className="p-5 rounded-2xl flex gap-7">
                     {/* 왼쪽 - 텍스트 */}
                     <div className="flex-1 flex flex-col items-start">
                       <div className="inline-block mb-3">
@@ -235,8 +275,10 @@ export default function LandingContent() {
                         </p>
                       </div>
                       <p className="text-md text-gray-500 font-semibold leading-relaxed">
-                        영수증 사진을 업로드만 하면 AI가 자동으로 분석하여
-                        가계부 작성을 도와줘요.
+                        영수증 사진을 업로드만 하면,
+                      </p>
+                      <p className="text-md text-gray-500 font-semibold leading-relaxed">
+                        AI가 자동으로 분석하여 가계부 작성을 도와줘요.
                       </p>
                     </div>
                     {/* 오른쪽 - 이미지 */}
