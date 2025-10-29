@@ -5,8 +5,9 @@ import RootPageClient from "@/components/auth/RootPageClient";
 import PWAInstallPrompt from "@/components/common/PWAInstallPrompt";
 
 export const metadata = {
+  title: "달쿠미 | 개인&그룹 AI 가계부",
   description:
-    "개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성, AI 영수증 분석, 그룹 작성 기능을 제공합니다. 지금 시작해보세요!",
+    "개인과 그룹을 위한 AI 가계부 서비스 달쿠미. 간편한 가계부 작성, AI 영수증 분석, 그룹 가계부 기능을 무료로 제공합니다. 스마트한 지출 관리와 예산 관리를 지금 시작해보세요!",
   keywords: [
     "가계부",
     "달쿠미",
@@ -18,11 +19,15 @@ export const metadata = {
     "AI 가계부",
     "지출관리",
     "예산관리",
+    "무료 가계부",
+    "가계부 앱",
+    "영수증 분석",
+    "재무관리",
   ],
   openGraph: {
     title: "달쿠미 | 개인&그룹 AI 가계부",
     description:
-      "개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성과 지출 분석을 제공합니다.",
+      "개인과 그룹을 위한 AI 가계부 서비스 달쿠미. 간편한 가계부 작성과 AI 영수증 분석, 그룹 가계부로 스마트하게 지출을 관리하세요.",
     url: "https://dalcoomi.com",
     siteName: "달쿠미",
     images: [
@@ -30,7 +35,7 @@ export const metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "달쿠미 AI 가계부 서비스",
+        alt: "달쿠미 AI 가계부 서비스 - 개인과 그룹을 위한 스마트 가계부",
       },
     ],
     locale: "ko_KR",
@@ -39,7 +44,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "달쿠미 | 개인&그룹 AI 가계부",
-    description: "개인과 그룹을 위한 AI 가계부 서비스",
+    description: "개인과 그룹을 위한 AI 가계부 서비스 달쿠미",
     images: ["/og-image.png"],
   },
   robots: {
@@ -49,9 +54,13 @@ export const metadata = {
       index: true,
       follow: true,
     },
+    "naver-site-verification": "39c4d20da5440f7822f33fabd7022c0c98622c82",
   },
   alternates: {
     canonical: "https://dalcoomi.com",
+  },
+  other: {
+    "naver-site-verification": "39c4d20da5440f7822f33fabd7022c0c98622c82",
   },
 };
 
