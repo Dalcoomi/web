@@ -483,7 +483,7 @@ export default function LoginPageClient() {
     <div className="relative w-full h-full">
       {/* SEO용 숨김 텍스트 */}
       <div className="sr-only">
-        <h1>달쿠미 - 개인과 그룹을 위한 AI 가계부</h1>
+        <p>달쿠미 - 개인과 그룹을 위한 AI 가계부</p>
         <p>
           개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성, AI 영수증
           분석, 그룹 작성 기능을 제공합니다. 달쿠미 가계부로 지출 관리를

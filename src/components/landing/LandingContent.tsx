@@ -131,7 +131,7 @@ export default function LandingContent() {
                 <p className="text-2xl font-semibold text-sky-600">
                   개인과 그룹을 위한 AI 가계부 서비스
                 </p>
-                <h1 className="text-4xl font-bold text-sky-600">달쿠미</h1>
+                <p className="text-4xl font-bold text-sky-600">달쿠미</p>
               </div>
             </div>
 
