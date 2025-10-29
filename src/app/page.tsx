@@ -7,7 +7,7 @@ import PWAInstallPrompt from "@/components/common/PWAInstallPrompt";
 export const metadata = {
   title: "달쿠미 | 개인&그룹 AI 가계부",
   description:
-    "개인과 그룹을 위한 AI 가계부 서비스 달쿠미. 간편한 가계부 작성, AI 영수증 분석, 그룹 가계부 기능을 무료로 제공합니다. 스마트한 지출 관리와 예산 관리를 지금 시작해보세요!",
+    "개인과 그룹을 위한 AI 가계부 서비스 달쿠미. 간편한 가계부 작성과 AI 영수증 분석, 그룹 가계부로 스마트한 지출 관리를 시작해 보세요!",
   keywords: [
     "가계부",
     "달쿠미",
@@ -27,7 +27,7 @@ export const metadata = {
   openGraph: {
     title: "달쿠미 | 개인&그룹 AI 가계부",
     description:
-      "개인과 그룹을 위한 AI 가계부 서비스 달쿠미. 간편한 가계부 작성과 AI 영수증 분석, 그룹 가계부로 스마트하게 지출을 관리하세요.",
+      "개인과 그룹을 위한 AI 가계부 서비스 달쿠미. 간편한 가계부 작성과 AI 영수증 분석, 그룹 가계부로 스마트한 지출 관리를 시작해 보세요!",
     url: "https://dalcoomi.com",
     siteName: "달쿠미",
     images: [
