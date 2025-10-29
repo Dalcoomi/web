@@ -11,6 +11,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -30,11 +31,25 @@ export default function GroupPageClient() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const groupListRef = useRef<HTMLDivElement>(null);
 
-  // 드래그&드롭 센서 설정
+  // 드래그&드롭 센서 설정 - 모바일 터치 최적화
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    // 마우스/터치패드용
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px 이동 후 드래그 시작 (클릭과 구분)
+      },
+    }),
+    // 모바일 터치용 (중요!)
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 100, // 100ms만 누르면 드래그 시작 (빠른 반응)
+        tolerance: 8, // 8px 이내 움직임 허용
+      },
+    }),
+    // 키보드 접근성용
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -128,9 +143,16 @@ export default function GroupPageClient() {
     };
   };
 
+  // 드래그 시작 핸들러
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
   // 드래그 종료 핸들러
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+
+    setIsDragging(false);
 
     if (over && active.id !== over.id) {
       setGroups((items) => {
@@ -142,12 +164,26 @@ export default function GroupPageClient() {
     }
   };
 
+  // 드래그 취소 핸들러
+  const handleDragCancel = () => {
+    setIsDragging(false);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
       <TopBar />
 
       {/* 메인 컨텐츠 영역 */}
-      <div className="flex-1 px-3 py-3 overflow-y-auto">
+      <div
+        className="flex-1 px-3 py-3 overflow-y-auto"
+        style={{
+          // 드래그 중 스크롤 및 pull-to-refresh 방지
+          ...(isDragging && {
+            overflowY: "hidden",
+            touchAction: "none",
+          }),
+        }}
+      >
         {/* 그룹 생성/참가 버튼들 */}
         <div className="grid grid-cols-2 gap-4 mb-5">
           {/* 그룹 생성 버튼 */}
@@ -227,7 +263,9 @@ export default function GroupPageClient() {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
             modifiers={[restrictToVerticalAxis, restrictToGroupList]}
           >
             <SortableContext
@@ -307,7 +345,12 @@ function SortableItem({
           <div
             {...attributes}
             {...listeners}
-            className="mr-3 text-gray-400 cursor-move"
+            className="mr-3 text-gray-400 cursor-move touch-none"
+            style={{
+              touchAction: "none", // 터치 제스처 방지
+              WebkitUserSelect: "none", // iOS 텍스트 선택 방지
+              userSelect: "none",
+            }}
           >
             <svg
               width="20"
