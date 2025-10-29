@@ -72,11 +72,21 @@ export default async function RootLayout({
           content="tgUU4sqjYyMvAIZ0nAuQQRpPO7kKJyRj2WmsKc2_KdA"
         />
 
-        {/* 네이버 서치어드바이저 인증 - 새로 추가 */}
+        {/* 네이버 서치어드바이저 인증 */}
         <meta
           name="naver-site-verification"
           content="39c4d20da5440f7822f33fabd7022c0c98622c82"
         />
+
+        {/* 네이버 검색 최적화 메타 태그 */}
+        <meta name="subject" content="가계부, 재무관리" />
+        <meta name="author" content="달쿠미 팀" />
+        <meta name="other agent" content="달쿠미" />
+        <meta name="classification" content="Finance, Productivity" />
+        <meta name="reply-to" content="dalcoomi.team@google.com" />
+        <meta name="date" content="2025-10-01" />
+        <meta name="copyright" content="© 2025 달쿠미. All rights reserved." />
+        <meta property="og:locale" content="ko_KR" />
 
         {/* PWA 메타 태그 */}
         <meta name="application-name" content="달쿠미" />

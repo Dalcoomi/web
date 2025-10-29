@@ -1,12 +1,37 @@
 # public/robots.txt
 
+# 모든 검색엔진 크롤러
 User-agent: *
 Allow: /
 Disallow: /transaction/
 Disallow: /group/
 Disallow: /sign-up/
 Disallow: /api/
-Disallow: /*.json$           # JSON 파일 차단
-Crawl-delay: 1               # 크롤링 간격 (초)
+Disallow: /*.json$
+
+# 네이버 검색봇 (Yeti)
+User-agent: Yeti
+Allow: /
+Disallow: /transaction/
+Disallow: /group/
+Disallow: /sign-up/
+Disallow: /api/
+Crawl-delay: 1
+
+# 구글 검색봇
+User-agent: Googlebot
+Allow: /
+Disallow: /transaction/
+Disallow: /group/
+Disallow: /sign-up/
+Disallow: /api/
+
+# 다음/카카오 검색봇
+User-agent: Daumoa
+Allow: /
+Disallow: /transaction/
+Disallow: /group/
+Disallow: /sign-up/
+Disallow: /api/
 
 Sitemap: https://dalcoomi.com/sitemap.xml
