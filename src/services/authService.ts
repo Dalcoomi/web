@@ -8,6 +8,7 @@ export const socialLogin = async (data: {
   socialId: string;
   socialType: string;
   socialRefreshToken?: string;
+  deviceType: string;
 }) => {
   return post("/api/auth/login", data);
 };
