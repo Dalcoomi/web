@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { signUp } from "@/services/memberService";
+import { getDeviceType } from "@/utils/deviceDetector";
 
 export default function SignUpInfoClient() {
   const router = useRouter();
@@ -245,6 +246,7 @@ export default function SignUpInfoClient() {
         serviceAgreement,
         collectionAgreement,
         aiLearningAgreement,
+        deviceType: getDeviceType(), // 디바이스 타입 추가
       };
 
       // API 서비스로 회원가입 요청

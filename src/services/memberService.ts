@@ -77,6 +77,7 @@ export interface SignUpRequest {
   serviceAgreement: boolean;
   collectionAgreement: boolean;
   aiLearningAgreement: boolean;
+  deviceType: string;
 }
 
 // 회원가입 API

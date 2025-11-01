@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
 import { connectSocial } from "@/services/memberService";
 import { isPWA, isMobile } from "@/utils/deviceDetection";
+import { getDeviceType } from "@/utils/deviceDetector";
 
 export default function LoginPageClient() {
   const router = useRouter();
@@ -281,6 +282,7 @@ export default function LoginPageClient() {
             : userData.naverId.toString(),
         socialType: socialType,
         socialRefreshToken: userData.refreshToken, // 소셜 리프레시 토큰 추가
+        deviceType: getDeviceType(), // 디바이스 타입 추가
       };
 
       try {
@@ -356,6 +358,7 @@ export default function LoginPageClient() {
         socialId: pendingSocialData.socialId,
         socialType: pendingSocialData.socialType,
         socialRefreshToken: pendingSocialData.socialRefreshToken, // 소셜 리프레시 토큰 추가
+        deviceType: getDeviceType(), // 디바이스 타입 추가
       });
 
       login(response.accessToken, response.refreshToken);

@@ -67,7 +67,7 @@ export default function GroupTransactionItem({
 
   return (
     <div
-      className="flex items-center py-1 px-4 bg-white cursor-pointer hover:bg-gray-100 transition-colors"
+      className="flex items-center py-2 px-4 bg-white cursor-pointer hover:bg-gray-100 transition-colors"
       onClick={handleClick}
     >
       {/* 날짜 (있을 때만 표시) */}
