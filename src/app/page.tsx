@@ -32,7 +32,7 @@ export const metadata = {
     siteName: "달쿠미",
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "달쿠미 AI 가계부 서비스 - 개인과 그룹을 위한 스마트 가계부",
@@ -45,7 +45,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "달쿠미 | 개인&그룹 AI 가계부",
     description: "개인과 그룹을 위한 AI 가계부 서비스 달쿠미",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,
