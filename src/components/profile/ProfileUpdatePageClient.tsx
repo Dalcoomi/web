@@ -206,6 +206,7 @@ export default function ProfileUpdatePageClient() {
       updateMember({ profileImageUrl: newAvatarUrl });
 
       setProfileImage(newAvatarUrl);
+      alert("프로필 사진이 변경되었습니다.");
     } catch (err: any) {
       console.error("Profile image update failed:", err);
       alert(err?.message || "프로필 사진 변경에 실패했습니다.");
@@ -228,6 +229,7 @@ export default function ProfileUpdatePageClient() {
       updateMember({ profileImageUrl: newAvatarUrl });
 
       setProfileImage(newAvatarUrl);
+      alert("프로필 사진이 변경되었습니다.");
     } catch (err: any) {
       console.error("Profile image change failed:", err);
       alert(err?.message || "프로필 사진 변경에 실패했습니다.");

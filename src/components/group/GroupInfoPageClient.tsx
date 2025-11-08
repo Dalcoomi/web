@@ -175,7 +175,6 @@ export default function GroupInfoPageClient() {
       setGroupInfo(response);
       setEditMemberLimit(response.memberLimit.toString());
       setIsEditMode(false);
-      alert("그룹 정보가 수정되었습니다.");
     } catch (error) {
       alert(error || "그룹 정보 수정 중 오류가 발생했습니다.");
     } finally {
@@ -520,15 +519,15 @@ export default function GroupInfoPageClient() {
             <div className="flex">
               <button
                 onClick={handleFirstConfirm}
-                className="flex-1 mx-3 mb-4 py-3 text-white text-base font-light border rounded-[10px] bg-[#0EABFF] hover:bg-blue-600 cursor-pointer transition-colors"
+                className="flex-1 mx-3 mb-4 py-3 text-white text-base font-light border rounded-[10px] bg-pink-500 hover:bg-pink-600 cursor-pointer transition-colors"
               >
-                네
+                떠나기
               </button>
               <button
                 onClick={handleCloseModal}
                 className="flex-1 mx-3 mb-4 py-3 text-white text-base font-light border rounded-[10px] bg-[#D4D4D4] hover:bg-gray-400 cursor-pointer transition-colors"
               >
-                아니오
+                취소
               </button>
             </div>
           </div>
@@ -633,7 +632,7 @@ export default function GroupInfoPageClient() {
                 <>
                   <button
                     onClick={handleFinalLeave}
-                    className="flex-1 py-3 px-4 bg-[#0EABFF] text-white rounded-[10px] font-light hover:bg-blue-600 cursor-pointer transition-colors"
+                    className="flex-1 py-3 px-4 bg-pink-500 text-white rounded-[10px] font-light hover:bg-pink-600 cursor-pointer transition-colors"
                   >
                     떠나기
                   </button>
