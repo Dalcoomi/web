@@ -249,7 +249,7 @@ export default function GroupPageClient() {
               onClick={isEditMode ? handleSaveOrder : handleEditModeToggle}
               className="text-sm font-medium text-[#0EABFF] px-3 py-1 rounded-md hover:bg-blue-50 transition-colors cursor-pointer"
             >
-              {isEditMode ? "완료" : "편집"}
+              {isEditMode ? "완료" : "⇅ 순서 변경"}
             </button>
           )}
         </div>
@@ -325,9 +325,14 @@ function SortableItem({
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id, disabled: !isEditMode });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
+    ...(isEditMode && {
+      touchAction: "none", // 터치 제스처 방지
+      WebkitUserSelect: "none" as const, // iOS 텍스트 선택 방지
+      userSelect: "none" as const,
+    }),
   };
 
   return (
@@ -335,40 +340,15 @@ function SortableItem({
       ref={setNodeRef}
       style={style}
       onClick={() => !isEditMode && onClick()}
-      className={`bg-[#F5F7FE] rounded-[10px] p-4 transition-colors ${
-        isEditMode ? "cursor-default" : "hover:bg-blue-200 cursor-pointer"
+      // 편집 모드일 때 박스 전체를 드래그 가능하게 설정
+      {...(isEditMode ? { ...attributes, ...listeners } : {})}
+      className={`rounded-[10px] p-4 transition-colors ${
+        isEditMode
+          ? "cursor-move border-2 border-gray-300 bg-white"
+          : "hover:bg-blue-200 cursor-pointer bg-[#F5F7FE]"
       }`}
     >
       <div className="flex items-center justify-between">
-        {/* 드래그 핸들 (편집 모드에만 표시) */}
-        {isEditMode && (
-          <div
-            {...attributes}
-            {...listeners}
-            className="mr-3 text-gray-400 cursor-move touch-none"
-            style={{
-              touchAction: "none", // 터치 제스처 방지
-              WebkitUserSelect: "none", // iOS 텍스트 선택 방지
-              userSelect: "none",
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="9" cy="5" r="1.5" fill="currentColor" />
-              <circle cx="9" cy="12" r="1.5" fill="currentColor" />
-              <circle cx="9" cy="19" r="1.5" fill="currentColor" />
-              <circle cx="15" cy="5" r="1.5" fill="currentColor" />
-              <circle cx="15" cy="12" r="1.5" fill="currentColor" />
-              <circle cx="15" cy="19" r="1.5" fill="currentColor" />
-            </svg>
-          </div>
-        )}
-
         {/* 그룹 정보 */}
         <div className="flex-1">
           <h3 className="text-md font-medium text-[#515968] px-1">
@@ -400,6 +380,30 @@ function SortableItem({
               <circle cx="12" cy="2" r="2" fill="currentColor" />
               <circle cx="12" cy="12" r="2" fill="currentColor" />
               <circle cx="12" cy="22" r="2" fill="currentColor" />
+            </svg>
+          </div>
+        )}
+
+        {/* 드래그 핸들 (편집 모드에만 표시) - 오른쪽으로 이동 */}
+        {isEditMode && (
+          <div className="text-gray-400 pointer-events-none">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* 위쪽 화살표 */}
+              <path
+                d="M12 5L8 9L9.5 10.5L12 8L14.5 10.5L16 9L12 5Z"
+                fill="currentColor"
+              />
+              {/* 아래쪽 화살표 */}
+              <path
+                d="M12 19L16 15L14.5 13.5L12 16L9.5 13.5L8 15L12 19Z"
+                fill="currentColor"
+              />
             </svg>
           </div>
         )}
