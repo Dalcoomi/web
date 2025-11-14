@@ -27,12 +27,12 @@ export default function PWAInstallPrompt() {
       (window.navigator as any).standalone === true;
     setIsStandalone(isInStandalone);
 
-    // 이전에 닫은 시간 확인 (7일 동안 다시 표시 안 함)
+    // 이전에 닫은 시간 확인 (3일 동안 다시 표시 안 함)
     const dismissedTime = localStorage.getItem("pwa-install-dismissed");
     if (dismissedTime) {
       const daysSinceDismissed =
         (Date.now() - parseInt(dismissedTime)) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 7) {
+      if (daysSinceDismissed < 3) {
         return;
       }
     }
@@ -156,7 +156,7 @@ export default function PWAInstallPrompt() {
               onClick={handleDismissWeek}
               className="flex-1 py-2.5 px-3 cursor-pointer text-[#0EABFF] text-sm font-medium border-2 border-[#0EABFF] rounded-lg hover:bg-blue-50 transition-colors"
             >
-              7일간 보지 않기
+              3일간 보지 않기
             </button>
           </div>
 
@@ -201,7 +201,7 @@ export default function PWAInstallPrompt() {
             onClick={handleDismissWeek}
             className="flex-1 py-2.5 px-3 cursor-pointer border-2 border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
           >
-            7일간 보지 않기
+            3일간 보지 않기
           </button>
           <button
             onClick={handleInstall}
