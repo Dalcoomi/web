@@ -29,6 +29,10 @@ export default function BottomBar() {
         {/* 개인 버튼 */}
         <button
           onClick={() => {
+            // 날짜와 스크롤 위치 초기화
+            sessionStorage.removeItem("my-transaction-date");
+            sessionStorage.removeItem("my-transaction-scroll");
+
             // 현재 페이지가 /transaction/my 인 경우 강제 새로고침
             if (pathname === "/transaction/my") {
               window.location.href = "/transaction/my";

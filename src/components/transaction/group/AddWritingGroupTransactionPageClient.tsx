@@ -185,6 +185,10 @@ export default function AddWritingGroupTransactionPageClient() {
       // API 서비스로 그룹 거래 내역 저장 요청
       await addTransaction(transactionData);
 
+      // 등록된 거래의 날짜로 저장 (스크롤은 맨 위로)
+      sessionStorage.setItem(`group-transaction-date-${teamId}`, new Date(year, month - 1, day).toISOString());
+      sessionStorage.setItem(`group-transaction-scroll-${teamId}`, "0");
+
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // 성공 시 그룹 거래 내역 조회 페이지로 이동

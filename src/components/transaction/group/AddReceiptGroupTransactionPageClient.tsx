@@ -157,7 +157,6 @@ export default function AddReceiptMyTransactionPageClient() {
       setReceiptItems(convertedItems);
       setHasUploadedReceipt(true);
     } catch (error) {
-      console.error("영수증 업로드 오류:", error);
       alert(
         error instanceof Error
           ? error.message

@@ -120,9 +120,8 @@ export default function GroupPageClient() {
       );
 
       setIsEditMode(false);
-    } catch (error) {
+    } catch {
       alert("그룹 순서 저장에 실패했습니다.");
-      console.error(error);
     }
   };
 
@@ -322,8 +321,14 @@ function SortableItem({
   onInfoClick,
   getMemberCountColor,
 }: SortableItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id, disabled: !isEditMode });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: !isEditMode });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -344,7 +349,9 @@ function SortableItem({
       {...(isEditMode ? { ...attributes, ...listeners } : {})}
       className={`rounded-[10px] p-4 transition-colors ${
         isEditMode
-          ? "cursor-move border-2 border-gray-300 bg-white"
+          ? isDragging
+            ? "cursor-move border-2 border-[#0EABFF] bg-blue-50"
+            : "cursor-move border-2 border-gray-300 bg-white hover:border-[#0EABFF] hover:bg-blue-50"
           : "hover:bg-blue-200 cursor-pointer bg-[#F5F7FE]"
       }`}
     >

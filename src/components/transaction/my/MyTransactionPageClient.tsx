@@ -18,8 +18,22 @@ import { useMemberStore } from "@/stores/useMemberStore";
 export default function MyTransactionPageClient() {
   const router = useRouter();
   const { fetchMember } = useMemberStore();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isLoading, setIsLoading] = useState<boolean>(false); // 초기 로딩 제거
+
+  // 스크롤 위치 복원을 위한 저장된 날짜 가져오기
+  const getSavedDate = (): Date => {
+    if (typeof window === "undefined") return new Date();
+    const saved = sessionStorage.getItem("my-transaction-date");
+    if (saved) {
+      const parsed = new Date(saved);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    return new Date();
+  };
+
+  const [selectedDate, setSelectedDate] = useState<Date>(getSavedDate());
+  const [isLoading, setIsLoading] = useState<boolean>(true); // 초기 로딩 true로 설정
   const [response, setResponse] = useState<MonthlyTransactionsResponse>({
     income: 0,
     expense: 0,
@@ -55,12 +69,58 @@ export default function MyTransactionPageClient() {
 
   const hasFetchedMember = useRef(false);
 
+  // 스크롤 위치 저장/복원을 위한 ref
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const shouldRestoreScroll = useRef(false);
+  const [isRestoringScroll, setIsRestoringScroll] = useState(false);
+
   useEffect(() => {
     if (!hasFetchedMember.current) {
       fetchMember();
       hasFetchedMember.current = true;
     }
   }, [fetchMember]);
+
+  // 페이지 진입 시 스크롤 위치 복원 플래그 설정
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem("my-transaction-scroll");
+    if (savedScroll) {
+      shouldRestoreScroll.current = true;
+      setIsRestoringScroll(true);
+    }
+  }, []);
+
+  // 데이터 로딩 완료 후 스크롤 복원
+  useEffect(() => {
+    if (!isLoading && shouldRestoreScroll.current && scrollContainerRef.current && response.transactions.length > 0) {
+      const savedScroll = sessionStorage.getItem("my-transaction-scroll");
+      if (savedScroll) {
+        const scrollPos = parseInt(savedScroll, 10);
+        // DOM 렌더링 완료 후 스크롤 복원
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = scrollPos;
+              shouldRestoreScroll.current = false;
+              // 약간의 딜레이 후 투명도 제거
+              setTimeout(() => {
+                setIsRestoringScroll(false);
+              }, 50);
+            }
+          });
+        }, 100);
+      }
+    } else if (!isLoading && shouldRestoreScroll.current) {
+      // 거래 내역이 없는 경우 투명도만 제거
+      shouldRestoreScroll.current = false;
+      setIsRestoringScroll(false);
+    }
+  }, [isLoading, response.transactions]);
+
+  // 날짜 변경 시 저장
+  useEffect(() => {
+    sessionStorage.setItem("my-transaction-date", selectedDate.toISOString());
+  }, [selectedDate]);
 
   // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
@@ -285,6 +345,14 @@ export default function MyTransactionPageClient() {
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("ko-KR");
+  };
+
+  // 스크롤 이벤트 핸들러
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const scrollPos = scrollContainerRef.current.scrollTop;
+      sessionStorage.setItem("my-transaction-scroll", scrollPos.toString());
+    }
   };
 
   return (
@@ -513,7 +581,12 @@ export default function MyTransactionPageClient() {
       </div>
 
       {/* 거래 내역 목록 */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto bg-white"
+        style={{ opacity: isRestoringScroll ? 0 : 1, transition: 'opacity 0.15s' }}
+      >
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
             <div className="text-gray-500">로딩 중...</div>

@@ -151,6 +151,10 @@ export default function AddWritingMyTransactionPageClient() {
       // API 서비스로 개인 거래 내역 저장 요청
       await addTransaction(transactionData);
 
+      // 등록된 거래의 날짜로 저장 (스크롤은 맨 위로)
+      sessionStorage.setItem("my-transaction-date", new Date(year, month - 1, day).toISOString());
+      sessionStorage.setItem("my-transaction-scroll", "0");
+
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // 성공 시 개인 거래 내역 조회 페이지로 이동
