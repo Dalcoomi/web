@@ -20,7 +20,20 @@ export default function MyTransactionPageClient() {
   const params = useParams();
   const teamId = params.teamId as string;
 
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  // 스크롤 위치 복원을 위한 저장된 날짜 가져오기
+  const getSavedDate = (): Date => {
+    if (typeof window === "undefined") return new Date();
+    const saved = sessionStorage.getItem(`group-transaction-date-${teamId}`);
+    if (saved) {
+      const parsed = new Date(saved);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    return new Date();
+  };
+
+  const [selectedDate, setSelectedDate] = useState<Date>(getSavedDate());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [response, setResponse] = useState<MonthlyTransactionsResponse>({
     income: 0,
@@ -67,6 +80,52 @@ export default function MyTransactionPageClient() {
     top: 0,
     left: 0,
   });
+
+  // 스크롤 위치 저장/복원을 위한 ref
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const shouldRestoreScroll = useRef(false);
+  const [isRestoringScroll, setIsRestoringScroll] = useState(false);
+
+  // 페이지 진입 시 스크롤 위치 복원 플래그 설정
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem(`group-transaction-scroll-${teamId}`);
+    if (savedScroll) {
+      shouldRestoreScroll.current = true;
+      setIsRestoringScroll(true);
+    }
+  }, [teamId]);
+
+  // 데이터 로딩 완료 후 스크롤 복원
+  useEffect(() => {
+    if (!isLoading && shouldRestoreScroll.current && scrollContainerRef.current && response.transactions.length > 0) {
+      const savedScroll = sessionStorage.getItem(`group-transaction-scroll-${teamId}`);
+      if (savedScroll) {
+        const scrollPos = parseInt(savedScroll, 10);
+        // DOM 렌더링 완료 후 스크롤 복원
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = scrollPos;
+              shouldRestoreScroll.current = false;
+              // 약간의 딜레이 후 투명도 제거
+              setTimeout(() => {
+                setIsRestoringScroll(false);
+              }, 50);
+            }
+          });
+        }, 100);
+      }
+    } else if (!isLoading && shouldRestoreScroll.current) {
+      // 거래 내역이 없는 경우 투명도만 제거
+      shouldRestoreScroll.current = false;
+      setIsRestoringScroll(false);
+    }
+  }, [isLoading, response.transactions, teamId]);
+
+  // 날짜 변경 시 저장
+  useEffect(() => {
+    sessionStorage.setItem(`group-transaction-date-${teamId}`, selectedDate.toISOString());
+  }, [selectedDate, teamId]);
 
   // 날짜 변경 핸들러 (필터 유지)
   const handleDateChange = (date: Date) => {
@@ -398,6 +457,16 @@ export default function MyTransactionPageClient() {
     return num.toLocaleString("ko-KR");
   };
 
+  // 스크롤 이벤트 핸들러
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      sessionStorage.setItem(
+        `group-transaction-scroll-${teamId}`,
+        scrollContainerRef.current.scrollTop.toString()
+      );
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white">
       <TopBar />
@@ -663,7 +732,12 @@ export default function MyTransactionPageClient() {
       </div>
 
       {/* 거래 내역 목록 */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto bg-white"
+        style={{ opacity: isRestoringScroll ? 0 : 1, transition: 'opacity 0.15s' }}
+      >
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
             <div className="text-gray-500">로딩 중...</div>

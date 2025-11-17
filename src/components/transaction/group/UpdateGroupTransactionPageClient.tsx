@@ -227,6 +227,9 @@ export default function UpdateGroupTransactionPageClient() {
       // API 서비스로 거래 내역 수정 요청
       await updateTransaction(transactionId, transactionData);
 
+      // 수정된 거래의 날짜로 저장 (스크롤 위치는 유지)
+      sessionStorage.setItem(`group-transaction-date-${teamId}`, new Date(year, month - 1, day).toISOString());
+
       // 성공 시 거래 내역 조회 페이지로 이동
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
@@ -247,6 +250,11 @@ export default function UpdateGroupTransactionPageClient() {
 
     try {
       await deleteTransaction(transactionId);
+
+      // 삭제 시 해당 월의 맨 위로 이동하기 위해 스크롤 위치 초기화
+      const [year, month] = date.split("-").map(Number);
+      sessionStorage.setItem(`group-transaction-date-${teamId}`, new Date(year, month - 1, 1).toISOString());
+      sessionStorage.setItem(`group-transaction-scroll-${teamId}`, "0");
 
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
