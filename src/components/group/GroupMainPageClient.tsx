@@ -89,6 +89,9 @@ export default function GroupPageClient() {
 
   // 그룹 클릭 핸들러 (그룹 거래 내역 조회 페이지로 이동)
   const handleGroupClick = (teamId: string) => {
+    // 저장된 날짜와 스크롤 위치 초기화 (항상 현재 달로 시작)
+    sessionStorage.removeItem(`group-transaction-date-${teamId}`);
+    sessionStorage.removeItem(`group-transaction-scroll-${teamId}`);
     router.push(`/transaction/group/${teamId}`);
   };
 
