@@ -1,10 +1,10 @@
-name: Dalcoomi Frontend CI
+name: Dalcoomi Frontend CI Prod
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [develop, main]
+    branches: [main]
 
 jobs:
   test:
