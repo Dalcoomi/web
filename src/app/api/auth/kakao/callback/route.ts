@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         `,
         {
           status: 400,
-          headers: { "Content-Type": "text/html" },
+          headers: { "Content-Type": "text/html; charset=utf-8" },
         }
       );
     }
@@ -175,11 +175,14 @@ export async function GET(request: NextRequest) {
         `,
         {
           status: 200,
-          headers: { "Content-Type": "text/html" },
+          headers: { "Content-Type": "text/html; charset=utf-8" },
         }
       );
     }
   } catch (error) {
+    // 에러 로그 출력 (개발 환경에서 디버깅용)
+    console.error("카카오 로그인 에러:", error);
+
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
 
     if (shouldUseRedirect) {
@@ -220,7 +223,7 @@ export async function GET(request: NextRequest) {
         `,
         {
           status: 500,
-          headers: { "Content-Type": "text/html" },
+          headers: { "Content-Type": "text/html; charset=utf-8" },
         }
       );
     }
