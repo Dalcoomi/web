@@ -26,6 +26,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup environment files
+        run: |
+          cp env-config/.env.development .env.production || cp env-config/.env.dev .env.production
+          cp env-config/.env .env
+
       - name: Clean build cache
         run: rm -rf .next
 
