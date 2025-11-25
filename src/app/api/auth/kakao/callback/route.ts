@@ -100,7 +100,10 @@ export async function GET(request: NextRequest) {
     });
 
     const tokenData = await tokenResponse.json();
-    if (!tokenResponse.ok) throw new Error("토큰 요청 실패");
+    if (!tokenResponse.ok) {
+      console.error("카카오 토큰 요청 실패:", tokenData);
+      throw new Error(`토큰 요청 실패: ${JSON.stringify(tokenData)}`);
+    }
 
     // 2. 토큰으로 사용자 정보 요청
     const userResponse = await fetch("https://kapi.kakao.com/v2/user/me", {
@@ -111,7 +114,10 @@ export async function GET(request: NextRequest) {
     });
 
     const userData = await userResponse.json();
-    if (!userResponse.ok) throw new Error("사용자 정보 요청 실패");
+    if (!userResponse.ok) {
+      console.error("카카오 사용자 정보 요청 실패:", userData);
+      throw new Error(`사용자 정보 요청 실패: ${JSON.stringify(userData)}`);
+    }
 
     // 사용자 데이터 정제
     const userInfo = {

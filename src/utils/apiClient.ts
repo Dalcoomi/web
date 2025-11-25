@@ -49,7 +49,6 @@ export const apiClient = async (
   const requestKey = `${method}:${url}:${bodyKey}`;
 
   if (pendingRequests.has(requestKey)) {
-    console.log(`[apiClient] 중복 요청 방지: ${method} ${endpoint}`);
     return pendingRequests.get(requestKey)!;
   }
 
@@ -78,7 +77,6 @@ export const apiClient = async (
   // 🔥 Promise를 생성하고 캐시에 저장
   const requestPromise = (async () => {
     try {
-      console.log(`[apiClient] 새 요청 시작: ${method} ${endpoint}`);
       const response = await fetch(url, config);
 
     // 인증 오류(401) 발생 시 토큰 리프레시 시도 (skipAuthRefresh가 true면 스킵)
@@ -139,7 +137,6 @@ export const apiClient = async (
       const clearDelay = method === "GET" ? 50 : 0;
       setTimeout(() => {
         pendingRequests.delete(requestKey);
-        console.log(`[apiClient] 캐시 정리 완료: ${method} ${endpoint}`);
       }, clearDelay);
     }
   })();

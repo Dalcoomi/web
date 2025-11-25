@@ -162,14 +162,12 @@ export const getTransactions = async (
 
   // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
   if (pendingRequests.has(url)) {
-    console.log(`[getTransactions] 중복 요청 방지: ${url}`);
     return pendingRequests.get(url)!;
   }
 
   // 🔥 새로운 요청 시작
   const requestPromise = (async () => {
     try {
-      console.log(`[getTransactions] 새 요청 시작: ${url}`);
       const response = await get(url);
       return response;
     } catch (error) {
@@ -185,7 +183,6 @@ export const getTransactions = async (
       // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
       setTimeout(() => {
         pendingRequests.delete(url);
-        console.log(`[getTransactions] 캐시 정리 완료: ${url}`);
       }, 50);
     }
   })();

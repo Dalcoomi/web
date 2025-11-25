@@ -70,12 +70,8 @@ export default function PWAInstallPrompt() {
     // 브라우저 설치 프롬프트 실행
     await deferredPrompt.prompt();
 
-    // 사용자 선택 결과
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === "accepted") {
-      console.log("PWA 설치 완료");
-    }
+    // 사용자 선택 대기
+    await deferredPrompt.userChoice;
 
     setDeferredPrompt(null);
     setShowInstallPrompt(false);

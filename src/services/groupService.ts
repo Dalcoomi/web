@@ -59,14 +59,12 @@ export const joinGroup = async (invitationCode: string) => {
 export const getGroups = async (): Promise<GetMyTeamsResponse> => {
   // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
   if (pendingGroupsRequest) {
-    console.log("[getGroups] 중복 요청 방지");
     return pendingGroupsRequest;
   }
 
   // 🔥 새로운 요청 시작
   pendingGroupsRequest = (async () => {
     try {
-      console.log("[getGroups] 새 요청 시작");
       const response = await get("/api/teams");
       return response;
     } catch (error) {
@@ -78,7 +76,6 @@ export const getGroups = async (): Promise<GetMyTeamsResponse> => {
       // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
       setTimeout(() => {
         pendingGroupsRequest = null;
-        console.log("[getGroups] 캐시 정리 완료");
       }, 50);
     }
   })();
@@ -92,14 +89,12 @@ export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
 
   // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
   if (pendingGroupInfoRequests.has(url)) {
-    console.log(`[getGroupInfo] 중복 요청 방지: ${url}`);
     return pendingGroupInfoRequests.get(url)!;
   }
 
   // 🔥 새로운 요청 시작
   const requestPromise = (async () => {
     try {
-      console.log(`[getGroupInfo] 새 요청 시작: ${url}`);
       const response = await get(url);
       return response;
     } catch (error) {
@@ -108,7 +103,6 @@ export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
       // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
       setTimeout(() => {
         pendingGroupInfoRequests.delete(url);
-        console.log(`[getGroupInfo] 캐시 정리 완료: ${url}`);
       }, 50);
     }
   })();
