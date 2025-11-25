@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 // 환경 설정 로드 함수
 function loadEnvironmentConfig() {
-  const nodeEnv = process.env.NODE_ENV as string;
+  const nodeEnv = process.env.NODE_ENV;
 
   // 기본 공용 설정 로드
   dotenv.config({
@@ -14,11 +14,11 @@ function loadEnvironmentConfig() {
   });
 
   // 환경별 설정 로드 (기본값 덮어쓰기)
-  let envFile = ".env.local"; // 기본값 (development)
+  let envFile = ".env.local"; // 기본값
 
-  if (nodeEnv === "prod") {
+  if (nodeEnv === "production") {
     envFile = ".env.prod";
-  } else if (nodeEnv === "dev") {
+  } else if (nodeEnv === "development") {
     envFile = ".env.dev";
   }
 

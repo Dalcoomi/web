@@ -27,7 +27,7 @@ jobs:
         run: npm ci
 
       - name: Build for production
-        run: NODE_ENV=prod npm run build
+        run: npm run build:prod
 
       - name: Public IP
         id: ip
@@ -70,7 +70,7 @@ jobs:
 
             # PM2로 Next.js 시작 (3000 포트, 운영 환경)
             pm2 delete dalcoomi-frontend || true
-            NODE_ENV=prod pm2 start npm --name "dalcoomi-frontend" -- start
+            NODE_ENV=production pm2 start npm --name "dalcoomi-frontend" -- start
 
             # Nginx 설정 테스트 및 리로드
             sudo nginx -t && sudo systemctl reload nginx

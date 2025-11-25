@@ -3,11 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_ENV=dev next dev --turbopack",
-    "dev:local": "next dev --turbopack",
+    "dev": "next dev --turbopack",
     "build": "next build",
-    "build:dev": "NODE_ENV=dev next build",
-    "build:prod": "NODE_ENV=prod next build",
+    "build:dev": "NODE_ENV=development next build",
+    "build:prod": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint"
   },
