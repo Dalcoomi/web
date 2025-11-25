@@ -82,6 +82,13 @@ export async function GET(request: NextRequest) {
     const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
     const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
+    // 환경 변수 로드 확인 로그
+    console.log("카카오 환경 변수:", {
+      KAKAO_REST_API_KEY: KAKAO_REST_API_KEY ? "설정됨" : "미설정",
+      KAKAO_REDIRECT_URI: KAKAO_REDIRECT_URI || "미설정",
+      NODE_ENV: process.env.NODE_ENV,
+    });
+
     // 환경 변수가 없는 경우 로그 남기기
     if (!KAKAO_REST_API_KEY || !KAKAO_REDIRECT_URI) {
       throw new Error("API 키 or 리다이렉트 URI가 설정되지 않았습니다.");
