@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 // 환경 설정 로드 함수
 function loadEnvironmentConfig() {
-  const isDevelopment = process.env.NODE_ENV !== "production";
+  const appEnv = process.env.APP_ENV || "local";
 
   // 기본 공용 설정 로드
   dotenv.config({
@@ -14,7 +14,13 @@ function loadEnvironmentConfig() {
   });
 
   // 환경별 설정 로드 (기본값 덮어쓰기)
-  const envFile = isDevelopment ? ".env.local" : ".env.production";
+  let envFile = ".env.local"; // 기본값
+
+  if (appEnv === "prod") {
+    envFile = ".env.prod";
+  } else if (appEnv === "dev") {
+    envFile = ".env.dev";
+  }
 
   dotenv.config({
     path: path.resolve(`./env-config/${envFile}`),
@@ -48,7 +54,7 @@ export default withPWA({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
+  disable: process.env.APP_ENV !== "prod",
   buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
     {

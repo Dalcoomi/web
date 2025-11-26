@@ -109,14 +109,12 @@ export const linkSocial = async (data: {
 export const getMember = async (): Promise<Member> => {
   // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
   if (pendingMemberRequest) {
-    console.log("[getMember] 중복 요청 방지");
     return pendingMemberRequest;
   }
 
   // 🔥 새로운 요청 시작
   pendingMemberRequest = (async () => {
     try {
-      console.log("[getMember] 새 요청 시작");
       const response = await get("/api/members");
       return response;
     } catch (error) {
@@ -125,7 +123,6 @@ export const getMember = async (): Promise<Member> => {
       // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
       setTimeout(() => {
         pendingMemberRequest = null;
-        console.log("[getMember] 캐시 정리 완료");
       }, 50);
     }
   })();
