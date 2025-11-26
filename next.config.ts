@@ -17,9 +17,9 @@ function loadEnvironmentConfig() {
   let envFile = ".env.local"; // 기본값
 
   if (nodeEnv === "production") {
-    envFile = ".env.production";
+    envFile = ".env.prod";
   } else if (nodeEnv === "development") {
-    envFile = ".env.development";
+    envFile = ".env.dev";
   }
 
   dotenv.config({

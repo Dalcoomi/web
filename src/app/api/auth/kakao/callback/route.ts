@@ -82,14 +82,6 @@ export async function GET(request: NextRequest) {
     const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
     const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
-    // 환경 변수 로드 확인 로그
-    console.log("카카오 환경 변수:", {
-      KAKAO_REST_API_KEY: KAKAO_REST_API_KEY ? "설정됨" : "미설정",
-      KAKAO_REDIRECT_URI: KAKAO_REDIRECT_URI || "미설정",
-      NODE_ENV: process.env.NODE_ENV,
-    });
-
-    // 환경 변수가 없는 경우 로그 남기기
     if (!KAKAO_REST_API_KEY || !KAKAO_REDIRECT_URI) {
       throw new Error("API 키 or 리다이렉트 URI가 설정되지 않았습니다.");
     }
@@ -107,10 +99,7 @@ export async function GET(request: NextRequest) {
     });
 
     const tokenData = await tokenResponse.json();
-    if (!tokenResponse.ok) {
-      console.error("카카오 토큰 요청 실패:", tokenData);
-      throw new Error(`토큰 요청 실패: ${JSON.stringify(tokenData)}`);
-    }
+    if (!tokenResponse.ok) throw new Error("토큰 요청 실패");
 
     // 2. 토큰으로 사용자 정보 요청
     const userResponse = await fetch("https://kapi.kakao.com/v2/user/me", {
@@ -121,10 +110,7 @@ export async function GET(request: NextRequest) {
     });
 
     const userData = await userResponse.json();
-    if (!userResponse.ok) {
-      console.error("카카오 사용자 정보 요청 실패:", userData);
-      throw new Error(`사용자 정보 요청 실패: ${JSON.stringify(userData)}`);
-    }
+    if (!userResponse.ok) throw new Error("사용자 정보 요청 실패");
 
     // 사용자 데이터 정제
     const userInfo = {
@@ -192,10 +178,7 @@ export async function GET(request: NextRequest) {
         }
       );
     }
-  } catch (error) {
-    // 에러 로그 출력 (개발 환경에서 디버깅용)
-    console.error("카카오 로그인 에러:", error);
-
+  } catch {
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
 
     if (shouldUseRedirect) {

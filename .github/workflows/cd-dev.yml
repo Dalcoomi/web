@@ -28,7 +28,7 @@ jobs:
 
       - name: Setup environment files
         run: |
-          cp env-config/.env.development .env.production || cp env-config/.env.dev .env.production
+          cp env-config/.env.dev .env.production
           cp env-config/.env .env
 
       - name: Clean build cache
@@ -77,7 +77,7 @@ jobs:
             npm ci
 
             # 환경 변수 파일 복사
-            cp env-config/.env.development .env.development || cp env-config/.env.dev .env.development
+            cp env-config/.env.dev .env.development
             cp env-config/.env .env
 
             # PM2로 Next.js 시작 (3000 포트, 개발 환경)
