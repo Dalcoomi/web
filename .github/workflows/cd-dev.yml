@@ -53,7 +53,7 @@ jobs:
           host: ${{ secrets.EC2_DEV_HOST }}
           username: ${{ secrets.EC2_DEV_USER }}
           key: ${{ secrets.EC2_DEV_PRIVATE_KEY }}
-          source: ".next,public,src,package.json,package-lock.json,next.config.ts,env-config"
+          source: ".next,public,src,package.json,package-lock.json,next.config.ts,env-config,ecosystem.config.js"
           target: "/var/www/dalcoomi-frontend"
 
       - name: Start application
@@ -73,7 +73,7 @@ jobs:
 
             # PM2로 Next.js 시작 (3000 포트)
             pm2 delete dalcoomi-frontend || true
-            pm2 start npm --name "dalcoomi-frontend" --update-env -e APP_ENV=dev -- start
+            APP_ENV=dev pm2 start ecosystem.config.js
 
             # Nginx 설정 테스트 및 리로드
             sudo nginx -t && sudo systemctl reload nginx
