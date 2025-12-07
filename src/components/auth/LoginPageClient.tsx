@@ -349,7 +349,7 @@ export default function LoginPageClient() {
         socialEmail: pendingSocialData.socialEmail,
         socialId: pendingSocialData.socialId,
         socialType: pendingSocialData.socialType,
-        socialRefreshToken: pendingSocialData.socialRefreshToken
+        socialRefreshToken: pendingSocialData.socialRefreshToken,
       });
 
       // 연동 성공 후 다시 로그인 시도
@@ -431,24 +431,22 @@ export default function LoginPageClient() {
   const disconnectKakao = async () => {
     if (!pendingSocialData?.socialAccessToken) return;
 
-
     try {
       // 🔥 서버 API를 통해 카카오 토큰 해제 처리
-      const response = await fetch('/api/auth/kakao/revoke', {
-        method: 'POST',
+      const response = await fetch("/api/auth/kakao/revoke", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          accessToken: pendingSocialData.socialAccessToken
-        })
+          accessToken: pendingSocialData.socialAccessToken,
+        }),
       });
 
       if (response.ok) {
         const result = await response.json();
       } else {
       }
-
     } catch (error) {
       console.error("카카오 연결 해제 실패:", error);
     }
@@ -458,25 +456,23 @@ export default function LoginPageClient() {
   const disconnectNaver = async () => {
     if (!pendingSocialData?.socialAccessToken) return;
 
-
     try {
       // 🔥 서버 API를 통해 네이버 토큰 해제 처리
-      const response = await fetch('/api/auth/naver/revoke', {
-        method: 'POST',
+      const response = await fetch("/api/auth/naver/revoke", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           accessToken: pendingSocialData.socialAccessToken,
-          refreshToken: pendingSocialData.socialRefreshToken
-        })
+          refreshToken: pendingSocialData.socialRefreshToken,
+        }),
       });
 
       if (response.ok) {
         const result = await response.json();
       } else {
       }
-
     } catch (error) {
       console.error("네이버 연결 해제 실패:", error);
     }
@@ -488,9 +484,8 @@ export default function LoginPageClient() {
       <div className="sr-only">
         <p>달쿠미 - 개인과 그룹을 위한 AI 가계부</p>
         <p>
-          개인과 그룹을 위한 AI 가계부 서비스 달쿠미.
-          간편한 가계부 작성과 AI 영수증 분석, 그룹 가계부로
-          스마트한 지출 관리를 시작해 보세요!
+          개인과 그룹을 위한 AI 가계부 서비스 달쿠미. 간편한 가계부 작성과 AI
+          영수증 분석, 그룹 가계부로 스마트한 지출 관리를 시작해 보세요!
         </p>
         <p>
           AI가 도와주는 스마트한 가계부 앱입니다. 개인 가계부부터 그룹
@@ -508,18 +503,29 @@ export default function LoginPageClient() {
       </div>
 
       {/* 배경 이미지 */}
-      <div className="absolute inset-0 w-full h-full z-0" style={{ backgroundColor: '#ffffff' }}>
+      <div
+        className="absolute inset-0 w-full h-full z-0"
+        style={{ backgroundColor: "#ffffff" }}
+      >
         <img
           src="/images/auth/로그인 페이지 이미지.png"
           alt="로그인 배경"
           className="w-full h-full object-contain object-center"
           loading="eager"
-          style={{ display: 'block' }}
+          style={{ display: "block" }}
         />
       </div>
 
       {/* 로그인 버튼 */}
-      <div className="absolute w-full max-w-[390px] flex flex-col items-center z-10 bg-gradient-to-t from-white via-white to-transparent pt-4" style={{ bottom: '40px', left: '50%', transform: 'translateX(-50%)', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+      <div
+        className="absolute w-full max-w-[390px] flex flex-col items-center z-10 bg-gradient-to-t from-white via-white to-transparent pt-4"
+        style={{
+          bottom: "40px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          paddingBottom: "max(24px, env(safe-area-inset-bottom))",
+        }}
+      >
         {/* 간편 로그인 제목과 구분선 */}
         <div className="flex items-center w-[320px] mb-6">
           <div className="flex-1 h-px bg-gray-300"></div>
@@ -542,7 +548,7 @@ export default function LoginPageClient() {
               height={33}
               className="w-full"
               loading="eager"
-              style={{ display: 'block' }}
+              style={{ display: "block" }}
             />
           </button>
 
@@ -559,7 +565,7 @@ export default function LoginPageClient() {
               height={34}
               className="w-full"
               loading="eager"
-              style={{ display: 'block' }}
+              style={{ display: "block" }}
             />
           </button>
         </div>
@@ -659,7 +665,10 @@ export default function LoginPageClient() {
               <span className="text-xs text-gray-500">
                 이미 다른 소셜로 가입한 회원이시라면
                 <br />
-                로그인 후 <span className="text-red-400">"마이페이지 > 프로필 수정"</span>
+                로그인 후{" "}
+                <span className="text-red-400">
+                  {`"마이페이지 > 프로필 수정"`}
+                </span>
                 <br />
                 메뉴에서 소셜 연동 설정을 진행해 주세요.
               </span>
