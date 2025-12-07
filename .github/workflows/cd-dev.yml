@@ -73,7 +73,7 @@ jobs:
 
             # PM2로 Next.js 시작 (3000 포트)
             pm2 delete dalcoomi-frontend || true
-            APP_ENV=dev pm2 start ecosystem.config.js
+            APP_ENV=dev pm2 start ecosystem-dev.config.js
 
             # Nginx 설정 테스트 및 리로드
             sudo nginx -t && sudo systemctl reload nginx
