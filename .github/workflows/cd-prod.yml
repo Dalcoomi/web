@@ -54,7 +54,7 @@ jobs:
           username: ${{ secrets.EC2_PROD_USER }}
           key: ${{ secrets.EC2_PROD_PRIVATE_KEY }}
           source: ".next,public,src,package.json,package-lock.json,next.config.ts,env-config,ecosystem.config.js"
-          target: "/var/www/dalcoomi-frontend"
+          target: "/var/www/frontend/releases/latest"
 
       - name: Start application
         uses: appleboy/ssh-action@v1.0.3
@@ -63,7 +63,8 @@ jobs:
           username: ${{ secrets.EC2_PROD_USER }}
           key: ${{ secrets.EC2_PROD_PRIVATE_KEY }}
           script: |
-            cd /var/www/dalcoomi-frontend
+            cd /var/www/frontend/releases/latest
+            npm ci --omit=dev
 
             # Node.js 22 버전 확인
             node --version
@@ -71,9 +72,11 @@ jobs:
             # 의존성 설치
             npm ci
 
-            # PM2로 Next.js 시작 (3000 포트)
-            pm2 delete dalcoomi-frontend || true
-            APP_ENV=prod pm2 start ecosystem.config.js
+            # PM2로 Next.js 시작
+            ln -sfn /var/www/frontend/releases/latest /var/www/frontend/current
+            pm2 delete frontend || true
+            pm2 start ecosystem.config.js
+            pm2 save
 
             # Nginx 설정 테스트 및 리로드
             sudo nginx -t && sudo systemctl reload nginx

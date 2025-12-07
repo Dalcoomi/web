@@ -34,6 +34,7 @@ loadEnvironmentConfig();
 import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
+  turbopack: {},
   eslint: {
     ignoreDuringBuilds: true,
   },

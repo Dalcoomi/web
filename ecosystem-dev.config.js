@@ -1,10 +1,9 @@
 module.exports = {
   apps: [
     {
-      name: "frontend",
-      script: "node_modules/next/dist/bin/next",
-      args: "start -p 3000",
-      cwd: "/var/www/frontend/current",
+      name: "dalcoomi-frontend",
+      script: "npm",
+      args: "start",
       env: {
         NODE_ENV: "production",
         APP_ENV: process.env.APP_ENV || "local",
