@@ -76,13 +76,7 @@ export default function LandingContent() {
   ];
 
   return (
-    <div
-      className="flex flex-col h-full"
-      style={{
-        fontFamily:
-          "Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif",
-      }}
-    >
+    <div className="flex flex-col h-full font-landing">
       {/* 1. 고정 탑바 */}
       <div className="flex-shrink-0 h-10 bg-blue-50 border-b border-blue-100 flex items-center px-6">
         {/* 왼쪽 - 아이콘과 로고 */}
@@ -91,7 +85,7 @@ export default function LandingContent() {
           className="flex items-center gap-1 -mx-2 hover:cursor-pointer"
         >
           <img
-            src="/icons/icon-192x192.png"
+            src="/images/transaction/v2/요약_카드_캐릭터.svg"
             alt="달쿠미"
             className="w-6 h-6 rounded"
           />
@@ -117,17 +111,17 @@ export default function LandingContent() {
               {/* 왼쪽 - 로고 */}
               <div className="flex-shrink-0">
                 <img
-                  src="/icons/icon-512x512.png"
+                  src="/images/transaction/v2/요약_카드_캐릭터.svg"
                   alt="달쿠미 로고"
                   className="w-32 h-32 object-contain"
                 />
               </div>
               {/* 오른쪽 - 타이틀 */}
               <div>
-                <p className="text-2xl font-semibold text-sky-600">
+                <p className="text-title1 text-sky-600">
                   개인과 그룹을 위한 AI 가계부 서비스
                 </p>
-                <p className="text-4xl font-bold text-sky-600">달쿠미</p>
+                <p className="text-header text-sky-600">달쿠미</p>
               </div>
             </div>
 
@@ -175,13 +169,11 @@ export default function LandingContent() {
           {/* 2. 서비스 소개 영역 */}
           <div className="h-[400px] px-6 bg-white flex items-center justify-center">
             <div className="max-w-xl mx-auto text-center">
-              <p className="text-2xl font-semibold text-gray-800">
-                <span className="text-2xl font-semibold text-[#11ABFF]">
-                  달쿠미
-                </span>
-                는 복잡한 가계부 작성 과정을 해결했어요
+              <p className="text-title1 text-gray-800">
+                <span className="text-title1 text-[#11ABFF]">달쿠미</span>는
+                복잡한 가계부 작성 과정을 해결했어요
               </p>
-              <p className="text-2xl font-semibold text-gray-800">
+              <p className="text-title1 text-gray-800">
                 그리고 가족이나 동료와 함께 가계부를 관리할 수 있어요
               </p>
             </div>
@@ -203,17 +195,17 @@ export default function LandingContent() {
                     {/* 왼쪽 - 텍스트 */}
                     <div className="flex-1 flex flex-col items-start">
                       <div className="inline-block mb-3">
-                        <p className="text-2xl text-gray-800 font-semibold">
+                        <p className="text-title1 text-gray-800">
                           복잡한 작성은 이제 끝!
                         </p>
-                        <p className="text-2xl text-gray-800 font-semibold">
+                        <p className="text-title1 text-gray-800">
                           <span className="text-[#11ABFF]">
                             빠른 가계부 작성
                           </span>
                           이 가능해요
                         </p>
                       </div>
-                      <p className="text-md text-gray-500 font-semibold leading-relaxed">
+                      <p className="text-body1-semibold text-gray-500 leading-relaxed">
                         간단한 UI로 몇 초만에 지출, 수입 내역을 작성할 수
                         있어요.
                       </p>
@@ -243,12 +235,12 @@ export default function LandingContent() {
                     {/* 오른쪽 - 텍스트 */}
                     <div className="flex-1 flex flex-col items-end">
                       <div className="inline-block mb-3 text-right">
-                        <p className="text-2xl text-gray-800 font-semibold">
+                        <p className="text-title1 text-gray-800">
                           <span className="text-[#11ABFF]">그룹</span>으로
                           가계부를 관리해요
                         </p>
                       </div>
-                      <p className="text-md text-gray-500 font-semibold leading-relaxed text-right">
+                      <p className="text-body1-semibold text-gray-500 leading-relaxed text-right">
                         가족, 친구, 동료와 함께 가계부를 관리해 보세요!
                       </p>
                     </div>
@@ -261,19 +253,19 @@ export default function LandingContent() {
                     {/* 왼쪽 - 텍스트 */}
                     <div className="flex-1 flex flex-col items-start">
                       <div className="inline-block mb-3">
-                        <p className="text-2xl text-gray-800 font-semibold">
+                        <p className="text-title1 text-gray-800">
                           직접 작성하기 귀찮다면,
                         </p>
-                        <p className="text-2xl text-gray-800 font-semibold">
+                        <p className="text-title1 text-gray-800">
                           AI에게
                           <span className="text-[#11ABFF]"> 영수증</span>을
                           맡겨봐요
                         </p>
                       </div>
-                      <p className="text-md text-gray-500 font-semibold leading-relaxed">
+                      <p className="text-body1-semibold text-gray-500 leading-relaxed">
                         영수증 사진을 업로드만 하면,
                       </p>
-                      <p className="text-md text-gray-500 font-semibold leading-relaxed">
+                      <p className="text-body1-semibold text-gray-500 leading-relaxed">
                         AI가 자동으로 분석하여 가계부 작성을 도와줘요.
                       </p>
                     </div>
@@ -294,20 +286,20 @@ export default function LandingContent() {
           {/* 4. PWA 설치 영역 */}
           <div className="min-h-[400px] py-12 px-6 flex items-center justify-center bg-gray-50">
             <div className="max-w-xl text-center">
-              <p className="text-2xl text-gray-800 font-semibold mb-5">
+              <p className="text-title1 text-gray-800 mb-5">
                 <span className="text-[#11ABFF]">달쿠미</span>를 홈 화면에
                 추가하고 앱처럼 편하게 사용하세요
               </p>
               <br />
               <button
                 onClick={handleInstallClick}
-                className="px-10 py-3 text-white bg-[#11ABFF] rounded-4xl text-2xl hover:bg-sky-400 transition-colors cursor-pointer shadow-lg"
+                className="px-10 py-3 text-white bg-[#11ABFF] rounded-4xl text-title1 hover:bg-sky-400 transition-colors cursor-pointer shadow-lg"
               >
                 {isInstallable ? "설치하기" : "설치 방법 보기"}
               </button>
               <br />
               <br />
-              <p className="text-md text-gray-800 font-semibold mt-4">
+              <p className="text-body1-semibold text-gray-800 mt-4">
                 iOS, Android, PC 지원
               </p>
             </div>
@@ -317,7 +309,7 @@ export default function LandingContent() {
           <div className="min-h-[500px] py-20 px-6 bg-sky-50">
             <div className="max-w-xl mx-auto">
               {/* FAQ 제목 */}
-              <h2 className="text-3xl text-gray-800 font-semibold text-center mb-10">
+              <h2 className="text-header text-gray-800 text-center mb-10">
                 자주 묻는 질문
               </h2>
 
@@ -335,12 +327,12 @@ export default function LandingContent() {
                       <div className="flex items-center gap-3">
                         {/* Q 아이콘 */}
                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#11ABFF] flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">
+                          <span className="text-white text-body2-regular">
                             Q
                           </span>
                         </div>
                         {/* 질문 텍스트 */}
-                        <span className="text-lg text-gray-800 font-semibold">
+                        <span className="text-subtitle text-gray-800">
                           {faq.question}
                         </span>
                       </div>
@@ -365,7 +357,7 @@ export default function LandingContent() {
                     {/* 답변 - 펼쳐졌을 때만 보임 */}
                     {openFaqIndex === index && (
                       <div className="p-8 py-0.5 bg-sky-50">
-                        <p className="text-sm text-gray-600 font-semibold leading-relaxed whitespace-pre-line">
+                        <p className="text-body2-regular text-gray-600 leading-relaxed whitespace-pre-line">
                           {faq.answer}
                         </p>
                       </div>
