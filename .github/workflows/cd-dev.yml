@@ -13,15 +13,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           token: ${{ secrets.SUBMODULE_PAT }}
           submodules: "recursive"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "22"
+          node-version: "24"
 
       - name: Install dependencies
         run: npm ci
@@ -34,10 +34,10 @@ jobs:
 
       - name: Public IP
         id: ip
-        uses: haythem/public-ip@v1.3
+        uses: haythem/public-ip@bdddd92c198b0955f0b494a8ebeac529754262ff # v1.3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
         with:
           aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_KEY }}
@@ -47,8 +47,19 @@ jobs:
         run: |
           aws ec2 authorize-security-group-ingress --group-id ${{ secrets.AWS_DEV_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
 
+      - name: Prepare Deployment Directory
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
+        with:
+          host: ${{ secrets.EC2_DEV_HOST }}
+          username: ${{ secrets.EC2_DEV_USER }}
+          key: ${{ secrets.EC2_DEV_PRIVATE_KEY }}
+          script: |
+            sudo mkdir -p /var/www/dalcoomi-frontend
+            sudo chown -R $USER:$USER /var/www/dalcoomi-frontend
+            sudo chmod -R 755 /var/www/dalcoomi-frontend
+
       - name: Deploy to EC2
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634 # v0.1.7
         with:
           host: ${{ secrets.EC2_DEV_HOST }}
           username: ${{ secrets.EC2_DEV_USER }}
@@ -57,7 +68,7 @@ jobs:
           target: "/var/www/dalcoomi-frontend"
 
       - name: Start application
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
           host: ${{ secrets.EC2_DEV_HOST }}
           username: ${{ secrets.EC2_DEV_USER }}
@@ -65,7 +76,7 @@ jobs:
           script: |
             cd /var/www/dalcoomi-frontend
 
-            # Node.js 22 버전 확인
+            # Node.js 24 버전 확인
             node --version
 
             # 의존성 설치

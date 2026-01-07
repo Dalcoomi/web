@@ -1,6 +1,7 @@
 /* globals.css */
 
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 /* 폰트 정의 */
 @font-face {
@@ -53,7 +54,7 @@
 body {
   background: var(--background);
   color: #000000;
-  font-family: var(--font-title-medium), "Apple Color Emoji", "Segoe UI Emoji",
+  font-family: "Pretendard", var(--font-title-medium), "Apple Color Emoji", "Segoe UI Emoji",
     Arial, Helvetica, sans-serif;
 }
 
@@ -258,4 +259,13 @@ textarea {
 /* 호버 효과 애니메이션 */
 .hover\:scale-102:hover {
   transform: scale(1.02);
+}
+
+/* 스크롤바 숨기기 유틸리티 */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
