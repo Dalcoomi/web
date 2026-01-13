@@ -17,7 +17,7 @@ export default function TransactionTypeToggleV2({
 }: TransactionTypeToggleV2Props) {
   return (
     <div
-      className={`bg-white rounded-full flex items-center shadow-lg p-1 pointer-events-auto z-30 relative ${className}`}
+      className={`bg-white/80 backdrop-blur-md rounded-full flex items-center shadow-lg p-1 pointer-events-auto z-30 relative ${className}`}
     >
       {/* 이동하는 검은색 배경 */}
       <div

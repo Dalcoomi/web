@@ -1,7 +1,7 @@
 // app/transaction/my/page.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import MyTransactionPageClient from "@/components/transaction/my/MyTransactionPageClient";
+import MyTransactionPageClientV2 from "@/components/transaction/my/MyTransactionPageClientV2";
 
 export const metadata = {
   title: "개인 거래 내역",
@@ -18,5 +18,5 @@ export default async function MyTransactionPage() {
     redirect("/");
   }
 
-  return <MyTransactionPageClient />;
+  return <MyTransactionPageClientV2 />;
 }
