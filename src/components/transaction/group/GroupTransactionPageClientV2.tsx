@@ -455,6 +455,7 @@ export default function GroupTransactionPageClientV2() {
       <div className="px-5 pt-2 pb-1 bg-gray-30">
         <GroupNameCardV2
           groupName={groupInfo?.title}
+          label={groupInfo?.label}
           onInfoClick={handleGroupInfo}
         />
       </div>

@@ -5,8 +5,8 @@ import Image from "next/image";
 interface TransactionFloatingButtonV2Props {
   isOpen: boolean;
   onToggle: () => void;
-  onWriteDirect: () => void;
-  onWriteReceipt: () => void;
+  onWriteDirect?: () => void;
+  onWriteReceipt?: () => void;
   onEnterInviteCode?: () => void;
   onCreateGroup?: () => void;
   className?: string;
@@ -21,6 +21,9 @@ export default function TransactionFloatingButtonV2({
   onCreateGroup,
   className = "",
 }: TransactionFloatingButtonV2Props) {
+  const showWriteButtons = onWriteDirect || onWriteReceipt;
+  const showGroupButtons = onEnterInviteCode || onCreateGroup;
+
   return (
     <>
       {/* 플로팅 + 버튼 */}
@@ -66,45 +69,51 @@ export default function TransactionFloatingButtonV2({
       {/* 플로팅 메뉴 */}
       {isOpen && (
         <div className="absolute right-4 bottom-24 bg-white border border-[#E0E0E0] rounded-[20px] shadow-lg flex flex-col z-50 min-w-max pt-4 pb-4 pl-4 pr-6 animate-slide-up pointer-events-auto">
-          <button
-            onClick={onWriteReceipt}
-            className="text-left text-gray-900 flex items-center gap-2 cursor-pointer mb-4 hover:opacity-70 transition-opacity"
-          >
-            <Image
-              src="/images/transaction/v2/영수증_작성_아이콘.svg"
-              alt="영수증"
-              width={20}
-              height={20}
-            />
-            <span className="text-body1-semibold whitespace-nowrap">
-              영수증으로 작성하기
-            </span>
-          </button>
-          <button
-            onClick={onWriteDirect}
-            className={`text-left text-gray-900 flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity ${
-              onEnterInviteCode || onCreateGroup ? "mb-3" : ""
-            }`}
-          >
-            <Image
-              src="/images/transaction/v2/직접_작성_아이콘.svg"
-              alt="직접 작성"
-              width={20}
-              height={20}
-            />
-            <span className="text-body1-semibold whitespace-nowrap">
-              직접 작성하기
-            </span>
-          </button>
+          {onWriteReceipt && (
+            <button
+              onClick={onWriteReceipt}
+              className="text-left text-gray-900 flex items-center gap-2 cursor-pointer mb-4 hover:opacity-70 transition-opacity"
+            >
+              <Image
+                src="/images/transaction/v2/영수증_작성_아이콘.svg"
+                alt="영수증"
+                width={20}
+                height={20}
+              />
+              <span className="text-body1-semibold whitespace-nowrap">
+                영수증으로 작성하기
+              </span>
+            </button>
+          )}
+          {onWriteDirect && (
+            <button
+              onClick={onWriteDirect}
+              className={`text-left text-gray-900 flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity ${
+                showGroupButtons ? "mb-3" : ""
+              }`}
+            >
+              <Image
+                src="/images/transaction/v2/직접_작성_아이콘.svg"
+                alt="직접 작성"
+                width={20}
+                height={20}
+              />
+              <span className="text-body1-semibold whitespace-nowrap">
+                직접 작성하기
+              </span>
+            </button>
+          )}
 
-          {(onEnterInviteCode || onCreateGroup) && (
+          {showWriteButtons && showGroupButtons && (
             <div className="h-px bg-gray-50 w-full mb-3" />
           )}
 
           {onEnterInviteCode && (
             <button
               onClick={onEnterInviteCode}
-              className="text-left text-gray-900 flex items-center gap-2 cursor-pointer mb-4 hover:opacity-70 transition-opacity"
+              className={`text-left text-gray-900 flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity ${
+                onCreateGroup ? "mb-4" : ""
+              }`}
             >
               <Image
                 src="/images/transaction/v2/초대코드_입력_아이콘.svg"

@@ -42,12 +42,12 @@ export default function MyTransactionPageClientV2() {
           // 첫 번째 그룹의 거래 내역 페이지로 이동
           router.push(`/transaction/group/${firstTeamId}`);
         } else {
-          // 그룹이 없으면 그룹 목록 페이지로 이동
-          router.push("/group");
+          // 그룹이 없으면 빈 그룹 페이지로 이동
+          router.push("/transaction/group");
         }
       } catch (error) {
         console.error("Failed to fetch groups:", error);
-        router.push("/group");
+        router.push("/transaction/group");
       }
     } else {
       // 이미 개인 페이지인 경우 현재 날짜로 초기화

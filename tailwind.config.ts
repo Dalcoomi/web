@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { BRAND_COLORS } from "./src/constants/brandColors";
 
 const config: Config = {
   content: [
@@ -74,6 +75,7 @@ const config: Config = {
           850: "#24272A",
           900: "#121315",
         },
+        brand: BRAND_COLORS,
         red: {
           50: "#FFEDF0",
           100: "#FFDBE2",
@@ -134,6 +136,15 @@ const config: Config = {
           "Malgun Gothic",
           "sans-serif",
         ],
+      },
+      keyframes: {
+        blink: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0" },
+        },
+      },
+      animation: {
+        "cursor-blink": "blink 1s step-end infinite",
       },
     },
   },

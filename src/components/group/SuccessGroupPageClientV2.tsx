@@ -109,10 +109,10 @@ export default function SuccessGroupPageClientV2() {
       {/* 메인 콘텐츠 - 상단 영역 중앙 정렬 */}
       <div className="flex-1 flex flex-col items-center justify-center">
         <Image
-          src="/images/transaction/v2/생성_완료.svg"
+          src="/images/transaction/v2/생성_성공_체크.svg"
           alt="생성 완료"
-          width={60}
-          height={60}
+          width={48}
+          height={48}
           className="mb-4"
         />
         <div className="flex flex-col items-center gap-[2px]">
@@ -159,7 +159,7 @@ export default function SuccessGroupPageClientV2() {
           onClick={handleShare}
           className="w-[207px] h-[56px] bg-gray-900 text-white rounded-xl text-subtitle cursor-pointer flex items-center justify-center"
         >
-          공유하기
+          초대하기
         </button>
       </div>
     </div>

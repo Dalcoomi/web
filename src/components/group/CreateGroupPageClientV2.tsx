@@ -5,14 +5,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createGroup } from "@/services/groupService";
+import { BRAND_COLORS } from "@/constants/brandColors";
+import BottomButton from "@/components/ui/BottomButton";
 
 // 라벨 컬러 옵션
 const LABEL_COLORS = [
-  { id: "gray", value: "#60666A" },
-  { id: "green", value: "#30D675" },
-  { id: "blue", value: "#4D83FF" },
-  { id: "pink", value: "#FF4B6C" },
-  { id: "yellow", value: "#FFC94B" },
+  { id: "gray", value: BRAND_COLORS.gray },
+  { id: "green", value: BRAND_COLORS.green },
+  { id: "blue", value: BRAND_COLORS.blue },
+  { id: "red", value: BRAND_COLORS.red },
+  { id: "yellow", value: BRAND_COLORS.yellow },
 ];
 
 export default function CreateGroupPageClientV2() {
@@ -24,7 +26,7 @@ export default function CreateGroupPageClientV2() {
   const [title, setTitle] = useState<string>("");
   const [memberLimit, setMemberLimit] = useState<number>(1);
   const [selectedColor, setSelectedColor] = useState<string>(
-    LABEL_COLORS[0].value
+    LABEL_COLORS[0].id
   );
   const [purpose, setPurpose] = useState<string>("");
 
@@ -76,7 +78,7 @@ export default function CreateGroupPageClientV2() {
         title: title.trim(),
         memberLimit: memberLimit,
         purpose: purpose.trim() || null,
-        color: selectedColor,
+        label: selectedColor,
       };
 
       const response = await createGroup(groupData);
@@ -190,9 +192,9 @@ export default function CreateGroupPageClientV2() {
             {LABEL_COLORS.map((color) => (
               <button
                 key={color.id}
-                onClick={() => setSelectedColor(color.value)}
+                onClick={() => setSelectedColor(color.id)}
                 className={`flex items-center justify-center w-[44px] h-[44px] rounded-full cursor-pointer ${
-                  selectedColor === color.value
+                  selectedColor === color.id
                     ? "border-2 border-gray-900"
                     : "border border-gray-100"
                 }`}
@@ -225,19 +227,12 @@ export default function CreateGroupPageClientV2() {
       </div>
 
       {/* 하단 고정 버튼 */}
-      <div className="bg-white px-5 py-4">
-        <button
-          onClick={handleSubmit}
-          disabled={!isFormValid || isSubmitting}
-          className={`w-full h-14 rounded-xl text-subtitle transition-all flex items-center justify-center ${
-            isFormValid && !isSubmitting
-              ? "bg-gray-900 text-white cursor-pointer"
-              : "bg-gray-200 text-white cursor-not-allowed"
-          }`}
-        >
-          {isSubmitting ? "생성 중..." : "그룹 생성하기"}
-        </button>
-      </div>
+      <BottomButton
+        text={isSubmitting ? "생성 중..." : "그룹 생성하기"}
+        onClick={handleSubmit}
+        disabled={!isFormValid || isSubmitting}
+        className="pb-4" 
+      />
     </div>
   );
 }

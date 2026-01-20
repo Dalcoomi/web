@@ -1,19 +1,45 @@
 import React from "react";
+import Image from "next/image";
+import { BRAND_COLORS } from "@/constants/brandColors";
 
 interface GroupNameCardV2Props {
   groupName?: string;
+  label?: string;
+  profileImageUrl?: string | null;
   onInfoClick: () => void;
 }
 
 export default function GroupNameCardV2({
   groupName,
+  label,
+  profileImageUrl,
   onInfoClick,
 }: GroupNameCardV2Props) {
+  // 라벨에 해당하는 색상 가져오기 (기본값: gray)
+  const labelColor =
+    label && label in BRAND_COLORS
+      ? BRAND_COLORS[label as keyof typeof BRAND_COLORS]
+      : BRAND_COLORS.gray;
+
   return (
-    <div className="bg-white rounded-[18px] pl-[10px] pr-4 py-[10px] flex items-center justify-between shadow-xs gap-2">
-      <div className="flex items-center gap-2 overflow-hidden">
-        {/* 그룹 프사 (placeholder) */}
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex-shrink-0" />
+    <div className="bg-white rounded-[18px] pl-5 pr-4 h-[56px] flex items-center justify-between shadow-xs gap-2">
+      <div className="flex items-center gap-3 overflow-hidden">
+        {profileImageUrl ? (
+          <div className="relative w-9 h-9 flex-shrink-0">
+            <Image
+              src={profileImageUrl}
+              alt={groupName || "그룹"}
+              fill
+              className="rounded-full object-cover"
+            />
+          </div>
+        ) : (
+          /* 라벨 컬러 인디케이터 (10x10) */
+          <div
+            className="w-[10px] h-[10px] rounded-full flex-shrink-0"
+            style={{ backgroundColor: labelColor }}
+          />
+        )}
         <h2 className="text-body1-semibold text-gray-900 truncate">
           {groupName || "그룹"}
         </h2>
