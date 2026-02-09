@@ -6,7 +6,15 @@ module.exports = {
       args: "start",
       env: {
         NODE_ENV: "production",
-        APP_ENV: process.env.APP_ENV || "local",
+        APP_ENV: "local",
+      },
+      env_dev: {
+        NODE_ENV: "production",
+        APP_ENV: "dev",
+      },
+      env_prod: {
+        NODE_ENV: "production",
+        APP_ENV: "prod",
       },
     },
   ],

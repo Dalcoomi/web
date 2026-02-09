@@ -88,7 +88,7 @@ jobs:
 
             # PM2로 Next.js 시작
             pm2 delete dalcoomi-frontend || true
-            pm2 start ecosystem.config.js
+            pm2 start ecosystem.config.js --env prod
             pm2 save
 
             # Nginx 설정 테스트 및 리로드

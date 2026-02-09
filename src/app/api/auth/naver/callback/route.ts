@@ -8,29 +8,6 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  // 다양한 방법으로 PWA/모바일 감지
-  const userAgent = request.headers.get("user-agent") || "";
-  const referer = request.headers.get("referer") || "";
-  const secFetchSite = request.headers.get("sec-fetch-site");
-
-  const isKakaoTalkBrowser = /KAKAOTALK/i.test(userAgent);
-  const isMobileApp = /Mobile|Android|iPhone|iPad/i.test(userAgent);
-  const isEdgeBrowser = /Edg\//.test(userAgent);
-  const isPWARequest =
-    secFetchSite === "none" ||
-    referer.includes("android-app://") ||
-    /wv/.test(userAgent);
-
-  // 엣지 웹은 팝업으로 처리 (PWA가 아닌 경우)
-  const isEdgeWeb = isEdgeBrowser && !isPWARequest && referer.includes("http");
-
-  // 리다이렉트를 사용해야 하는 경우들
-  const shouldUseRedirect =
-    (isKakaoTalkBrowser ||
-      isPWARequest ||
-      (isMobileApp && !referer.includes("http"))) &&
-    !isEdgeWeb;
-
   // 에러가 있거나 코드가 없으면 에러 반환
   if (error || !code || !state) {
     const errorMessage =
@@ -38,49 +15,12 @@ export async function GET(request: NextRequest) {
         ? "사용자가 로그인을 취소했습니다."
         : "인증 코드가 없습니다.";
 
-    if (shouldUseRedirect) {
-      return Response.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(
-          errorMessage
-        )}`,
-        302
-      );
-    } else {
-      // 팝업 방식
-      const cancelled = error === "access_denied";
-      return new Response(
-        `
-        <html>
-          <head>
-            <title>로그인 실패</title>
-            <script>
-            if (window.opener) {
-              window.opener.postMessage({ 
-                type: 'naverLogin', 
-                success: false, 
-                error: '${errorMessage}',
-                cancelled: ${cancelled}
-              }, window.opener.location.origin);
-              window.close();
-              } else {
-                // 팝업이 아닌 경우 메인으로 리다이렉트
-                window.location.href = '${
-                  process.env.NEXT_PUBLIC_BASE_URL
-                }/?error=${encodeURIComponent(errorMessage)}';
-              }
-            </script>
-          </head>
-          <body>
-            <p>로그인 실패</p>
-          </body>
-        </html>
-        `,
-        {
-          status: 400,
-          headers: { "Content-Type": "text/html" },
-        }
-      );
-    }
+    return Response.redirect(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(
+        errorMessage
+      )}`,
+      302
+    );
   }
 
   try {
@@ -128,106 +68,24 @@ export async function GET(request: NextRequest) {
       refreshToken: tokenData.refresh_token,
     };
 
-    // 3. 브라우저 타입에 따라 다른 응답 방식 사용
-    if (shouldUseRedirect) {
-      // 모바일/PWA: 리다이렉트 방식
-      const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
+    // 3. 리다이렉트 응답
+    const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
 
-      // 🔥 프로필 연동인 경우 프로필 페이지로 리다이렉트
-      const isProfileIntegration = state?.startsWith("profile_integration");
-      const redirectPath = isProfileIntegration ? "/profile/update" : "/";
+    // 프로필 연동인 경우 프로필 페이지로 리다이렉트
+    const isProfileIntegration = state?.startsWith("profile_integration");
+    const redirectPath = isProfileIntegration ? "/profile/update" : "/";
 
-      return Response.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`,
-        302
-      );
-    } else {
-      // 팝업 방식
-      return new Response(
-        `
-        <html>
-          <head>
-            <title>로그인 성공</title>
-            <script>
-                if (window.opener) {
-              window.opener.postMessage(
-                { 
-                  type: 'naverLogin', 
-                  success: true, 
-                  userData: ${JSON.stringify(userInfo)} 
-                }, 
-                window.opener.location.origin
-              );
-              window.close();
-              } else {
-                // 팝업이 아닌 경우 적절한 페이지로 리다이렉트
-                const userInfoEncoded = encodeURIComponent('${JSON.stringify(
-                  userInfo
-                )}');
-                const isProfileIntegration = '${state?.startsWith("profile_integration")}' === 'true';
-                const redirectPath = isProfileIntegration ? '/profile/update' : '/';
-                window.location.href = '${
-                  process.env.NEXT_PUBLIC_BASE_URL
-                }' + redirectPath + '?naver_login=success&user_data=' + userInfoEncoded;
-              }
-            </script>
-          </head>
-          <body>
-            <p>로그인 성공! 창을 닫아주세요.</p>
-          </body>
-        </html>
-        `,
-        {
-          status: 200,
-          headers: { "Content-Type": "text/html" },
-        }
-      );
-    }
+    return Response.redirect(
+      `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`,
+      302
+    );
   } catch (error) {
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
-
-    if (shouldUseRedirect) {
-      return Response.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(
-          errorMessage
-        )}`,
-        302
-      );
-    } else {
-      // 팝업 방식
-      return new Response(
-        `
-        <html>
-          <head>
-            <title>로그인 실패</title>
-            <script>
-             if (window.opener) {
-              window.opener.postMessage(
-                { 
-                  type: 'naverLogin', 
-                  success: false, 
-                  error: '${errorMessage}' 
-                }, 
-                window.opener.location.origin
-              );
-              window.close();
-                  } else {
-                window.location.href = '${
-                  process.env.NEXT_PUBLIC_BASE_URL
-                }/?error=${encodeURIComponent(errorMessage)}';
-              }
-            </script>
-          </head>
-          <body>
-            <p>로그인 실패</p>
-          </body>
-        </html>
-        `,
-        {
-          status: 500,
-          headers: { "Content-Type": "text/html" },
-        }
-      );
-    }
+    return Response.redirect(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(
+        errorMessage
+      )}`,
+      302
+    );
   }
 }
