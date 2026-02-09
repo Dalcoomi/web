@@ -15,7 +15,6 @@ import {
   linkSocial,
   getSocialRefreshToken,
 } from "@/services/memberService";
-import { isPWA, isMobile } from "@/utils/deviceDetection";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { validateNickname, validateName } from "@/utils/validation";
 
@@ -62,20 +61,6 @@ export default function ProfileUpdatePageClient() {
 
   // 현재 프로필 사진이 기본 사진인지 확인
   const isDefaultAvatar = profileImage && defaultAvatars.includes(profileImage);
-
-  // 브라우저 및 환경 감지 함수들
-  const isKakaoTalkBrowser = () => {
-    return /KAKAOTALK/i.test(navigator.userAgent);
-  };
-
-  const isEdge = () => {
-    return /Edg\//.test(navigator.userAgent);
-  };
-
-  // 리다이렉트를 사용해야 하는 경우 판단
-  const shouldUseRedirect = () => {
-    return isKakaoTalkBrowser() || isPWA() || isMobile();
-  };
 
   // 초기 데이터 로드 (Zustand 스토어를 통해 처리)
   useEffect(() => {
@@ -382,230 +367,26 @@ export default function ProfileUpdatePageClient() {
     const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_API_KEY;
     const REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI;
 
-    // 🔥 프로필 연동임을 나타내는 state 추가
     const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code&state=profile_integration`;
 
-    // PWA, 모바일, 카카오톡 브라우저는 리다이렉트
-    if (shouldUseRedirect()) {
-      window.location.href = kakaoAuthUrl;
-      return;
-    }
-
-    // PC 웹은 팝업
-    handleKakaoPopupIntegration();
-  };
-
-  // 카카오 팝업 연동
-  const handleKakaoPopupIntegration = () => {
-    const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_API_KEY;
-    const REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI;
-
-    const width = 500;
-    const height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    // 🔥 프로필 연동임을 나타내는 state 추가
-    const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code&state=profile_integration`;
-
-    let popupOptions = `width=${width},height=${height},left=${left},top=${top}`;
-
-    if (isEdge()) {
-      popupOptions +=
-        ",scrollbars=yes,resizable=yes,location=yes,menubar=no,toolbar=no";
-    }
-
-    const popup = window.open(kakaoAuthUrl, "kakaoIntegration", popupOptions);
-
-    if (!popup) {
-      alert("팝업이 차단되었습니다. 팝업 차단을 해제해주세요.");
-      setIsUpdatingSocial(false);
-      return;
-    }
-
-    if (isEdge()) {
-      popup.focus();
-      setTimeout(() => {
-        if (popup && (popup.closed || !popup.location)) {
-          popup.close();
-          window.location.href = kakaoAuthUrl;
-          return;
-        }
-      }, 1000);
-    }
-
-    const checkInterval = isEdge() ? 300 : 500;
-    const checkPopup = setInterval(() => {
-      if (!popup || popup.closed) {
-        clearInterval(checkPopup);
-        window.removeEventListener(
-          "message",
-          receiveKakaoIntegrationMessage,
-          false
-        );
-        setIsUpdatingSocial(false);
-      }
-    }, checkInterval);
-
-    setTimeout(() => {
-      clearInterval(checkPopup);
-      window.removeEventListener(
-        "message",
-        receiveKakaoIntegrationMessage,
-        false
-      );
-      setIsUpdatingSocial(false);
-    }, 30000);
-
-    window.addEventListener("message", receiveKakaoIntegrationMessage, false);
-
-    function receiveKakaoIntegrationMessage(event: MessageEvent) {
-      if (event.origin !== window.location.origin) return;
-
-      if (event.data.type === "kakaoLogin") {
-        if (event.data.success) {
-          // pendingSocialData에 저장 후 연동 처리
-          const socialData = {
-            socialEmail: event.data.userData.email,
-            socialId: event.data.userData.kakaoId,
-            socialType: "KAKAO",
-            socialAccessToken: event.data.userData.accessToken || "",
-            socialRefreshToken: event.data.userData.refreshToken || "",
-          };
-          setPendingSocialData(socialData);
-          handleSocialIntegration(socialData);
-        } else {
-          if (!event.data.cancelled) {
-            alert(`카카오 연동 실패: ${event.data.error}`);
-          }
-          setIsUpdatingSocial(false);
-        }
-
-        if (popup && !popup.closed) {
-          popup.close();
-        }
-
-        window.removeEventListener(
-          "message",
-          receiveKakaoIntegrationMessage,
-          false
-        );
-        clearInterval(checkPopup);
-      }
-    }
+    window.location.href = kakaoAuthUrl;
   };
 
   // 네이버 연동을 위한 로그인 함수
   const handleNaverIntegration = () => {
     const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
     const REDIRECT_URI = process.env.NEXT_PUBLIC_NAVER_REDIRECT_URI;
-    // 🔥 프로필 연동임을 나타내는 state 사용
     const STATE =
       "profile_integration_" + Math.random().toString(36).substring(2, 15);
 
     const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
 
-    // PWA, 모바일, 카카오톡 브라우저는 리다이렉트
-    if (shouldUseRedirect()) {
-      try {
-        localStorage.setItem("naverIntegrationState", STATE);
-      } catch (error) {
-        sessionStorage.setItem("naverIntegrationState", STATE);
-      }
-      window.location.href = naverAuthUrl;
-      return;
+    try {
+      localStorage.setItem("naverIntegrationState", STATE);
+    } catch (error) {
+      sessionStorage.setItem("naverIntegrationState", STATE);
     }
-
-    // PC 웹은 팝업
-    handleNaverPopupIntegration();
-  };
-
-  // 네이버 팝업 연동
-  const handleNaverPopupIntegration = () => {
-    const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
-    const REDIRECT_URI = process.env.NEXT_PUBLIC_NAVER_REDIRECT_URI;
-    // 🔥 프로필 연동임을 나타내는 state 사용
-    const STATE =
-      "profile_integration_" + Math.random().toString(36).substring(2, 15);
-
-    const width = 500;
-    const height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
-
-    const popup = window.open(
-      naverAuthUrl,
-      "naverIntegration",
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-
-    if (!popup) {
-      alert("팝업이 차단되었습니다. 팝업 차단을 해제해주세요.");
-      setIsUpdatingSocial(false);
-      return;
-    }
-
-    const checkPopup = setInterval(() => {
-      if (!popup || popup.closed) {
-        clearInterval(checkPopup);
-        window.removeEventListener(
-          "message",
-          receiveNaverIntegrationMessage,
-          false
-        );
-        setIsUpdatingSocial(false);
-      }
-    }, 500);
-
-    setTimeout(() => {
-      clearInterval(checkPopup);
-      window.removeEventListener(
-        "message",
-        receiveNaverIntegrationMessage,
-        false
-      );
-      setIsUpdatingSocial(false);
-    }, 30000); // 🔥 30초로 변경 (카카오와 동일)
-
-    window.addEventListener("message", receiveNaverIntegrationMessage, false);
-
-    function receiveNaverIntegrationMessage(event: MessageEvent) {
-      if (event.origin !== window.location.origin) return;
-
-      if (event.data.type === "naverLogin") {
-        if (event.data.success) {
-          // pendingSocialData에 저장 후 연동 처리
-          const socialData = {
-            socialEmail: event.data.userData.email,
-            socialId: event.data.userData.naverId,
-            socialType: "NAVER",
-            socialAccessToken: event.data.userData.accessToken || "",
-            socialRefreshToken: event.data.userData.refreshToken || "",
-          };
-          setPendingSocialData(socialData);
-          handleSocialIntegration(socialData);
-          // 🔥 성공 시에도 setIsUpdatingSocial(false) 호출은 handleSocialIntegration에서 처리됨
-        } else {
-          if (!event.data.cancelled) {
-            alert(`네이버 연동 실패: ${event.data.error}`);
-          }
-          setIsUpdatingSocial(false);
-        }
-
-        if (popup && !popup.closed) {
-          popup.close();
-        }
-
-        window.removeEventListener(
-          "message",
-          receiveNaverIntegrationMessage,
-          false
-        );
-        clearInterval(checkPopup);
-      }
-    }
+    window.location.href = naverAuthUrl;
   };
 
   // 카카오 연결 해제 (프로필 수정용)

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import MyTransactionItemV2 from "@/components/transaction/MyTransactionItemV2";
+import { useRouter, useParams } from "next/navigation";
+import GroupTransactionItemV2 from "@/components/transaction/GroupTransactionItemV2";
 import TransactionHeaderV2 from "@/components/transaction/v2/TransactionHeaderV2";
+import GroupNameCardV2 from "@/components/transaction/v2/GroupNameCardV2";
 import TransactionSummaryV2 from "@/components/transaction/v2/TransactionSummaryV2";
 import TransactionTotalV2 from "@/components/transaction/v2/TransactionTotalV2";
 import TransactionFilterV2 from "@/components/transaction/v2/TransactionFilterV2";
@@ -16,11 +17,13 @@ import {
   MonthlyTransactionsResponse,
   TransactionSearchCriteria,
 } from "@/services/transactionService";
-import { getGroups } from "@/services/groupService";
+import { getGroupInfo, GroupInfo } from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
 
-export default function MyTransactionPageClientV2() {
+export default function GroupTransactionPageClientV2() {
   const router = useRouter();
+  const params = useParams();
+  const teamId = params.teamId as string;
   const { fetchMember } = useMemberStore();
 
   // 사이드바 상태
@@ -28,29 +31,16 @@ export default function MyTransactionPageClientV2() {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // 개인/그룹 토글 상태
-  const [viewMode, setViewMode] = useState<ViewMode>("personal");
+  const [viewMode, setViewMode] = useState<ViewMode>("group");
 
-  const handleViewModeToggle = async (mode: ViewMode) => {
-    if (mode === "group") {
-      try {
-        const response = await getGroups();
-        if (response.groups && response.groups.length > 0) {
-          const firstTeamId = response.groups[0].teamId;
-          // 그룹 페이지로 이동 전 해당 그룹의 날짜/스크롤 저장소 초기화 (현재 날짜로 이동)
-          sessionStorage.removeItem(`group-transaction-date-${firstTeamId}`);
-          sessionStorage.removeItem(`group-transaction-scroll-${firstTeamId}`);
-          // 첫 번째 그룹의 거래 내역 페이지로 이동
-          router.push(`/transaction/group/${firstTeamId}`);
-        } else {
-          // 그룹이 없으면 빈 그룹 페이지로 이동
-          router.push("/transaction/group");
-        }
-      } catch (error) {
-        console.error("Failed to fetch groups:", error);
-        router.push("/transaction/group");
-      }
+  const handleViewModeToggle = (mode: ViewMode) => {
+    if (mode === "personal") {
+      // 개인 페이지로 이동 전 개인 날짜/스크롤 저장소 초기화 (현재 날짜로 이동)
+      sessionStorage.removeItem("my-transaction-date");
+      sessionStorage.removeItem("my-transaction-scroll");
+      router.push("/transaction/my");
     } else {
-      // 이미 개인 페이지인 경우 현재 날짜로 초기화
+      // 이미 그룹 페이지인 경우 현재 날짜로 초기화
       setViewMode(mode);
       setSelectedDate(new Date());
     }
@@ -62,7 +52,7 @@ export default function MyTransactionPageClientV2() {
   // 날짜 관련 상태
   const getSavedDate = (): Date => {
     if (typeof window === "undefined") return new Date();
-    const saved = sessionStorage.getItem("my-transaction-date");
+    const saved = sessionStorage.getItem(`group-transaction-date-${teamId}`);
     if (saved) {
       const parsed = new Date(saved);
       if (!isNaN(parsed.getTime())) {
@@ -80,10 +70,11 @@ export default function MyTransactionPageClientV2() {
     total: 0,
     transactions: [],
   });
+  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
   // 필터링 관련 상태
   const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // Not used in V2 yet?
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [currentCategoryFilter, setCurrentCategoryFilter] = useState<
     string | null
@@ -106,6 +97,22 @@ export default function MyTransactionPageClientV2() {
       hasFetchedMember.current = true;
     }
   }, [fetchMember]);
+
+  // 그룹 정보 로딩
+  useEffect(() => {
+    if (!teamId || groupInfo) return;
+
+    const fetchGroupInfo = async () => {
+      try {
+        const info = await getGroupInfo(teamId);
+        setGroupInfo(info);
+      } catch (error) {
+        console.error("Failed to fetch group info:", error);
+        // router.replace("/group"); // 에러 시 그룹 목록으로 이동? 일단 유지
+      }
+    };
+    fetchGroupInfo();
+  }, [teamId, groupInfo]);
 
   // 외부 클릭 감지 (사이드바)
   useEffect(() => {
@@ -147,12 +154,14 @@ export default function MyTransactionPageClientV2() {
 
   // 페이지 진입 시 스크롤 위치 복원 플래그 설정
   useEffect(() => {
-    const savedScroll = sessionStorage.getItem("my-transaction-scroll");
+    const savedScroll = sessionStorage.getItem(
+      `group-transaction-scroll-${teamId}`
+    );
     if (savedScroll) {
       shouldRestoreScroll.current = true;
       setIsRestoringScroll(true);
     }
-  }, []);
+  }, [teamId]);
 
   // 데이터 로딩 완료 후 스크롤 복원
   useEffect(() => {
@@ -162,7 +171,9 @@ export default function MyTransactionPageClientV2() {
       scrollContainerRef.current &&
       response.transactions.length > 0
     ) {
-      const savedScroll = sessionStorage.getItem("my-transaction-scroll");
+      const savedScroll = sessionStorage.getItem(
+        `group-transaction-scroll-${teamId}`
+      );
       if (savedScroll) {
         const scrollPos = parseInt(savedScroll, 10);
         setTimeout(() => {
@@ -181,7 +192,7 @@ export default function MyTransactionPageClientV2() {
       shouldRestoreScroll.current = false;
       setIsRestoringScroll(false);
     }
-  }, [isLoading, response.transactions]);
+  }, [isLoading, response.transactions, teamId]);
 
   // 스크롤 시 총액 섹션 스타일 변경을 위한 상태 및 관찰자
   const [isSticky, setIsSticky] = useState(false);
@@ -190,10 +201,9 @@ export default function MyTransactionPageClientV2() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // sentinel이 화면 밖으로 나가면(즉, 스크롤이 내려가면) sticky 상태로 간주
         setIsSticky(!entry.isIntersecting);
       },
-      { threshold: [0, 1] } // 상단 모서리에 닿자마자 감지
+      { threshold: [0, 1] }
     );
 
     if (sentinelRef.current) {
@@ -209,14 +219,21 @@ export default function MyTransactionPageClientV2() {
 
   // 날짜 변경 시 저장
   useEffect(() => {
-    sessionStorage.setItem("my-transaction-date", selectedDate.toISOString());
-  }, [selectedDate]);
+    sessionStorage.setItem(
+      `group-transaction-date-${teamId}`,
+      selectedDate.toISOString()
+    );
+  }, [selectedDate, teamId]);
 
   // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
+    if (!teamId) return;
+
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
-    const requestKey = `${year}-${month}-${currentCategoryFilter || ""}`;
+    const requestKey = `${teamId}-${year}-${month}-${
+      currentCategoryFilter || ""
+    }`;
 
     if (
       isRequestInProgressRef.current &&
@@ -240,7 +257,7 @@ export default function MyTransactionPageClientV2() {
       const fetchData = async () => {
         try {
           const criteria: TransactionSearchCriteria = {
-            teamId: null,
+            teamId: parseInt(teamId),
             year,
             month,
             categoryName: currentCategoryFilter,
@@ -279,7 +296,7 @@ export default function MyTransactionPageClientV2() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [selectedDate, currentCategoryFilter]);
+  }, [selectedDate, currentCategoryFilter, teamId]);
 
   // 필터링된 거래 내역 가져오기
   const getFilteredTransactions = () => {
@@ -338,7 +355,10 @@ export default function MyTransactionPageClientV2() {
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const scrollPos = scrollContainerRef.current.scrollTop;
-      sessionStorage.setItem("my-transaction-scroll", scrollPos.toString());
+      sessionStorage.setItem(
+        `group-transaction-scroll-${teamId}`,
+        scrollPos.toString()
+      );
     }
   };
 
@@ -349,12 +369,13 @@ export default function MyTransactionPageClientV2() {
 
   const handleWritingTransaction = () => {
     setIsFloatingMenuOpen(false);
-    router.push("/transaction/my/add/writing");
+    router.push(`/transaction/group/${teamId}/add/writing`);
   };
 
   const handleReceiptTransaction = () => {
-    setIsFloatingMenuOpen(false);
-    router.push("/transaction/my/add/receipt");
+    // setIsFloatingMenuOpen(false);
+    // router.push(`/transaction/group/${teamId}/add/receipt`);
+    alert("서비스 점검 중입니다.");
   };
 
   // 카테고리 필터 핸들러
@@ -367,9 +388,22 @@ export default function MyTransactionPageClientV2() {
   // 수입이 더 많은 날인지 확인
   const isIncomeDay = response.income > response.expense;
 
+  // 그룹 정보 이동
+  const handleGroupInfo = () => {
+    router.push(`/group/info/${teamId}`);
+  };
+
+  const handleEnterInviteCode = () => {
+    router.push("/group/join");
+  };
+
+  const handleCreateGroup = () => {
+    router.push("/group/create");
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-30 relative font-landing overflow-hidden">
-      {/* 상단바 (컴포넌트 분리됨) */}
+      {/* 상단바 */}
       <TransactionHeaderV2
         title={formatDateForDisplay(selectedDate)}
         onPrevMonth={handlePrevMonth}
@@ -380,13 +414,10 @@ export default function MyTransactionPageClientV2() {
       {/* 사이드바 */}
       {showSidebar && (
         <>
-          {/* 반투명 오버레이 */}
           <div
             className="absolute inset-0 bg-[#d9d9d9] opacity-50 z-40"
             onClick={() => setShowSidebar(false)}
           />
-
-          {/* 사이드바 본문 */}
           <div
             ref={sidebarRef}
             className="absolute top-0 right-0 h-full w-48 bg-white shadow-lg border-l border-[#E0E0E0] transform transition-transform duration-300 ease-in-out z-50"
@@ -402,14 +433,12 @@ export default function MyTransactionPageClientV2() {
                     마이페이지
                   </span>
                 </button>
-
                 <button
                   onClick={handleNotice}
                   className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
                 >
                   <span className="text-subtitle text-gray-900">공지사항</span>
                 </button>
-
                 <button
                   onClick={handleContactUs}
                   className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
@@ -421,6 +450,15 @@ export default function MyTransactionPageClientV2() {
           </div>
         </>
       )}
+
+      {/* 그룹명 섹션 */}
+      <div className="px-5 pt-2 pb-1 bg-gray-30">
+        <GroupNameCardV2
+          groupName={groupInfo?.title}
+          label={groupInfo?.label}
+          onInfoClick={handleGroupInfo}
+        />
+      </div>
 
       {/* 메인 컨텐츠 영역 */}
       <div
@@ -451,7 +489,7 @@ export default function MyTransactionPageClientV2() {
           <TransactionTotalV2 total={response.total} isSticky={isSticky} />
         </div>
 
-        {/* 거래 내역 목록 영역 - White Sheet (배경 White) */}
+        {/* 거래 내역 목록 영역 - White Sheet */}
         <div className="bg-white flex-1">
           {/* 필터 버튼 영역 (Sticky) */}
           <TransactionFilterV2
@@ -483,11 +521,13 @@ export default function MyTransactionPageClientV2() {
                       const shouldShowDate = prevDate !== currentDate;
 
                       return (
-                        <MyTransactionItemV2
+                        <GroupTransactionItemV2
                           key={transaction.transactionId}
+                          teamId={teamId}
                           date={shouldShowDate ? currentDate : ""}
                           category={transaction.categoryName}
                           description={transaction.content}
+                          creator={transaction.creatorNickname}
                           amount={
                             transaction.transactionType === "EXPENSE"
                               ? -transaction.amount
@@ -498,7 +538,6 @@ export default function MyTransactionPageClientV2() {
                         />
                       );
                     })}
-                    {/* 하단 여백 (약 2개 아이템 높이) */}
                     <div className="h-24 bg-white" />
                   </>
                 ) : (
@@ -514,7 +553,6 @@ export default function MyTransactionPageClientV2() {
         </div>
       </div>
 
-      {/* 오버레이 (플로팅 메뉴) */}
       {isFloatingMenuOpen && (
         <div
           className="absolute inset-0 bg-black/20 z-40"
@@ -524,18 +562,18 @@ export default function MyTransactionPageClientV2() {
 
       {/* 하단 개인/그룹 토글 및 플로팅 버튼 */}
       <div className="absolute bottom-0 left-0 right-0 pb-6 px-4 flex items-end justify-between pointer-events-none">
-        {/* 개인/그룹 토글 */}
         <TransactionTypeToggleV2
           viewMode={viewMode}
           onToggle={handleViewModeToggle}
         />
 
-        {/* 플로팅 + 버튼 */}
         <TransactionFloatingButtonV2
           isOpen={isFloatingMenuOpen}
           onToggle={handleFloatingButtonClick}
           onWriteDirect={handleWritingTransaction}
           onWriteReceipt={handleReceiptTransaction}
+          onEnterInviteCode={handleEnterInviteCode}
+          onCreateGroup={handleCreateGroup}
         />
       </div>
     </div>

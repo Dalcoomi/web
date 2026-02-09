@@ -19,7 +19,7 @@ export default function TransactionHeaderV2({
 }: TransactionHeaderV2Props) {
   return (
     <div
-      className={`flex items-center justify-start px-[24px] py-4 bg-gray-50 relative z-10 ${className}`}
+      className={`flex items-center justify-start px-[24px] py-4 bg-transparent relative z-10 ${className}`}
     >
       <button onClick={onPrevMonth} className="cursor-pointer">
         <Image

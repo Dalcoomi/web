@@ -1,7 +1,7 @@
 // app/transaction/group/[teamId]/page.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import GroupTransactionPageClient from "@/components/transaction/group/GroupTransactionPageClient";
+import GroupTransactionPageClientV2 from "@/components/transaction/group/GroupTransactionPageClientV2";
 
 export const metadata = {
   title: "그룹 거래 내역",
@@ -17,5 +17,5 @@ export default async function GroupTransactionPage() {
     redirect("/");
   }
 
-  return <GroupTransactionPageClient />;
+  return <GroupTransactionPageClientV2 />;
 }

@@ -11,6 +11,7 @@ export interface Group {
   title: string;
   memberCount: number;
   memberLimit: number;
+  label: string;
 }
 
 export interface GetMyTeamsResponse {
@@ -26,6 +27,7 @@ export interface GroupInfo {
   purpose: string;
   leaderNickname: string;
   members: GroupMember[];
+  label: string;
 }
 
 export interface GroupMember {
@@ -39,6 +41,7 @@ export interface GroupRequestDto {
   title: string;
   memberLimit: number;
   purpose: string | null;
+  label: string;
 }
 
 // 그룹 생성 API
@@ -51,7 +54,7 @@ export const createGroup = async (groupData: Omit<GroupRequestDto, 'teamId'>) =>
 };
 
 // 그룹 참가 API
-export const joinGroup = async (invitationCode: string) => {
+export const joinGroup = async (invitationCode: string): Promise<{ teamId: string; title: string }> => {
   return post(`/api/teams/join/${invitationCode}`, {});
 };
 
