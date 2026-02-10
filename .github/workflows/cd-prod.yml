@@ -64,7 +64,7 @@ jobs:
           host: ${{ secrets.EC2_PROD_HOST }}
           username: ${{ secrets.EC2_PROD_USER }}
           key: ${{ secrets.EC2_PROD_PRIVATE_KEY }}
-          source: ".next,public,src,package.json,package-lock.json,next.config.ts,env-config,ecosystem.config.js"
+          source: ".next,public,src,package.json,package-lock.json,next.config.ts,env-config,ecosystem.config.cjs"
           target: "/var/www/dalcoomi-frontend/releases/latest"
 
       - name: Start application
@@ -88,7 +88,7 @@ jobs:
 
             # PM2로 Next.js 시작
             pm2 delete dalcoomi-frontend || true
-            pm2 start ecosystem.config.js --env prod
+            pm2 start ecosystem.config.cjs --env prod
             pm2 save
 
             # Nginx 설정 테스트 및 리로드
