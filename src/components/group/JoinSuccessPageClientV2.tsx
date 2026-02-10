@@ -23,9 +23,9 @@ export default function JoinSuccessPageClientV2() {
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center pt-[120px]">
+      <div className="flex-1 flex flex-col items-center pt-30">
         {/* Icon */}
-        <div className="mb-[64px]">
+        <div className="mb-16">
           <Image
             src="/images/transaction/v2/그룹_초대_아이콘.svg"
             alt="참여 완료"

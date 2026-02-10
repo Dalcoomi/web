@@ -9,6 +9,7 @@ import TransactionTypeToggleV2, {
 } from "@/components/transaction/v2/TransactionTypeToggleV2";
 import TransactionFloatingButtonV2 from "@/components/transaction/v2/TransactionFloatingButtonV2";
 import { useMemberStore } from "@/stores/useMemberStore";
+import SidebarV2 from "@/components/ui/SidebarV2";
 
 export default function GroupTransactionEmptyPageClientV2() {
   const router = useRouter();
@@ -16,7 +17,6 @@ export default function GroupTransactionEmptyPageClientV2() {
 
   // 사이드바 상태
   const [showSidebar, setShowSidebar] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
 
   // 개인/그룹 토글 상태
   const [viewMode, setViewMode] = useState<ViewMode>("group");
@@ -45,42 +45,9 @@ export default function GroupTransactionEmptyPageClientV2() {
     }
   }, [fetchMember]);
 
-  // 외부 클릭 감지 (사이드바)
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        sidebarRef.current &&
-        !sidebarRef.current.contains(event.target as Node)
-      ) {
-        setShowSidebar(false);
-      }
-    };
-
-    if (showSidebar) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showSidebar]);
-
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
     setShowSidebar(true);
-  };
-
-  const handleMyPage = () => {
-    setShowSidebar(false);
-    router.push("/profile");
-  };
-
-  const handleNotice = () => {
-    alert("서비스 준비 중입니다.");
-  };
-
-  const handleContactUs = () => {
-    window.open("https://forms.gle/ucj6CNNx25wzB9a88", "_blank");
   };
 
   const formatDateForDisplay = (date: Date): string => {
@@ -91,7 +58,7 @@ export default function GroupTransactionEmptyPageClientV2() {
     const newDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth() - 1,
-      1
+      1,
     );
     setSelectedDate(newDate);
   };
@@ -100,7 +67,7 @@ export default function GroupTransactionEmptyPageClientV2() {
     const newDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth() + 1,
-      1
+      1,
     );
     setSelectedDate(newDate);
   };
@@ -128,59 +95,23 @@ export default function GroupTransactionEmptyPageClientV2() {
         onMenuClick={handleMenuClick}
       />
 
-      {/* 사이드바 */}
-      {showSidebar && (
-        <>
-          <div
-            className="absolute inset-0 bg-[#d9d9d9] opacity-50 z-40"
-            onClick={() => setShowSidebar(false)}
-          />
-          <div
-            ref={sidebarRef}
-            className="absolute top-0 right-0 h-full w-48 bg-white shadow-lg border-l border-[#E0E0E0] transform transition-transform duration-300 ease-in-out z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="pt-6 px-4">
-              <div className="space-y-2">
-                <button
-                  onClick={handleMyPage}
-                  className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
-                >
-                  <span className="text-subtitle text-gray-900">
-                    마이페이지
-                  </span>
-                </button>
-                <button
-                  onClick={handleNotice}
-                  className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
-                >
-                  <span className="text-subtitle text-gray-900">공지사항</span>
-                </button>
-                <button
-                  onClick={handleContactUs}
-                  className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
-                >
-                  <span className="text-subtitle text-gray-900">문의하기</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      <SidebarV2 isOpen={showSidebar} onClose={() => setShowSidebar(false)} />
 
-      {/* 메인 컨텐츠 영역 */}
-      <div className="flex-1 flex flex-col items-center justify-center pb-20">
-        <div className="bg-white px-3 py-1.5 rounded-full mb-4">
-          <span className="text-blue-600 text-caption1-semibold">
-            새로운 그룹을 만들어봐요~!
-          </span>
-        </div>
+      {/* 메인 컨텐츠 영역 - 팁 섹션(~142px) + 간격(120px) = bottom 약 350px */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+        style={{ bottom: "350px" }}
+      >
         <Image
-          src="/images/transaction/v2/요약_카드_캐릭터.svg"
-          alt="캐릭터"
-          width={100}
-          height={100}
+          src="/images/transaction/v2/empty_캐릭터.svg"
+          alt="참여 중인 그룹 없음"
+          width={120}
+          height={120}
+          className="opacity-40 mix-blend-luminosity"
         />
+        <span className="text-subtitle text-gray-300">
+          참여 중인 그룹이 없어요.
+        </span>
       </div>
 
       {isFloatingMenuOpen && (
@@ -188,6 +119,28 @@ export default function GroupTransactionEmptyPageClientV2() {
           className="absolute inset-0 bg-black/20 z-40"
           onClick={() => setIsFloatingMenuOpen(false)}
         />
+      )}
+
+      {/* 플로팅 버튼 위 안내 섹션 */}
+      {!isFloatingMenuOpen && (
+        <div
+          className="absolute bottom-22 flex flex-col items-start pointer-events-none z-50"
+          style={{ right: "45.65px" }}
+        >
+          <span className="text-caption2-semibold text-green-600">Tip</span>
+          <span className="text-caption1-semibold text-gray-900 mt-2">
+            새로운 그룹을 생성하거나,
+            <br />
+            초대 코드를 입력해보세요!
+          </span>
+          <Image
+            src="/images/transaction/v2/그룹_안내_arrow.svg"
+            alt="안내 화살표"
+            width={64}
+            height={64}
+            className="mt-3 self-end"
+          />
+        </div>
       )}
 
       {/* 하단 개인/그룹 토글 및 플로팅 버튼 */}

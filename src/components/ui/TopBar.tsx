@@ -3,6 +3,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useState, useRef, useEffect } from "react";
+import { useToastStore } from "@/stores/useToastStore";
 
 interface TopBarProps {
   showBackButton?: boolean;
@@ -18,6 +19,7 @@ export default function TopBar({
 }: TopBarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const addToast = useToastStore((state) => state.addToast);
   const [showSidebar, setShowSidebar] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +88,7 @@ export default function TopBar({
   };
 
   const handleNotice = () => {
-    alert("서비스 준비 중입니다.");
+    addToast("info", "서비스 준비 중입니다.");
   };
 
   const handleContactUs = () => {

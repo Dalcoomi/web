@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { createGroup } from "@/services/groupService";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function CreateGroupPageClient() {
   const router = useRouter();
+  const addToast = useToastStore((state) => state.addToast);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
 
@@ -110,7 +112,7 @@ export default function CreateGroupPageClient() {
       const inviteCode = response;
       router.push(`/group/create/success?code=${inviteCode}`);
     } catch (error) {
-      alert(error.message || "그룹 생성 중 오류가 발생했습니다.");
+      addToast("error", error.message || "그룹 생성 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);

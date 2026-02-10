@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import { addTransaction } from "@/services/transactionService";
 import { getTeamCategories, Category } from "@/services/categoryService";
 import { getGroupInfo, GroupInfo } from "@/services/groupService";
+import { useToastStore } from "@/stores/useToastStore";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -27,6 +28,7 @@ export default function AddWritingGroupTransactionPageClient() {
   const router = useRouter();
   const params = useParams();
   const teamId = params.teamId as string; // URL에서 teamId 추출
+  const addToast = useToastStore((state) => state.addToast);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
@@ -62,7 +64,7 @@ export default function AddWritingGroupTransactionPageClient() {
         const response = await getGroupInfo(teamId);
         setGroupInfo(response);
       } catch (error) {
-        alert(error || "그룹 정보를 불러올 수 없습니다.");
+        addToast("error", String(error) || "그룹 정보를 불러올 수 없습니다.");
         router.replace("/group");
       }
     };
@@ -88,7 +90,7 @@ export default function AddWritingGroupTransactionPageClient() {
           setCategoryId(defaultCategory.id);
         }
       } catch (error) {
-        alert(error);
+        addToast("error", String(error));
         setCategories([]);
       } finally {
         setIsLoadingCategories(false);
@@ -194,7 +196,7 @@ export default function AddWritingGroupTransactionPageClient() {
       // 성공 시 그룹 거래 내역 조회 페이지로 이동
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      alert(error || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);

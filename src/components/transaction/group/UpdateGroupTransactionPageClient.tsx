@@ -12,6 +12,7 @@ import { Transaction } from "@/services/transactionService";
 import { getTeamCategories, Category } from "@/services/categoryService";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { getGroupInfo, GroupInfo } from "@/services/groupService";
+import { useToastStore } from "@/stores/useToastStore";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -34,6 +35,7 @@ export default function UpdateGroupTransactionPageClient() {
   const params = useParams();
   const searchParams = useSearchParams();
   const { member: currentUser, fetchMember } = useMemberStore();
+  const addToast = useToastStore((state) => state.addToast);
 
   const teamId = params.teamId as string;
   const transactionId = searchParams.get("id");
@@ -103,7 +105,7 @@ export default function UpdateGroupTransactionPageClient() {
         setCategories(categoryList);
         setIsLoadingCategories(false);
       } catch (error) {
-        alert(error || "거래 내역을 불러올 수 없습니다.");
+        addToast("error", String(error) || "거래 내역을 불러올 수 없습니다.");
 
         router.replace(`/transaction/group/${teamId}`);
       }
@@ -115,7 +117,7 @@ export default function UpdateGroupTransactionPageClient() {
 
         setGroupInfo(response);
       } catch (error) {
-        alert(error || "그룹 정보를 불러올 수 없습니다.");
+        addToast("error", String(error) || "그룹 정보를 불러올 수 없습니다.");
         router.replace("/group");
       }
     }, 100);
@@ -180,7 +182,7 @@ export default function UpdateGroupTransactionPageClient() {
         }
       }
     } catch (error) {
-      alert(error);
+      addToast("error", String(error));
     } finally {
       setIsLoadingCategories(false);
     }
@@ -233,7 +235,7 @@ export default function UpdateGroupTransactionPageClient() {
       // 성공 시 거래 내역 조회 페이지로 이동
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      alert(error || "그룹 거래 내역 수정 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "그룹 거래 내역 수정 중 오류가 발생했습니다.");
       setIsSubmitting(false);
     }
   };
@@ -258,7 +260,7 @@ export default function UpdateGroupTransactionPageClient() {
 
       router.push(`/transaction/group/${teamId}`);
     } catch (error) {
-      alert(error || "그룹 거래 내역 삭제 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "그룹 거래 내역 삭제 중 오류가 발생했습니다.");
     }
   };
 

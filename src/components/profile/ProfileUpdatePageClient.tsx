@@ -16,6 +16,7 @@ import {
   getSocialRefreshToken,
 } from "@/services/memberService";
 import { useMemberStore } from "@/stores/useMemberStore";
+import { useToastStore } from "@/stores/useToastStore";
 import { validateNickname, validateName } from "@/utils/validation";
 
 export default function ProfileUpdatePageClient() {
@@ -24,6 +25,7 @@ export default function ProfileUpdatePageClient() {
 
   // Zustand 스토어에서 상태와 액션 가져오기
   const { member, fetchMember, updateMember } = useMemberStore();
+  const addToast = useToastStore((state) => state.addToast);
 
   // 수정할 정보 상태 (로컬에서 관리)
   const [profileImage, setProfileImage] = useState<string>("");
@@ -95,7 +97,7 @@ export default function ProfileUpdatePageClient() {
     }
 
     if (error) {
-      alert(`연동 실패: ${decodeURIComponent(error)}`);
+      addToast("error", `연동 실패: ${decodeURIComponent(error)}`);
       // URL 정리
       window.history.replaceState({}, "", window.location.pathname);
       return;
@@ -114,7 +116,7 @@ export default function ProfileUpdatePageClient() {
         setPendingSocialData(socialData);
         handleSocialIntegration(socialData);
       } catch (error) {
-        alert("연동 처리 중 오류가 발생했습니다.");
+        addToast("error", "연동 처리 중 오류가 발생했습니다.");
       }
       // URL 정리
       window.history.replaceState({}, "", window.location.pathname);
@@ -133,7 +135,7 @@ export default function ProfileUpdatePageClient() {
         setPendingSocialData(socialData);
         handleSocialIntegration(socialData);
       } catch (error) {
-        alert("연동 처리 중 오류가 발생했습니다.");
+        addToast("error", "연동 처리 중 오류가 발생했습니다.");
       }
       // URL 정리
       window.history.replaceState({}, "", window.location.pathname);
@@ -160,7 +162,7 @@ export default function ProfileUpdatePageClient() {
 
     // 이미지 파일 검증
     if (!file.type.startsWith("image/")) {
-      alert(err.message || "이미지 파일만 업로드 가능합니다.");
+      addToast("error", "이미지 파일만 업로드 가능합니다.");
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -169,7 +171,7 @@ export default function ProfileUpdatePageClient() {
 
     // 파일 크기 검증 (10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert(err.message || "파일 크기는 10MB 이하여야 합니다.");
+      addToast("error", "파일 크기는 10MB 이하여야 합니다.");
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -191,10 +193,10 @@ export default function ProfileUpdatePageClient() {
       updateMember({ profileImageUrl: newAvatarUrl });
 
       setProfileImage(newAvatarUrl);
-      alert("프로필 사진이 변경되었습니다.");
+      addToast("success", "프로필 사진이 변경되었습니다.");
     } catch (err: any) {
       console.error("Profile image update failed:", err);
-      alert(err?.message || "프로필 사진 변경에 실패했습니다.");
+      addToast("error", err?.message || "프로필 사진 변경에 실패했습니다.");
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -214,10 +216,10 @@ export default function ProfileUpdatePageClient() {
       updateMember({ profileImageUrl: newAvatarUrl });
 
       setProfileImage(newAvatarUrl);
-      alert("프로필 사진이 변경되었습니다.");
+      addToast("success", "프로필 사진이 변경되었습니다.");
     } catch (err: any) {
       console.error("Profile image change failed:", err);
-      alert(err?.message || "프로필 사진 변경에 실패했습니다.");
+      addToast("error", err?.message || "프로필 사진 변경에 실패했습니다.");
     }
   };
 
@@ -242,7 +244,7 @@ export default function ProfileUpdatePageClient() {
       setNicknameError("");
     } catch (error) {
       console.error("Nickname check failed:", error);
-      alert(error.message || "닉네임 확인에 실패했습니다.");
+      addToast("error", error.message || "닉네임 확인에 실패했습니다.");
       setNicknameCheckResult("none");
     }
   };
@@ -322,7 +324,7 @@ export default function ProfileUpdatePageClient() {
       router.push("/profile");
     } catch (err) {
       console.error("Profile update failed:", err);
-      alert(err.message || "프로필 수정에 실패했습니다. ");
+      addToast("error", err.message || "프로필 수정에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
     }
@@ -483,7 +485,8 @@ export default function ProfileUpdatePageClient() {
         // 🔥 백엔드와 동기화를 위해 강제로 회원 정보 다시 가져오기 (currentLoginSocial은 store에서 자동 보존)
         await fetchMember(true);
 
-        alert(
+        addToast(
+          "success",
           `${getSocialDisplayName(
             socialData.socialType as SocialType
           )} 연동이 완료되었습니다.`
@@ -508,18 +511,20 @@ export default function ProfileUpdatePageClient() {
             // 🔥 백엔드와 동기화를 위해 강제로 회원 정보 다시 가져오기 (currentLoginSocial은 store에서 자동 보존)
             await fetchMember(true);
 
-            alert(
+            addToast(
+              "success",
               `${getSocialDisplayName(
                 socialData.socialType as SocialType
               )} 계정이 이미 연동되어 있습니다.`
             );
           } catch (fetchError) {
             console.error("회원 정보 갱신 실패:", fetchError);
-            alert("연동 상태 확인 중 오류가 발생했습니다.");
+            addToast("error", "연동 상태 확인 중 오류가 발생했습니다.");
           }
         } else {
           // 다른 에러인 경우 기존 처리
-          alert(
+          addToast(
+            "error",
             errorMessage ||
               `${getSocialDisplayName(
                 socialData.socialType as SocialType
@@ -533,7 +538,7 @@ export default function ProfileUpdatePageClient() {
         setIsUpdatingSocial(false);
       }
     },
-    [fetchMember, updateMember]
+    [fetchMember, updateMember, addToast]
   );
 
   // 소셜 연동 토글 핸들러
@@ -550,7 +555,8 @@ export default function ProfileUpdatePageClient() {
 
         // 1. 현재 로그인에 사용 중인 소셜 계정인지 확인
         if (member?.currentLoginSocial === socialType) {
-          alert(
+          addToast(
+            "error",
             "현재 로그인에 사용 중인 소셜 계정입니다. 다른 소셜 계정으로 로그인 후 해제해주세요."
           );
           setIsUpdatingSocial(false);
@@ -559,7 +565,7 @@ export default function ProfileUpdatePageClient() {
 
         // 2. 마지막 연동 계정인지 확인
         if (member?.socialTypes && member.socialTypes.length <= 1) {
-          alert("마지막 연동 계정은 해제할 수 없습니다.");
+          addToast("error", "마지막 연동 계정은 해제할 수 없습니다.");
           setIsUpdatingSocial(false);
           return;
         }
@@ -635,7 +641,7 @@ export default function ProfileUpdatePageClient() {
           updateMember({ socialTypes: updatedSocialTypes });
         }
 
-        alert(`${getSocialDisplayName(socialType)} 연동이 해제되었습니다.`);
+        addToast("success", `${getSocialDisplayName(socialType)} 연동이 해제되었습니다.`);
         setIsUpdatingSocial(false);
       } else {
         // 토글을 켜는 경우 = 연동 추가
@@ -648,7 +654,8 @@ export default function ProfileUpdatePageClient() {
         return;
       }
     } catch (error) {
-      alert(
+      addToast(
+        "error",
         error ||
           `${getSocialDisplayName(
             socialType

@@ -7,6 +7,7 @@ import Image from "next/image";
 import { createGroup } from "@/services/groupService";
 import { BRAND_COLORS } from "@/constants/brandColors";
 import BottomButton from "@/components/ui/BottomButton";
+import { useToastStore } from "@/stores/useToastStore";
 
 // 라벨 컬러 옵션
 const LABEL_COLORS = [
@@ -19,6 +20,7 @@ const LABEL_COLORS = [
 
 export default function CreateGroupPageClientV2() {
   const router = useRouter();
+  const addToast = useToastStore((state) => state.addToast);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
 
@@ -89,7 +91,7 @@ export default function CreateGroupPageClientV2() {
         )}`
       );
     } catch (error: any) {
-      alert(error.message || "그룹 생성 중 오류가 발생했습니다.");
+      addToast("error", error.message || "그룹 생성 중 오류가 발생했습니다.");
       setIsSubmitting(false);
     }
   };

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import MyTransactionItemV2 from "@/components/transaction/MyTransactionItemV2";
 import TransactionHeaderV2 from "@/components/transaction/v2/TransactionHeaderV2";
 import TransactionSummaryV2 from "@/components/transaction/v2/TransactionSummaryV2";
@@ -16,8 +17,11 @@ import {
   MonthlyTransactionsResponse,
   TransactionSearchCriteria,
 } from "@/services/transactionService";
-import { getGroups } from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
+import { useToastStore } from "@/stores/useToastStore";
+import TransactionPageSkeleton from "@/components/skeletons/TransactionPageSkeleton";
+import { getGroups } from "@/services/groupService";
+import SidebarV2 from "@/components/ui/SidebarV2";
 
 export default function MyTransactionPageClientV2() {
   const router = useRouter();
@@ -25,7 +29,6 @@ export default function MyTransactionPageClientV2() {
 
   // 사이드바 상태
   const [showSidebar, setShowSidebar] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
 
   // 개인/그룹 토글 상태
   const [viewMode, setViewMode] = useState<ViewMode>("personal");
@@ -36,9 +39,6 @@ export default function MyTransactionPageClientV2() {
         const response = await getGroups();
         if (response.groups && response.groups.length > 0) {
           const firstTeamId = response.groups[0].teamId;
-          // 그룹 페이지로 이동 전 해당 그룹의 날짜/스크롤 저장소 초기화 (현재 날짜로 이동)
-          sessionStorage.removeItem(`group-transaction-date-${firstTeamId}`);
-          sessionStorage.removeItem(`group-transaction-scroll-${firstTeamId}`);
           // 첫 번째 그룹의 거래 내역 페이지로 이동
           router.push(`/transaction/group/${firstTeamId}`);
         } else {
@@ -107,42 +107,9 @@ export default function MyTransactionPageClientV2() {
     }
   }, [fetchMember]);
 
-  // 외부 클릭 감지 (사이드바)
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        sidebarRef.current &&
-        !sidebarRef.current.contains(event.target as Node)
-      ) {
-        setShowSidebar(false);
-      }
-    };
-
-    if (showSidebar) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showSidebar]);
-
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
     setShowSidebar(true);
-  };
-
-  const handleMyPage = () => {
-    setShowSidebar(false);
-    router.push("/profile");
-  };
-
-  const handleNotice = () => {
-    alert("서비스 준비 중입니다.");
-  };
-
-  const handleContactUs = () => {
-    window.open("https://forms.gle/ucj6CNNx25wzB9a88", "_blank");
   };
 
   // 페이지 진입 시 스크롤 위치 복원 플래그 설정
@@ -193,7 +160,7 @@ export default function MyTransactionPageClientV2() {
         // sentinel이 화면 밖으로 나가면(즉, 스크롤이 내려가면) sticky 상태로 간주
         setIsSticky(!entry.isIntersecting);
       },
-      { threshold: [0, 1] } // 상단 모서리에 닿자마자 감지
+      { threshold: [0, 1] }, // 상단 모서리에 닿자마자 감지
     );
 
     if (sentinelRef.current) {
@@ -225,6 +192,8 @@ export default function MyTransactionPageClientV2() {
       return;
     }
 
+    setIsLoading(true);
+
     const timeoutId = setTimeout(() => {
       if (
         isRequestInProgressRef.current &&
@@ -235,7 +204,6 @@ export default function MyTransactionPageClientV2() {
 
       isRequestInProgressRef.current = true;
       lastRequestRef.current = requestKey;
-      setIsLoading(true);
 
       const fetchData = async () => {
         try {
@@ -251,7 +219,7 @@ export default function MyTransactionPageClientV2() {
 
           if (!currentCategoryFilter) {
             const uniqueCategories = Array.from(
-              new Set(response.transactions.map((t) => t.categoryName))
+              new Set(response.transactions.map((t) => t.categoryName)),
             );
             setAllCategories(uniqueCategories);
           }
@@ -316,7 +284,7 @@ export default function MyTransactionPageClientV2() {
     const newDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth() - 1,
-      1
+      1,
     );
     handleDateChange(newDate);
   };
@@ -325,7 +293,7 @@ export default function MyTransactionPageClientV2() {
     const newDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth() + 1,
-      1
+      1,
     );
     handleDateChange(newDate);
   };
@@ -377,141 +345,106 @@ export default function MyTransactionPageClientV2() {
         onMenuClick={handleMenuClick}
       />
 
-      {/* 사이드바 */}
-      {showSidebar && (
-        <>
-          {/* 반투명 오버레이 */}
-          <div
-            className="absolute inset-0 bg-[#d9d9d9] opacity-50 z-40"
-            onClick={() => setShowSidebar(false)}
-          />
-
-          {/* 사이드바 본문 */}
-          <div
-            ref={sidebarRef}
-            className="absolute top-0 right-0 h-full w-48 bg-white shadow-lg border-l border-[#E0E0E0] transform transition-transform duration-300 ease-in-out z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="pt-6 px-4">
-              <div className="space-y-2">
-                <button
-                  onClick={handleMyPage}
-                  className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
-                >
-                  <span className="text-subtitle text-gray-900">
-                    마이페이지
-                  </span>
-                </button>
-
-                <button
-                  onClick={handleNotice}
-                  className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
-                >
-                  <span className="text-subtitle text-gray-900">공지사항</span>
-                </button>
-
-                <button
-                  onClick={handleContactUs}
-                  className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
-                >
-                  <span className="text-subtitle text-gray-900">문의하기</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      <SidebarV2 isOpen={showSidebar} onClose={() => setShowSidebar(false)} />
 
       {/* 메인 컨텐츠 영역 */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto flex flex-col relative scrollbar-hide"
+        className="flex-1 overflow-y-auto flex flex-col relative scrollbar-hide z-10 bg-gray-30"
         style={{
           opacity: isRestoringScroll ? 0 : 1,
           transition: "opacity 0.15s",
         }}
       >
-        {/* 요약 카드 상단 (스크롤됨) */}
-        <div className="px-5 pt-1 bg-gray-30">
-          <TransactionSummaryV2
-            income={response.income}
-            expense={response.expense}
-          />
-        </div>
-
-        {/* Sticky 감지용 Sentinel */}
-        <div
-          ref={sentinelRef}
-          className="absolute w-full h-px -mt-px pointer-events-none opacity-0"
-        />
-
-        {/* 요약 카드 하단 (총액) - Sticky */}
-        <div className="sticky top-0 z-30 px-5 pb-3 bg-gray-30 -mt-[1px] transition-all duration-300">
-          <TransactionTotalV2 total={response.total} isSticky={isSticky} />
-        </div>
-
-        {/* 거래 내역 목록 영역 - White Sheet (배경 White) */}
-        <div className="bg-white flex-1">
-          {/* 필터 버튼 영역 (Sticky) */}
-          <TransactionFilterV2
-            showCategoryFilter={showCategoryFilter}
-            onCategoryToggle={handleCategoryFilterToggle}
-          />
-
-          {/* 리스트 */}
-          {isLoading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="text-gray-400 text-sm">로딩 중...</div>
+        {isLoading ? (
+          <TransactionPageSkeleton />
+        ) : (
+          <>
+            {/* 요약 카드 상단 (스크롤됨) */}
+            <div className="px-5 pt-1 bg-gray-30">
+              <TransactionSummaryV2
+                income={response.income}
+                expense={response.expense}
+                showCharacter={response.transactions.length > 0}
+              />
             </div>
-          ) : (
-            <div className="space-y-0">
-              {(() => {
-                const filteredTransactions = getFilteredTransactions();
-                return filteredTransactions.length > 0 ? (
-                  <>
-                    {filteredTransactions.map((transaction, index) => {
-                      const currentDate = formatDateToMMDD(
-                        transaction.transactionDate
-                      );
-                      const prevDate =
-                        index > 0
-                          ? formatDateToMMDD(
-                              filteredTransactions[index - 1].transactionDate
-                            )
-                          : null;
-                      const shouldShowDate = prevDate !== currentDate;
 
-                      return (
-                        <MyTransactionItemV2
-                          key={transaction.transactionId}
-                          date={shouldShowDate ? currentDate : ""}
-                          category={transaction.categoryName}
-                          description={transaction.content}
-                          amount={
-                            transaction.transactionType === "EXPENSE"
-                              ? -transaction.amount
-                              : transaction.amount
-                          }
-                          transactionId={transaction.transactionId}
-                          showSeparator={index > 0 && shouldShowDate}
-                        />
-                      );
-                    })}
-                    {/* 하단 여백 (약 2개 아이템 높이) */}
-                    <div className="h-24 bg-white" />
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-40">
-                    <div className="text-gray-400 text-sm">
-                      거래 내역이 없습니다.
+            {/* Sticky 감지용 Sentinel */}
+            <div
+              ref={sentinelRef}
+              className="absolute w-full h-px -mt-px pointer-events-none opacity-0"
+            />
+
+            {/* 요약 카드 하단 (총액) - Sticky */}
+            <div className="sticky top-0 z-30 px-5 pb-3 bg-gray-30 -mt-[1px] transition-all duration-300">
+              <TransactionTotalV2 total={response.total} isSticky={isSticky} />
+            </div>
+
+            {/* 거래 내역 목록 영역 - White Sheet (배경 White) */}
+            <div className="bg-white flex-1">
+              {/* 필터 버튼 영역 (Sticky) */}
+              <TransactionFilterV2
+                showCategoryFilter={showCategoryFilter}
+                onCategoryToggle={handleCategoryFilterToggle}
+              />
+
+              {/* 리스트 */}
+              <div className="space-y-0">
+                {(() => {
+                  const filteredTransactions = getFilteredTransactions();
+                  return filteredTransactions.length > 0 ? (
+                    <>
+                      {filteredTransactions.map((transaction, index) => {
+                        const currentDate = formatDateToMMDD(
+                          transaction.transactionDate,
+                        );
+                        const prevDate =
+                          index > 0
+                            ? formatDateToMMDD(
+                                filteredTransactions[index - 1].transactionDate,
+                              )
+                            : null;
+                        const shouldShowDate = prevDate !== currentDate;
+
+                        return (
+                          <MyTransactionItemV2
+                            key={transaction.transactionId}
+                            date={shouldShowDate ? currentDate : ""}
+                            category={transaction.categoryName}
+                            description={transaction.content}
+                            amount={
+                              transaction.transactionType === "EXPENSE"
+                                ? -transaction.amount
+                                : transaction.amount
+                            }
+                            transactionId={transaction.transactionId}
+                            showSeparator={index > 0 && shouldShowDate}
+                          />
+                        );
+                      })}
+                      {/* 하단 여백 (약 2개 아이템 높이) */}
+                      <div className="h-24 bg-white" />
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center mt-11">
+                      <Image
+                        src="/images/transaction/v2/empty_캐릭터.svg"
+                        alt="데이터 없음"
+                        width={120}
+                        height={120}
+                        className="opacity-40 mix-blend-luminosity"
+                      />
+                      <span className="text-subtitle text-gray-300">
+                        아직 작성된 기록이 없어요.
+                      </span>
                     </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
+              </div>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* 오버레이 (플로팅 메뉴) */}

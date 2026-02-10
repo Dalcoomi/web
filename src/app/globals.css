@@ -261,6 +261,36 @@ textarea {
   transform: scale(1.02);
 }
 
+/* 스켈레톤 shimmer 효과 */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(18,19,21,0.02) 0%, rgba(18,19,21,0.10) 100%);
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.4) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
 /* 스크롤바 숨기기 유틸리티 */
 .scrollbar-hide {
   -ms-overflow-style: none; /* IE and Edge */

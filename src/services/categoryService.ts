@@ -1,5 +1,6 @@
 // services/categoryService.ts
 import { get, post, put, del } from "@/utils/apiClient";
+import { useToastStore } from "@/stores/useToastStore";
 
 // 🔥 중복 요청 방지를 위한 Promise 캐시
 const pendingCategoryRequests = new Map<string, Promise<Category[]>>();
@@ -34,7 +35,7 @@ export const getMyCategories = async (
       const response: GetCategoriesResponse = await get(url);
       return response.categories;
     } catch (error) {
-      alert(error);
+      useToastStore.getState().addToast("error", String(error));
       return [];
     } finally {
       // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
@@ -66,7 +67,7 @@ export const getTeamCategories = async (
       const response: GetCategoriesResponse = await get(url);
       return response.categories;
     } catch (error) {
-      alert(error);
+      useToastStore.getState().addToast("error", String(error));
       return [];
     } finally {
       // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)

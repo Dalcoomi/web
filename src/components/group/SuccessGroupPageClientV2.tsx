@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { getGroups, getGroupInfo } from "@/services/groupService";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function SuccessGroupPageClientV2() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const addToast = useToastStore((state) => state.addToast);
   const [inviteCode, setInviteCode] = useState("");
   const [title, setTitle] = useState("");
   const [targetTeamId, setTargetTeamId] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export default function SuccessGroupPageClientV2() {
     if (!inviteCode) return;
     try {
       await navigator.clipboard.writeText(inviteCode);
-      alert("초대 코드가 복사되었습니다.");
+      addToast("success", "초대 코드가 복사되었습니다.");
     } catch (error) {
       console.error("복사 실패:", error);
     }
@@ -89,7 +91,7 @@ export default function SuccessGroupPageClientV2() {
       }
     } else {
       handleCopyCode();
-      alert("공유하기가 지원되지 않는 환경입니다. 초대 코드가 복사되었습니다.");
+      addToast("info", "공유하기가 지원되지 않아 초대 코드가 복사되었습니다.");
     }
   };
 
@@ -111,17 +113,17 @@ export default function SuccessGroupPageClientV2() {
         <Image
           src="/images/transaction/v2/생성_성공_체크.svg"
           alt="생성 완료"
-          width={48}
-          height={48}
+          width={60}
+          height={60}
           className="mb-4"
         />
-        <div className="flex flex-col items-center gap-[2px]">
+        <div className="flex flex-col items-center gap-0.5">
           <h1 className="text-title1 text-green-600">{title}</h1>
-          <h2 className="text-title1 text-gray-900">그룹 생성 완료!</h2>
+          <h2 className="text-title1 text-gray-900">그룹이 만들어졌어요!</h2>
         </div>
 
-        <div className="relative mt-[56px]">
-          <div className="w-[221px] h-[48px] bg-gray-30 border border-gray-100 rounded-[12px] flex items-center pl-4 pr-2">
+        <div className="relative mt-14">
+          <div className="w-55.25 h-12 bg-gray-30 border border-gray-100 rounded-xl flex items-center pl-4 pr-2">
             <span className="text-body1-regular text-gray-500 whitespace-nowrap">
               초대코드
             </span>
@@ -130,7 +132,7 @@ export default function SuccessGroupPageClientV2() {
             </span>
             <button
               onClick={handleCopyCode}
-              className="flex-shrink-0 cursor-pointer"
+              className="shrink-0 cursor-pointer"
             >
               <Image
                 src="/images/transaction/v2/복사_버튼.svg"
@@ -151,13 +153,13 @@ export default function SuccessGroupPageClientV2() {
       <div className="flex justify-center gap-2 px-5 pb-5">
         <button
           onClick={handleClose}
-          className="w-[120px] h-[56px] bg-gray-200 text-white rounded-xl text-subtitle cursor-pointer flex items-center justify-center"
+          className="w-30 h-14 bg-gray-200 text-white rounded-xl text-subtitle cursor-pointer flex items-center justify-center"
         >
           닫기
         </button>
         <button
           onClick={handleShare}
-          className="w-[207px] h-[56px] bg-gray-900 text-white rounded-xl text-subtitle cursor-pointer flex items-center justify-center"
+          className="w-51.75 h-14 bg-gray-900 text-white rounded-xl text-subtitle cursor-pointer flex items-center justify-center"
         >
           초대하기
         </button>

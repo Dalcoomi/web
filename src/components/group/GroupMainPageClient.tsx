@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getGroups, Group, updateGroupOrder } from "@/services/groupService";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
+import { useToastStore } from "@/stores/useToastStore";
 import {
   DndContext,
   closestCenter,
@@ -28,6 +29,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 export default function GroupPageClient() {
   const router = useRouter();
+  const addToast = useToastStore((state) => state.addToast);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -63,7 +65,7 @@ export default function GroupPageClient() {
         const response = await getGroups();
         setGroups(response.groups);
       } catch (error) {
-        alert(error);
+        addToast("error", String(error));
 
         setGroups([]);
       } finally {
@@ -124,7 +126,7 @@ export default function GroupPageClient() {
 
       setIsEditMode(false);
     } catch {
-      alert("그룹 순서 저장에 실패했습니다.");
+      addToast("error", "그룹 순서 저장에 실패했습니다.");
     }
   };
 

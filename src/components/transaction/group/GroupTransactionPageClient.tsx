@@ -14,11 +14,13 @@ import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
 import { getGroupInfo, GroupInfo } from "@/services/groupService";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function MyTransactionPageClient() {
   const router = useRouter();
   const params = useParams();
   const teamId = params.teamId as string;
+  const addToast = useToastStore((state) => state.addToast);
 
   // 스크롤 위치 복원을 위한 저장된 날짜 가져오기
   const getSavedDate = (): Date => {
@@ -53,7 +55,7 @@ export default function MyTransactionPageClient() {
 
   // 현재 적용된 필터 (API 호출용)
   const [currentMemberFilter, setCurrentMemberFilter] = useState<string | null>(
-    null
+    null,
   );
   const [currentCategoryFilter, setCurrentCategoryFilter] = useState<
     string | null
@@ -88,7 +90,9 @@ export default function MyTransactionPageClient() {
 
   // 페이지 진입 시 스크롤 위치 복원 플래그 설정
   useEffect(() => {
-    const savedScroll = sessionStorage.getItem(`group-transaction-scroll-${teamId}`);
+    const savedScroll = sessionStorage.getItem(
+      `group-transaction-scroll-${teamId}`,
+    );
     if (savedScroll) {
       shouldRestoreScroll.current = true;
       setIsRestoringScroll(true);
@@ -97,8 +101,15 @@ export default function MyTransactionPageClient() {
 
   // 데이터 로딩 완료 후 스크롤 복원
   useEffect(() => {
-    if (!isLoading && shouldRestoreScroll.current && scrollContainerRef.current && response.transactions.length > 0) {
-      const savedScroll = sessionStorage.getItem(`group-transaction-scroll-${teamId}`);
+    if (
+      !isLoading &&
+      shouldRestoreScroll.current &&
+      scrollContainerRef.current &&
+      response.transactions.length > 0
+    ) {
+      const savedScroll = sessionStorage.getItem(
+        `group-transaction-scroll-${teamId}`,
+      );
       if (savedScroll) {
         const scrollPos = parseInt(savedScroll, 10);
         // DOM 렌더링 완료 후 스크롤 복원
@@ -124,7 +135,10 @@ export default function MyTransactionPageClient() {
 
   // 날짜 변경 시 저장
   useEffect(() => {
-    sessionStorage.setItem(`group-transaction-date-${teamId}`, selectedDate.toISOString());
+    sessionStorage.setItem(
+      `group-transaction-date-${teamId}`,
+      selectedDate.toISOString(),
+    );
   }, [selectedDate, teamId]);
 
   // 날짜 변경 핸들러 (필터 유지)
@@ -185,10 +199,10 @@ export default function MyTransactionPageClient() {
           // 멤버와 카테고리 목록 갱신: 필터 없이 조회할 때만 전체 목록 추출
           if (!currentMemberFilter && !currentCategoryFilter) {
             const uniqueMembers = Array.from(
-              new Set(response.transactions.map((t) => t.creatorNickname))
+              new Set(response.transactions.map((t) => t.creatorNickname)),
             );
             const uniqueCategories = Array.from(
-              new Set(response.transactions.map((t) => t.categoryName))
+              new Set(response.transactions.map((t) => t.categoryName)),
             );
             setAllMembers(uniqueMembers);
             setAllCategories(uniqueCategories);
@@ -238,7 +252,7 @@ export default function MyTransactionPageClient() {
         const response = await getGroupInfo(teamId);
         setGroupInfo(response);
       } catch (error) {
-        alert(error || "그룹 정보를 불러올 수 없습니다.");
+        addToast("error", String(error) || "그룹 정보를 불러올 수 없습니다.");
         router.replace("/group");
       }
     }, 100);
@@ -412,7 +426,7 @@ export default function MyTransactionPageClient() {
   };
 
   const handleReceiptTransaction = () => {
-    alert("서비스 점검 중입니다.");
+    addToast("info", "서비스 점검 중입니다.");
     // router.push(`/transaction/group/${teamId}/add/receipt`);
   };
 
@@ -429,7 +443,7 @@ export default function MyTransactionPageClient() {
     const newDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth() - 1,
-      1
+      1,
     );
     handleDateChange(newDate);
   };
@@ -438,7 +452,7 @@ export default function MyTransactionPageClient() {
     const newDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth() + 1,
-      1
+      1,
     );
     handleDateChange(newDate);
   };
@@ -462,7 +476,7 @@ export default function MyTransactionPageClient() {
     if (scrollContainerRef.current) {
       sessionStorage.setItem(
         `group-transaction-scroll-${teamId}`,
-        scrollContainerRef.current.scrollTop.toString()
+        scrollContainerRef.current.scrollTop.toString(),
       );
     }
   };
@@ -500,7 +514,7 @@ export default function MyTransactionPageClient() {
               onClick={(e) => {
                 e.stopPropagation();
                 const input = e.currentTarget.querySelector(
-                  'input[type="month"]'
+                  'input[type="month"]',
                 ) as HTMLInputElement;
                 if (input) {
                   if (typeof input.showPicker === "function") {
@@ -524,7 +538,7 @@ export default function MyTransactionPageClient() {
               <input
                 type="month"
                 value={`${selectedDate.getFullYear()}-${String(
-                  selectedDate.getMonth() + 1
+                  selectedDate.getMonth() + 1,
                 ).padStart(2, "0")}`}
                 onChange={handleMonthInputChange}
                 className="absolute opacity-0"
@@ -736,7 +750,10 @@ export default function MyTransactionPageClient() {
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto bg-white"
-        style={{ opacity: isRestoringScroll ? 0 : 1, transition: 'opacity 0.15s' }}
+        style={{
+          opacity: isRestoringScroll ? 0 : 1,
+          transition: "opacity 0.15s",
+        }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
@@ -749,14 +766,14 @@ export default function MyTransactionPageClient() {
               filteredTransactions.map((transaction, index) => {
                 // 현재 거래의 날짜
                 const currentDate = formatDateToMMDD(
-                  transaction.transactionDate
+                  transaction.transactionDate,
                 );
 
                 // 이전 거래와 날짜가 같은지 확인
                 const prevDate =
                   index > 0
                     ? formatDateToMMDD(
-                        filteredTransactions[index - 1].transactionDate
+                        filteredTransactions[index - 1].transactionDate,
                       )
                     : null;
 
@@ -781,8 +798,16 @@ export default function MyTransactionPageClient() {
                 );
               })
             ) : (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-gray-500">거래 내역이 없습니다.</div>
+              <div className="flex flex-col items-center mt-16">
+                <Image
+                  src="/images/empty_캐릭터.svg"
+                  alt="데이터 없음"
+                  width={120}
+                  height={120}
+                />
+                <span className="text-subtitle text-gray-300">
+                  아직 작성된 기록이 없어요.
+                </span>
               </div>
             );
           })()
@@ -837,7 +862,7 @@ export default function MyTransactionPageClient() {
               ))}
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {/* 멤버 필터 드롭다운 (Portal) */}
@@ -886,7 +911,7 @@ export default function MyTransactionPageClient() {
               ))}
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </div>
   );

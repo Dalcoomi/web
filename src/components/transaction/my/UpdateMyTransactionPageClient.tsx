@@ -10,6 +10,7 @@ import {
 } from "@/services/transactionService";
 import { Transaction } from "@/services/transactionService";
 import { getMyCategories, Category } from "@/services/categoryService";
+import { useToastStore } from "@/stores/useToastStore";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -31,6 +32,7 @@ export default function UpdateMyTransactionPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const transactionId = searchParams.get("id");
+  const addToast = useToastStore((state) => state.addToast);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,7 +87,7 @@ export default function UpdateMyTransactionPageClient() {
         setCategories(categoryList);
         setIsLoadingCategories(false);
       } catch (error) {
-        alert(error || "거래 내역을 불러올 수 없습니다.");
+        addToast("error", String(error) || "거래 내역을 불러올 수 없습니다.");
 
         router.replace("/transaction/my");
       } finally {
@@ -152,7 +154,7 @@ export default function UpdateMyTransactionPageClient() {
         }
       }
     } catch (error) {
-      alert(error);
+      addToast("error", String(error));
     } finally {
       setIsLoadingCategories(false);
     }
@@ -205,7 +207,7 @@ export default function UpdateMyTransactionPageClient() {
       // 성공 시 개인 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      alert(error || "개인 거래 내역 수정 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "개인 거래 내역 수정 중 오류가 발생했습니다.");
       setIsSubmitting(false);
     }
   };
@@ -230,7 +232,7 @@ export default function UpdateMyTransactionPageClient() {
 
       router.push("/transaction/my");
     } catch (error) {
-      alert(error || "개인 거래 내역 삭제 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "개인 거래 내역 삭제 중 오류가 발생했습니다.");
     }
   };
 
