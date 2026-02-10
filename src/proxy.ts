@@ -1,8 +1,7 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;
   const path = request.nextUrl.pathname;
@@ -37,8 +36,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/transaction/my", request.url));
   }
 
-  // 🔥 메인 페이지: 리다이렉트 하지 않음 (무한 루프 방지)
+  // 🔥 메인 페이지(로그인 페이지): 로그인 상태면 거래 내역으로 리다이렉트
   if (isPublicPath) {
+    if (refreshToken && !request.nextUrl.search) {
+      return NextResponse.redirect(new URL("/transaction/my", request.url));
+    }
     return NextResponse.next();
   }
 

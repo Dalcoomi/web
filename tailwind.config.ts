@@ -1,5 +1,4 @@
 import type { Config } from "tailwindcss";
-import { BRAND_COLORS } from "./src/constants/brandColors";
 
 const config: Config = {
   content: [
@@ -75,7 +74,13 @@ const config: Config = {
           850: "#24272A",
           900: "#121315",
         },
-        brand: BRAND_COLORS,
+        brand: {
+          gray: "#787F85",
+          blue: "#4D83FF",
+          red: "#FF4B6C",
+          green: "#30D675",
+          yellow: "#FFC94B",
+        },
         red: {
           50: "#FFEDF0",
           100: "#FFDBE2",

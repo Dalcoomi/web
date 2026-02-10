@@ -1,5 +1,6 @@
 // services/groupService.ts
 import { get, post, put, del, patch } from "@/utils/apiClient";
+import { useToastStore } from "@/stores/useToastStore";
 
 // 🔥 중복 요청 방지를 위한 Promise 캐시
 let pendingGroupsRequest: Promise<GetMyTeamsResponse> | null = null;
@@ -71,7 +72,7 @@ export const getGroups = async (): Promise<GetMyTeamsResponse> => {
       const response = await get("/api/teams");
       return response;
     } catch (error) {
-      alert(error);
+      useToastStore.getState().addToast("error", String(error));
       return {
         groups: [],
       };
@@ -136,7 +137,7 @@ export const leaveGroup = async (
 
     await del(`/api/teams/leave`, requestBody);
   } catch (error) {
-    alert(error);
+    useToastStore.getState().addToast("error", String(error));
 
     throw error;
   }

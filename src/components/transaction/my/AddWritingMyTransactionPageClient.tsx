@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { addTransaction } from "@/services/transactionService";
 import { getMyCategories, Category } from "@/services/categoryService";
+import { useToastStore } from "@/stores/useToastStore";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -24,6 +25,7 @@ export default function AddWritingMyTransactionPageClient() {
   };
 
   const router = useRouter();
+  const addToast = useToastStore((state) => state.addToast);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
@@ -60,7 +62,7 @@ export default function AddWritingMyTransactionPageClient() {
           setCategoryId(defaultCategory.id);
         }
       } catch (error) {
-        alert(error);
+        addToast("error", String(error));
         setCategories([]);
       } finally {
         setIsLoadingCategories(false);
@@ -160,7 +162,7 @@ export default function AddWritingMyTransactionPageClient() {
       // 성공 시 개인 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      alert(error || "개인 거래 내역 저장 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "개인 거래 내역 저장 중 오류가 발생했습니다.");
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);

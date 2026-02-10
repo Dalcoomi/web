@@ -14,10 +14,12 @@ import {
   TransactionSearchCriteria,
 } from "@/services/transactionService";
 import { useMemberStore } from "@/stores/useMemberStore";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function MyTransactionPageClient() {
   const router = useRouter();
   const { fetchMember } = useMemberStore();
+  const addToast = useToastStore((state) => state.addToast);
 
   // 스크롤 위치 복원을 위한 저장된 날짜 가져오기
   const getSavedDate = (): Date => {
@@ -92,7 +94,12 @@ export default function MyTransactionPageClient() {
 
   // 데이터 로딩 완료 후 스크롤 복원
   useEffect(() => {
-    if (!isLoading && shouldRestoreScroll.current && scrollContainerRef.current && response.transactions.length > 0) {
+    if (
+      !isLoading &&
+      shouldRestoreScroll.current &&
+      scrollContainerRef.current &&
+      response.transactions.length > 0
+    ) {
       const savedScroll = sessionStorage.getItem("my-transaction-scroll");
       if (savedScroll) {
         const scrollPos = parseInt(savedScroll, 10);
@@ -164,7 +171,7 @@ export default function MyTransactionPageClient() {
           // 카테고리 목록 갱신: 필터 없이 조회할 때만 전체 카테고리 추출
           if (!currentCategoryFilter) {
             const uniqueCategories = Array.from(
-              new Set(response.transactions.map((t) => t.categoryName))
+              new Set(response.transactions.map((t) => t.categoryName)),
             );
             setAllCategories(uniqueCategories);
           }
@@ -302,7 +309,7 @@ export default function MyTransactionPageClient() {
   };
 
   const handleReceiptTransaction = () => {
-    alert("서비스 점검 중입니다.");
+    addToast("info", "서비스 점검 중입니다.");
     // router.push("/transaction/my/add/receipt");
   };
 
@@ -319,7 +326,7 @@ export default function MyTransactionPageClient() {
     const newDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth() - 1,
-      1
+      1,
     );
     handleDateChange(newDate);
   };
@@ -328,7 +335,7 @@ export default function MyTransactionPageClient() {
     const newDate = new Date(
       selectedDate.getFullYear(),
       selectedDate.getMonth() + 1,
-      1
+      1,
     );
     handleDateChange(newDate);
   };
@@ -381,7 +388,7 @@ export default function MyTransactionPageClient() {
               onClick={(e) => {
                 e.stopPropagation();
                 const input = e.currentTarget.querySelector(
-                  'input[type="month"]'
+                  'input[type="month"]',
                 ) as HTMLInputElement;
                 if (input) {
                   if (typeof input.showPicker === "function") {
@@ -405,7 +412,7 @@ export default function MyTransactionPageClient() {
               <input
                 type="month"
                 value={`${selectedDate.getFullYear()}-${String(
-                  selectedDate.getMonth() + 1
+                  selectedDate.getMonth() + 1,
                 ).padStart(2, "0")}`}
                 onChange={handleMonthInputChange}
                 className="absolute opacity-0"
@@ -585,7 +592,10 @@ export default function MyTransactionPageClient() {
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto bg-white"
-        style={{ opacity: isRestoringScroll ? 0 : 1, transition: 'opacity 0.15s' }}
+        style={{
+          opacity: isRestoringScroll ? 0 : 1,
+          transition: "opacity 0.15s",
+        }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
@@ -598,14 +608,14 @@ export default function MyTransactionPageClient() {
               filteredTransactions.map((transaction, index) => {
                 // 현재 거래의 날짜
                 const currentDate = formatDateToMMDD(
-                  transaction.transactionDate
+                  transaction.transactionDate,
                 );
 
                 // 이전 거래와 날짜가 같은지 확인
                 const prevDate =
                   index > 0
                     ? formatDateToMMDD(
-                        filteredTransactions[index - 1].transactionDate
+                        filteredTransactions[index - 1].transactionDate,
                       )
                     : null;
 
@@ -628,8 +638,16 @@ export default function MyTransactionPageClient() {
                 );
               })
             ) : (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-gray-500">거래 내역이 없습니다.</div>
+              <div className="flex flex-col items-center mt-16">
+                <Image
+                  src="/images/empty_캐릭터.svg"
+                  alt="데이터 없음"
+                  width={120}
+                  height={120}
+                />
+                <span className="text-subtitle text-gray-300">
+                  아직 작성된 기록이 없어요.
+                </span>
               </div>
             );
           })()
@@ -684,7 +702,7 @@ export default function MyTransactionPageClient() {
               ))}
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </div>
   );

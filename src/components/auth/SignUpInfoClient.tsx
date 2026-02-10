@@ -5,9 +5,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { signUp } from "@/services/memberService";
 import { getDeviceType } from "@/utils/deviceDetector";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function SignUpInfoClient() {
   const router = useRouter();
+  const addToast = useToastStore((state) => state.addToast);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -181,9 +183,7 @@ export default function SignUpInfoClient() {
     // 이름 유효성 검사
     if (!userInfo.name || userInfo.name.trim().length < 2) {
       setNameError(true);
-      setTimeout(() => {
-        alert("이름을 다시 입력해주세요. (2자 이상 30자 이하)");
-      }, 10);
+      addToast("error", "이름을 다시 입력해주세요. (2자 이상 30자 이하)");
       isValid = false;
       return;
     }
@@ -192,9 +192,7 @@ export default function SignUpInfoClient() {
     const nameRegex = /^[가-힣a-zA-Z\s]{2,30}$/;
     if (!nameRegex.test(userInfo.name.trim())) {
       setNameError(true);
-      setTimeout(() => {
-        alert("이름은 한글, 영문만 입력 가능합니다.");
-      }, 10);
+      addToast("error", "이름은 한글, 영문만 입력 가능합니다.");
       isValid = false;
       return;
     }
@@ -203,9 +201,7 @@ export default function SignUpInfoClient() {
     const isBirthdateValid = validateBirthdate(userInfo.birthdate);
     if (!isBirthdateValid) {
       setBirthdateError(true);
-      setTimeout(() => {
-        alert(birthdateErrorMessage);
-      }, 10);
+      addToast("error", birthdateErrorMessage);
       isValid = false;
       return;
     }
@@ -261,7 +257,7 @@ export default function SignUpInfoClient() {
       // 성공 페이지로 이동
       router.push("/sign-up/success");
     } catch (error) {
-      alert(error.message || "회원가입 처리 중 오류가 발생했습니다.");
+      addToast("error", error.message || "회원가입 처리 중 오류가 발생했습니다.");
 
       if (error.message.includes("약관 동의")) {
         router.push("/sign-up/step1");

@@ -1,6 +1,14 @@
 // app/api/auth/naver/callback/route.ts
 import { NextRequest } from "next/server";
 
+// 히스토리에 남지 않도록 location.replace를 사용하는 HTML 응답
+function redirectWithReplace(url: string) {
+  return new Response(
+    `<html><head><script>window.location.replace("${url}");</script></head><body></body></html>`,
+    { headers: { "Content-Type": "text/html; charset=utf-8" } }
+  );
+}
+
 export async function GET(request: NextRequest) {
   // URL에서 파라미터 추출
   const searchParams = request.nextUrl.searchParams;
@@ -15,11 +23,8 @@ export async function GET(request: NextRequest) {
         ? "사용자가 로그인을 취소했습니다."
         : "인증 코드가 없습니다.";
 
-    return Response.redirect(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(
-        errorMessage
-      )}`,
-      302
+    return redirectWithReplace(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(errorMessage)}`
     );
   }
 
@@ -68,24 +73,18 @@ export async function GET(request: NextRequest) {
       refreshToken: tokenData.refresh_token,
     };
 
-    // 3. 리다이렉트 응답
+    // 3. 리다이렉트 응답 (location.replace로 히스토리에 남지 않음)
     const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
-
-    // 프로필 연동인 경우 프로필 페이지로 리다이렉트
     const isProfileIntegration = state?.startsWith("profile_integration");
     const redirectPath = isProfileIntegration ? "/profile/update" : "/";
 
-    return Response.redirect(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`,
-      302
+    return redirectWithReplace(
+      `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`
     );
-  } catch (error) {
+  } catch {
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
-    return Response.redirect(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(
-        errorMessage
-      )}`,
-      302
+    return redirectWithReplace(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(errorMessage)}`
     );
   }
 }

@@ -7,6 +7,7 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import { useMemberStore } from "@/stores/useMemberStore";
+import { useToastStore } from "@/stores/useToastStore";
 import { useAuth } from "@/hooks/useAuth";
 import {
   withdrawMember,
@@ -25,6 +26,7 @@ import {
 export default function ProfilePageClient() {
   const router = useRouter();
   const { member, fetchMember } = useMemberStore();
+  const addToast = useToastStore((state) => state.addToast);
   const { logout, isLoggedIn } = useAuth();
 
   // 모달 상태들
@@ -125,7 +127,7 @@ export default function ProfilePageClient() {
         .getState()
         .updateMember({ aiLearningAgreement: newAgreement });
     } catch (error) {
-      alert(error || "AI 학습 동의 설정 변경 중 오류가 발생했습니다.");
+      addToast("error", error || "AI 학습 동의 설정 변경 중 오류가 발생했습니다.");
     } finally {
       setIsUpdatingAiAgreement(false);
     }
@@ -145,12 +147,12 @@ export default function ProfilePageClient() {
   // 탈퇴 방식 선택 후 그룹 조회 및 다음 단계로 이동
   const handleWithdrawTypeConfirm = async () => {
     if (!selectedWithdrawType) {
-      alert("탈퇴 방식을 선택해 주세요.");
+      addToast("error", "탈퇴 방식을 선택해 주세요.");
       return;
     }
 
     if (selectedWithdrawType === "DORMANT" && aiLearningConsent === null) {
-      alert("데이터 보존 동의 여부를 선택해 주세요.");
+      addToast("error", "데이터 보존 동의 여부를 선택해 주세요.");
       return;
     }
 
@@ -171,7 +173,7 @@ export default function ProfilePageClient() {
         setShowReasonModal(true);
       }
     } catch (error) {
-      alert("그룹 정보를 불러오는데 실패했습니다.");
+      addToast("error", "그룹 정보를 불러오는데 실패했습니다.");
       console.error("그룹 조회 실패:", error);
     } finally {
       setIsLoadingGroups(false);
@@ -233,12 +235,12 @@ export default function ProfilePageClient() {
   // 최종 회원탈퇴 실행
   const handleFinalWithdraw = async () => {
     if (!selectedReason) {
-      alert("탈퇴 사유를 선택해 주세요.");
+      addToast("error", "탈퇴 사유를 선택해 주세요.");
       return;
     }
 
     if (selectedReason === WithdrawalType.OTHER && !otherReason.trim()) {
-      alert("기타 사유를 입력해 주세요.");
+      addToast("error", "기타 사유를 입력해 주세요.");
       return;
     }
 
@@ -301,10 +303,10 @@ export default function ProfilePageClient() {
 
       const withdrawTypeText =
         selectedWithdrawType === "DORMANT" ? "휴면탈퇴" : "영구탈퇴";
-      alert(`${withdrawTypeText}가 완료되었습니다.`);
+      addToast("success", `${withdrawTypeText}가 완료되었습니다.`);
       logout(); // 로그아웃 처리
     } catch (error) {
-      alert(error || "회원탈퇴 중 오류가 발생했습니다.");
+      addToast("error", error || "회원탈퇴 중 오류가 발생했습니다.");
     } finally {
       setIsProcessing(false);
     }

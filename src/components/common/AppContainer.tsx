@@ -4,6 +4,7 @@
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import LandingContent from "@/components/landing/LandingContent";
+import ToastContainer from "@/components/ui/ToastContainer";
 
 interface AppContainerProps {
   children: ReactNode;
@@ -60,6 +61,7 @@ export default function AppContainer({ children }: AppContainerProps) {
               boxShadow: isDesktop ? 'none' : '0 10px 15px -3px rgb(0 0 0 / 0.1)'
             }}
           >
+            <ToastContainer />
             {children}
           </div>
         </div>

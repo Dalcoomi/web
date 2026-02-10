@@ -2,9 +2,11 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function LandingContent() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const addToast = useToastStore((state) => state.addToast);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -34,11 +36,7 @@ export default function LandingContent() {
   // PWA 설치 버튼 클릭 핸들러
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      alert(
-        "웹앱 설치는 브라우저의 설치 기능을 이용해주세요.\n" +
-          "PC: 주소창 우측의 설치 아이콘을 클릭하세요.\n" +
-          "모바일: 브라우저 메뉴에서 '홈 화면에 추가'를 선택하세요."
-      );
+      addToast("info", "웹앱 설치는 브라우저의 설치 기능을 이용해주세요.");
       return;
     }
 

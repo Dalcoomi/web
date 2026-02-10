@@ -35,9 +35,6 @@ import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
   turbopack: {},
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -56,7 +53,7 @@ export default withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.APP_ENV !== "prod",
-  buildExcludes: [/middleware-manifest\.json$/],
+  buildExcludes: [/middleware-manifest\.json$/, /proxy-manifest\.json$/],
   runtimeCaching: [
     {
       urlPattern: /^https?.*\.(png|jpg|jpeg|svg|gif|webp)$/,

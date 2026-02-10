@@ -6,10 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function SuccessGroupPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const addToast = useToastStore((state) => state.addToast);
   const [inviteCode, setInviteCode] = useState("");
 
   // URL에서 초대 코드 가져오기
@@ -26,15 +28,15 @@ export default function SuccessGroupPageClient() {
   // 초대 코드 복사하기
   const handleCopyInviteCode = async () => {
     if (!inviteCode) {
-      alert("초대 코드가 없습니다.");
+      addToast("error", "초대 코드가 없습니다.");
       return;
     }
 
     try {
       await navigator.clipboard.writeText(inviteCode);
-      alert("초대 코드가 복사되었습니다!");
+      addToast("success", "초대 코드가 복사되었습니다!");
     } catch (error) {
-      alert(error || "복사에 실패했습니다. 다시 시도해 주세요.");
+      addToast("error", String(error) || "복사에 실패했습니다. 다시 시도해 주세요.");
     }
   };
 

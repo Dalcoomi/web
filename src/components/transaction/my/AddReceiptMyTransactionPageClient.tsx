@@ -15,6 +15,7 @@ import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import { formatDateToDisplay, parseDisplayDate } from "@/utils/dateUtils";
+import { useToastStore } from "@/stores/useToastStore";
 
 interface ReceiptItem {
   id: number;
@@ -26,6 +27,7 @@ interface ReceiptItem {
 
 export default function AddReceiptMyTransactionPageClient() {
   const router = useRouter();
+  const addToast = useToastStore((state) => state.addToast);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,7 +64,7 @@ export default function AddReceiptMyTransactionPageClient() {
           setCategories(categoryList);
           hasLoadedRef.current = true; // 성공 시 완료 플래그 설정
         } catch (error) {
-          alert(error);
+          addToast("error", String(error));
           setCategories([]);
         } finally {
           setIsLoadingCategories(false);
@@ -105,13 +107,13 @@ export default function AddReceiptMyTransactionPageClient() {
 
     // 파일 타입 검증
     if (!file.type.startsWith("image/")) {
-      alert("이미지 파일만 업로드 가능합니다.");
+      addToast("error", "이미지 파일만 업로드 가능합니다.");
       return;
     }
 
     // 파일 크기 검증 (10MB 제한)
     if (file.size > 10 * 1024 * 1024) {
-      alert("파일 크기는 10MB 이하여야 합니다.");
+      addToast("error", "파일 크기는 10MB 이하여야 합니다.");
       return;
     }
 
@@ -137,7 +139,8 @@ export default function AddReceiptMyTransactionPageClient() {
       setReceiptItems(convertedItems);
       setHasUploadedReceipt(true);
     } catch (error) {
-      alert(
+      addToast(
+        "error",
         error instanceof Error
           ? error.message
           : "영수증 업로드 중 오류가 발생했습니다."
@@ -289,7 +292,7 @@ export default function AddReceiptMyTransactionPageClient() {
     const emptyAmountItems = receiptItems.filter((item) => !item.amount.trim());
 
     if (emptyAmountItems.length > 0) {
-      alert("모든 항목의 금액을 입력해주세요. 금액은 필수입니다.");
+      addToast("error", "모든 항목의 금액을 입력해주세요. 금액은 필수입니다.");
       return;
     }
 
@@ -299,7 +302,8 @@ export default function AddReceiptMyTransactionPageClient() {
     );
 
     if (invalidDateItems.length > 0) {
-      alert(
+      addToast(
+        "error",
         "유효하지 않은 날짜가 있습니다. 날짜를 확인해주세요. (YY/MM/DD 형식)"
       );
       return;
@@ -309,7 +313,7 @@ export default function AddReceiptMyTransactionPageClient() {
     const validItems = receiptItems.filter((item) => item.amount.trim());
 
     if (validItems.length === 0) {
-      alert("최소 하나의 항목을 입력해주세요.");
+      addToast("error", "최소 하나의 항목을 입력해주세요.");
       return;
     }
 
@@ -390,7 +394,7 @@ export default function AddReceiptMyTransactionPageClient() {
       // 성공 시 개인 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      alert(error || "영수증 등록 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "영수증 등록 중 오류가 발생했습니다.");
       setIsSubmitting(false);
     }
   };

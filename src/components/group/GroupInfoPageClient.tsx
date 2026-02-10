@@ -10,6 +10,7 @@ import {
   GroupInfo,
 } from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
+import { useToastStore } from "@/stores/useToastStore";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -19,6 +20,7 @@ export default function GroupInfoPageClient() {
   const params = useParams();
   const teamId = params.teamId as string;
   const { member: memberInfo, fetchMember } = useMemberStore();
+  const addToast = useToastStore((state) => state.addToast);
 
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -57,7 +59,7 @@ export default function GroupInfoPageClient() {
         setEditPurpose(response.purpose || "");
         setEditMemberLimit(response.memberLimit.toString());
       } catch (error) {
-        alert(error || "그룹 정보를 불러올 수 없습니다.");
+        addToast("error", String(error) || "그룹 정보를 불러올 수 없습니다.");
 
         router.replace("/group");
       }
@@ -72,15 +74,15 @@ export default function GroupInfoPageClient() {
   // 초대 코드 복사
   const handleCopyInviteCode = async () => {
     if (!groupInfo?.invitationCode) {
-      alert("초대 코드가 없습니다.");
+      addToast("error", "초대 코드가 없습니다.");
       return;
     }
 
     try {
       await navigator.clipboard.writeText(groupInfo.invitationCode);
-      alert("초대 코드가 복사되었습니다!");
+      addToast("success", "초대 코드가 복사되었습니다!");
     } catch (error) {
-      alert(error || "복사에 실패했습니다. 다시 시도해 주세요.");
+      addToast("error", String(error) || "복사에 실패했습니다. 다시 시도해 주세요.");
     }
   };
 
@@ -136,12 +138,12 @@ export default function GroupInfoPageClient() {
     if (!groupInfo) return;
 
     if (editTitle.trim().length === 0) {
-      alert("그룹명을 입력해주세요.");
+      addToast("error", "그룹명을 입력해주세요.");
       return;
     }
 
     if (editMemberLimit.trim() === "") {
-      alert("최대 인원을 입력해주세요.");
+      addToast("error", "최대 인원을 입력해주세요.");
       return;
     }
 
@@ -149,14 +151,15 @@ export default function GroupInfoPageClient() {
     const currentMemberCount = groupInfo.members.length;
 
     if (newMemberLimit < currentMemberCount) {
-      alert(
+      addToast(
+        "error",
         `최대 인원은 현재 인원(${currentMemberCount}명)보다 작을 수 없습니다.`
       );
       return;
     }
 
     if (newMemberLimit < 1 || newMemberLimit > 10) {
-      alert("최대 인원은 1명에서 10명 사이여야 합니다.");
+      addToast("error", "최대 인원은 1명에서 10명 사이여야 합니다.");
       return;
     }
 
@@ -176,7 +179,7 @@ export default function GroupInfoPageClient() {
       setEditMemberLimit(response.memberLimit.toString());
       setIsEditMode(false);
     } catch (error) {
-      alert(error || "그룹 정보 수정 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "그룹 정보 수정 중 오류가 발생했습니다.");
     } finally {
       setIsUpdating(false);
     }
@@ -207,7 +210,7 @@ export default function GroupInfoPageClient() {
       groupInfo &&
       groupInfo.members.length > 1
     ) {
-      alert("새 그룹장을 선택해 주세요.");
+      addToast("error", "새 그룹장을 선택해 주세요.");
       return;
     }
 
@@ -220,10 +223,10 @@ export default function GroupInfoPageClient() {
         await leaveGroup(teamId);
       }
 
-      alert("그룹을 떠났습니다.");
+      addToast("success", "그룹을 떠났습니다.");
       router.replace("/group");
     } catch (error) {
-      alert(error || "그룹 떠나기 중 오류가 발생했습니다.");
+      addToast("error", String(error) || "그룹 떠나기 중 오류가 발생했습니다.");
     }
   };
 

@@ -1,4 +1,4 @@
-name: Dalcoomi Frontend CD PROD
+name: Dalcoomi Frontend CD Prod
 
 on:
   workflow_run:

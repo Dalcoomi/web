@@ -7,11 +7,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
 import { connectSocial } from "@/services/memberService";
 import { getDeviceType } from "@/utils/deviceDetector";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const addToast = useToastStore((state) => state.addToast);
   const [isLoading, setIsLoading] = useState(false);
 
   // 소셜 연동 모달 상태
@@ -34,7 +36,7 @@ export default function LoginPageClient() {
     const error = searchParams.get("error");
 
     if (error) {
-      alert(`로그인 실패: ${decodeURIComponent(error)}`);
+      addToast("error", `로그인 실패: ${decodeURIComponent(error)}`);
       // URL 정리
       window.history.replaceState({}, "", window.location.pathname);
       return;
@@ -62,7 +64,7 @@ export default function LoginPageClient() {
 
     const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
 
-    window.location.href = kakaoAuthUrl;
+    window.location.replace(kakaoAuthUrl);
   };
 
   // 네이버 로그인 처리 함수
@@ -78,7 +80,7 @@ export default function LoginPageClient() {
     } catch (error) {
       sessionStorage.setItem("naverLoginState", STATE);
     }
-    window.location.href = naverAuthUrl;
+    window.location.replace(naverAuthUrl);
   };
 
   // 백엔드로 데이터 전송 (공통 함수)
@@ -121,9 +123,9 @@ export default function LoginPageClient() {
         // 현재 로그인 소셜 타입을 임시 저장 (회원 정보 로드 후 적용하기 위해)
         localStorage.setItem("currentLoginSocial", socialType);
 
-        // 이미지 깨짐 방지를 위해 hard navigation 사용
-        window.location.href = "/transaction/my";
-      } catch (error) {
+        // 이미지 깨짐 방지를 위해 hard navigation 사용, replace로 히스토리에 로그인 페이지 남기지 않음
+        window.location.replace("/transaction/my");
+      } catch (error: any) {
         if (
           error.message === "존재하지 않는 회원입니다." ||
           error.message.includes("404")
@@ -139,13 +141,11 @@ export default function LoginPageClient() {
 
           setShowSignUpModal(true);
         } else {
-          alert(`로그인 실패: ${error.message}`);
+          addToast("error", `로그인 실패: ${error.message}`);
         }
       }
     } catch (error) {
-      alert(
-        "로그인 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요."
-      );
+      addToast("error", "로그인 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -183,8 +183,8 @@ export default function LoginPageClient() {
 
       // 이미지 깨짐 방지를 위해 hard navigation 사용
       window.location.href = "/transaction/my";
-    } catch (error) {
-      alert(`소셜 연동 실패: ${error.message}`);
+    } catch (error: any) {
+      addToast("error", `소셜 연동 실패: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

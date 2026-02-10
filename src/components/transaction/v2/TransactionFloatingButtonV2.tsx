@@ -69,28 +69,10 @@ export default function TransactionFloatingButtonV2({
       {/* 플로팅 메뉴 */}
       {isOpen && (
         <div className="absolute right-4 bottom-24 bg-white border border-[#E0E0E0] rounded-[20px] shadow-lg flex flex-col z-50 min-w-max pt-4 pb-4 pl-4 pr-6 animate-slide-up pointer-events-auto">
-          {onWriteReceipt && (
-            <button
-              onClick={onWriteReceipt}
-              className="text-left text-gray-900 flex items-center gap-2 cursor-pointer mb-4 hover:opacity-70 transition-opacity"
-            >
-              <Image
-                src="/images/transaction/v2/영수증_작성_아이콘.svg"
-                alt="영수증"
-                width={20}
-                height={20}
-              />
-              <span className="text-body1-semibold whitespace-nowrap">
-                영수증으로 작성하기
-              </span>
-            </button>
-          )}
           {onWriteDirect && (
             <button
               onClick={onWriteDirect}
-              className={`text-left text-gray-900 flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity ${
-                showGroupButtons ? "mb-3" : ""
-              }`}
+              className="text-left text-gray-900 flex items-center gap-2 cursor-pointer mb-4 hover:opacity-70 transition-opacity"
             >
               <Image
                 src="/images/transaction/v2/직접_작성_아이콘.svg"
@@ -100,6 +82,24 @@ export default function TransactionFloatingButtonV2({
               />
               <span className="text-body1-semibold whitespace-nowrap">
                 직접 작성하기
+              </span>
+            </button>
+          )}
+          {onWriteReceipt && (
+            <button
+              onClick={onWriteReceipt}
+              className={`text-left text-gray-900 flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity ${
+                showGroupButtons ? "mb-3" : ""
+              }`}
+            >
+              <Image
+                src="/images/transaction/v2/영수증_작성_아이콘.svg"
+                alt="영수증"
+                width={20}
+                height={20}
+              />
+              <span className="text-body1-semibold whitespace-nowrap">
+                영수증으로 작성하기
               </span>
             </button>
           )}
