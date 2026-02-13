@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
 import TransactionHeader from "@/components/transaction/v2/TransactionHeader";
@@ -18,22 +18,41 @@ import {
   MonthlyTransactionsResponse,
   TransactionSearchCriteria,
 } from "@/services/transactionService";
-import { getGroupInfo, GroupInfo } from "@/services/groupService";
+import {
+  getGroupInfo,
+  GroupInfo,
+  getGroups,
+  Group,
+} from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
 import TransactionPageSkeleton from "@/components/skeletons/TransactionPageSkeleton";
 import Skeleton from "@/components/skeletons/Skeleton";
 import Sidebar from "@/components/ui/Sidebar";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import { BRAND_COLORS } from "@/constants/brandColors";
+
+let cachedGroupModalList: Group[] = [];
 
 export default function GroupTransactionPageClient() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const teamId = params.teamId as string;
+  const groupModalQuery = searchParams.get("groupModal");
   const { fetchMember } = useMemberStore();
   const addToast = useToastStore((state) => state.addToast);
+  const copyToClipboard = useCopyToClipboard();
 
   // 사이드바 상태
   const [showSidebar, setShowSidebar] = useState(false);
+  const [isGroupModalMounted, setIsGroupModalMounted] = useState(
+    groupModalQuery === "open",
+  );
+  const [showGroupModal, setShowGroupModal] = useState(
+    groupModalQuery === "open",
+  );
+  const [groups, setGroups] = useState<Group[]>(cachedGroupModalList);
 
   // 개인/그룹 토글 상태
   const [viewMode, setViewMode] = useState<ViewMode>("group");
@@ -76,10 +95,7 @@ export default function GroupTransactionPageClient() {
 
   // 필터링 관련 상태
   const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
-const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [currentCategoryFilter, setCurrentCategoryFilter] = useState<
-    string | null
-  >(null);
+  const [currentCategoryFilter] = useState<string | null>(null);
 
   // 중복 호출 방지를 위한 ref
   const lastRequestRef = useRef<string>("");
@@ -91,6 +107,7 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
   const [isRestoringScroll, setIsRestoringScroll] = useState(false);
 
   const hasFetchedMember = useRef(false);
+  const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!hasFetchedMember.current) {
@@ -98,6 +115,25 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
       hasFetchedMember.current = true;
     }
   }, [fetchMember]);
+
+  useEffect(() => {
+    if (groupModalQuery === "open") {
+      if (closeModalTimerRef.current) {
+        clearTimeout(closeModalTimerRef.current);
+        closeModalTimerRef.current = null;
+      }
+      setIsGroupModalMounted(true);
+      setShowGroupModal(true);
+    }
+  }, [groupModalQuery]);
+
+  useEffect(() => {
+    return () => {
+      if (closeModalTimerRef.current) {
+        clearTimeout(closeModalTimerRef.current);
+      }
+    };
+  }, []);
 
   // 그룹 정보 로딩
   useEffect(() => {
@@ -174,13 +210,14 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
       { threshold: [0, 1] },
     );
 
-    if (sentinelRef.current) {
-      observer.observe(sentinelRef.current);
+    const sentinelNode = sentinelRef.current;
+    if (sentinelNode) {
+      observer.observe(sentinelNode);
     }
 
     return () => {
-      if (sentinelRef.current) {
-        observer.unobserve(sentinelRef.current);
+      if (sentinelNode) {
+        observer.unobserve(sentinelNode);
       }
     };
   }, []);
@@ -234,13 +271,6 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
 
           const response = await getTransactions(criteria);
           setResponse(response);
-
-          if (!currentCategoryFilter) {
-            const uniqueCategories = Array.from(
-              new Set(response.transactions.map((t) => t.categoryName)),
-            );
-            setAllCategories(uniqueCategories);
-          }
         } catch (error) {
           if (error instanceof Error && error.message.includes("401")) {
             window.location.href = "/";
@@ -316,10 +346,6 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
     handleDateChange(newDate);
   };
 
-  const formatNumber = (num: number): string => {
-    return num.toLocaleString("ko-KR");
-  };
-
   // 스크롤 이벤트 핸들러
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -352,14 +378,18 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
     setShowCategoryFilter((prev) => !prev);
   };
 
-  // 지출이 더 많은 날인지 확인
-  const isExpenseDay = response.expense > response.income;
-  // 수입이 더 많은 날인지 확인
-  const isIncomeDay = response.income > response.expense;
-
   // 그룹 정보 이동
   const handleGroupInfo = () => {
-    router.push(`/group/info/${teamId}`);
+    if (!isGroupModalMounted) {
+      setIsGroupModalMounted(true);
+      requestAnimationFrame(() => setShowGroupModal(true));
+    } else {
+      setShowGroupModal(true);
+    }
+
+    router.replace(`/transaction/group/${teamId}?groupModal=open`, {
+      scroll: false,
+    });
   };
 
   const handleEnterInviteCode = () => {
@@ -369,6 +399,73 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
   const handleCreateGroup = () => {
     router.push("/group/create");
   };
+
+  const handleCloseGroupModal = () => {
+    setShowGroupModal(false);
+
+    if (closeModalTimerRef.current) {
+      clearTimeout(closeModalTimerRef.current);
+    }
+
+    closeModalTimerRef.current = setTimeout(() => {
+      setIsGroupModalMounted(false);
+      router.replace(`/transaction/group/${teamId}`, { scroll: false });
+      closeModalTimerRef.current = null;
+    }, 220);
+  };
+
+  const handleSelectGroup = (selectedTeamId: string) => {
+    if (selectedTeamId === teamId) return;
+    sessionStorage.removeItem(`group-transaction-date-${selectedTeamId}`);
+    sessionStorage.removeItem(`group-transaction-scroll-${selectedTeamId}`);
+    router.push(`/transaction/group/${selectedTeamId}?groupModal=open`);
+  };
+
+  const handleGroupInfoEdit = () => {
+    setShowGroupModal(false);
+    router.push(`/group/info/${teamId}`);
+  };
+
+  const handleGroupInvite = async () => {
+    try {
+      const info =
+        groupInfo && groupInfo.teamId === teamId
+          ? groupInfo
+          : await getGroupInfo(teamId);
+      if (!info?.invitationCode) {
+        addToast("error", "초대 코드를 불러올 수 없습니다.");
+        return;
+      }
+      await copyToClipboard(info.invitationCode, "초대 코드가 복사되었습니다.");
+      router.replace(`/transaction/group/${teamId}`, { scroll: false });
+    } catch (error) {
+      addToast("error", String(error) || "초대 코드 복사에 실패했습니다.");
+    }
+  };
+
+  const getLabelColor = (label?: string) => {
+    if (!label) return BRAND_COLORS.gray;
+    return label in BRAND_COLORS
+      ? BRAND_COLORS[label as keyof typeof BRAND_COLORS]
+      : BRAND_COLORS.gray;
+  };
+
+  useEffect(() => {
+    if (!isGroupModalMounted) return;
+
+    const fetchGroups = async () => {
+      try {
+        const response = await getGroups();
+        const nextGroups = response.groups || [];
+        cachedGroupModalList = nextGroups;
+        setGroups(nextGroups);
+      } catch {
+        addToast("error", "그룹 목록을 불러오지 못했습니다.");
+      }
+    };
+
+    fetchGroups();
+  }, [isGroupModalMounted, addToast]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-30 relative font-landing overflow-hidden">
@@ -466,7 +563,9 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
                             category={transaction.categoryName}
                             description={transaction.content}
                             creator={transaction.creatorNickname}
-                            creatorProfileImageUrl={transaction.creatorProfileImageUrl}
+                            creatorProfileImageUrl={
+                              transaction.creatorProfileImageUrl
+                            }
                             amount={
                               transaction.transactionType === "EXPENSE"
                                 ? -transaction.amount
@@ -500,29 +599,121 @@ const [allCategories, setAllCategories] = useState<string[]>([]);
         )}
       </div>
 
-      {isFloatingMenuOpen && (
-        <div
-          className="absolute inset-0 bg-black/20 z-40"
-          onClick={() => setIsFloatingMenuOpen(false)}
-        />
+      {isGroupModalMounted && (
+        <>
+          <div
+            className={`absolute inset-0 z-40 transition-opacity duration-200 ${
+              showGroupModal ? "bg-black/35 opacity-100" : "bg-black/35 opacity-0"
+            }`}
+            onClick={handleCloseGroupModal}
+          />
+          <div
+            className={`absolute left-0 right-0 bottom-0 z-50 bg-gray-30 rounded-t-[20px] rounded-b-none px-5 pt-3 pb-0 transition-transform duration-200 ease-out ${
+              showGroupModal ? "translate-y-0" : "translate-y-full"
+            }`}
+          >
+            <div className="w-16 h-[5px] bg-gray-100 rounded-[100px] mx-auto mb-5" />
+
+            <p className="text-body2-semibold text-gray-500 mt-2 mb-3">
+              그룹 목록
+            </p>
+
+            <div className="space-y-0 mb-3 max-h-[220px] overflow-y-auto">
+              {groups.map((group) => (
+                <button
+                  key={group.teamId}
+                  onClick={() => handleSelectGroup(group.teamId)}
+                  className="w-[335px] max-w-full h-[46px] px-2 py-3 flex items-center cursor-pointer"
+                >
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: getLabelColor(group.label) }}
+                    />
+                    <span className="text-body1-semibold text-gray-900 truncate">
+                      {group.title}
+                    </span>
+                  </div>
+                  {String(group.teamId) === String(teamId) && (
+                    <Image
+                      src="/images/transaction/v2/체크_블랙.svg"
+                      alt="선택됨"
+                      width={24}
+                      height={24}
+                      className="ml-4 flex-shrink-0"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                setShowGroupModal(false);
+                handleCreateGroup();
+              }}
+              className="w-[335px] max-w-full h-12 px-5 py-3 rounded-[100px] bg-gray-50 border border-gray-100 cursor-pointer mb-2 flex items-center justify-center gap-2"
+            >
+              <Image
+                src="/images/transaction/v2/증가_가능.svg"
+                alt="그룹 추가"
+                width={24}
+                height={24}
+              />
+              <span className="text-body1-semibold text-gray-900">
+                그룹 새로 만들기
+              </span>
+            </button>
+
+            <div className="-mx-5 py-4">
+              <div className="border-t border-gray-100" />
+            </div>
+
+            <div className="mt-2 space-y-0">
+              <button
+                onClick={handleGroupInfoEdit}
+                className="w-[335px] max-w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer"
+              >
+                그룹 정보 확인하기
+              </button>
+              <button
+                onClick={handleGroupInvite}
+                className="w-[335px] max-w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer mb-8"
+              >
+                그룹 초대하기
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
-      {/* 하단 개인/그룹 토글 및 플로팅 버튼 */}
-      <div className="absolute bottom-0 left-0 right-0 pb-6 px-4 flex items-end justify-between pointer-events-none">
-        <TransactionTypeToggle
-          viewMode={viewMode}
-          onToggle={handleViewModeToggle}
-        />
+      {!isGroupModalMounted && (
+        <>
+          {isFloatingMenuOpen && (
+            <div
+              className="absolute inset-0 bg-black/20 z-40"
+              onClick={() => setIsFloatingMenuOpen(false)}
+            />
+          )}
 
-        <TransactionFloatingButton
-          isOpen={isFloatingMenuOpen}
-          onToggle={handleFloatingButtonClick}
-          onWriteDirect={handleWritingTransaction}
-          onWriteReceipt={handleReceiptTransaction}
-          onEnterInviteCode={handleEnterInviteCode}
-          onCreateGroup={handleCreateGroup}
-        />
-      </div>
+          {/* 하단 개인/그룹 토글 및 플로팅 버튼 */}
+          <div className="absolute bottom-0 left-0 right-0 pb-6 px-4 flex items-end justify-between pointer-events-none">
+            <TransactionTypeToggle
+              viewMode={viewMode}
+              onToggle={handleViewModeToggle}
+            />
+
+            <TransactionFloatingButton
+              isOpen={isFloatingMenuOpen}
+              onToggle={handleFloatingButtonClick}
+              onWriteDirect={handleWritingTransaction}
+              onWriteReceipt={handleReceiptTransaction}
+              onEnterInviteCode={handleEnterInviteCode}
+              onCreateGroup={handleCreateGroup}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
