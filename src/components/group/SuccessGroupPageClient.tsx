@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { getGroups, getGroupInfo } from "@/services/groupService";
 import { useToastStore } from "@/stores/useToastStore";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 export default function SuccessGroupPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const addToast = useToastStore((state) => state.addToast);
+  const copyToClipboard = useCopyToClipboard();
   const [inviteCode, setInviteCode] = useState("");
   const [title, setTitle] = useState("");
   const [targetTeamId, setTargetTeamId] = useState<string | null>(null);
@@ -70,33 +72,7 @@ export default function SuccessGroupPageClient() {
   // 초대 코드 복사하기
   const handleCopyCode = async () => {
     if (!inviteCode) return;
-    try {
-      // 최신 Clipboard API 시도
-      await navigator.clipboard.writeText(inviteCode);
-      addToast("success", "초대 코드가 복사되었습니다.");
-    } catch (err) {
-      // Clipboard API 실패 시 fallback (Safari 등)
-      const textArea = document.createElement("textarea");
-      textArea.value = inviteCode;
-      // 화면에 보이지 않게 처리
-      textArea.style.position = "fixed";
-      textArea.style.top = "-9999px";
-      textArea.style.left = "-9999px";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        const successful = document.execCommand("copy");
-        if (successful) {
-          addToast("success", "초대 코드가 복사되었습니다.");
-        } else {
-          addToast("error", "복사에 실패했습니다. 다시 시도해 주세요.");
-        }
-      } catch (error) {
-        addToast("error", "복사에 실패했습니다. 다시 시도해 주세요.");
-      }
-      document.body.removeChild(textArea);
-    }
+    await copyToClipboard(inviteCode, "초대 코드가 복사되었습니다.");
   };
 
   // 공유하기

@@ -11,6 +11,7 @@ import {
 } from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import Image from "next/image";
 import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
@@ -21,6 +22,7 @@ export default function GroupInfoPageClient() {
   const teamId = params.teamId as string;
   const { member: memberInfo, fetchMember } = useMemberStore();
   const addToast = useToastStore((state) => state.addToast);
+  const copyToClipboard = useCopyToClipboard();
 
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -69,7 +71,7 @@ export default function GroupInfoPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [teamId, router]);
+  }, [teamId, router, addToast]);
 
   // 초대 코드 복사
   const handleCopyInviteCode = async () => {
@@ -78,36 +80,7 @@ export default function GroupInfoPageClient() {
       return;
     }
 
-    try {
-      // 최신 Clipboard API 시도
-      await navigator.clipboard.writeText(groupInfo.invitationCode);
-      addToast("success", "초대 코드가 복사되었습니다!");
-    } catch (err) {
-      // Clipboard API 실패 시 fallback (Safari 등)
-      const textArea = document.createElement("textarea");
-      textArea.value = groupInfo.invitationCode;
-      // 화면에 보이지 않게 처리
-      textArea.style.position = "fixed";
-      textArea.style.top = "-9999px";
-      textArea.style.left = "-9999px";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        const successful = document.execCommand("copy");
-        if (successful) {
-          addToast("success", "초대 코드가 복사되었습니다!");
-        } else {
-          addToast("error", "복사에 실패했습니다. 다시 시도해 주세요.");
-        }
-      } catch (error) {
-        addToast(
-          "error",
-          String(error) || "복사에 실패했습니다. 다시 시도해 주세요.",
-        );
-      }
-      document.body.removeChild(textArea);
-    }
+    await copyToClipboard(groupInfo.invitationCode, "초대 코드가 복사되었습니다!");
   };
 
   // 수정 모드 진입

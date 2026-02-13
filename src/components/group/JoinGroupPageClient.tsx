@@ -24,6 +24,16 @@ export default function JoinGroupPageClient() {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const normalized = pastedText
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toUpperCase()
+      .slice(0, 8);
+    setInviteCode(normalized);
+  };
+
   const handleSubmit = async () => {
     if (inviteCode.length !== 8 || isSubmitting) return;
 
@@ -36,10 +46,14 @@ export default function JoinGroupPageClient() {
       router.push(
         `/group/join/success?teamId=${teamId}&title=${encodeURIComponent(title)}`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "그룹 참여에 실패했습니다. 코드를 다시 확인해주세요.";
       addToast(
         "error",
-        error.message || "그룹 참여에 실패했습니다. 코드를 다시 확인해주세요.",
+        errorMessage,
       );
       setIsSubmitting(false);
     }
@@ -108,6 +122,7 @@ export default function JoinGroupPageClient() {
             type="text"
             value={inviteCode}
             onChange={handleInputChange}
+            onPaste={handlePaste}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             maxLength={8}
