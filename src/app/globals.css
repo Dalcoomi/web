@@ -261,6 +261,27 @@ textarea {
   transform: scale(1.02);
 }
 
+/* 거래 내역 아이템 gradient 호버 효과 (Safari 호환) */
+.transaction-item-hover {
+  position: relative;
+  isolation: isolate;
+}
+
+.transaction-item-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at bottom, #FFF7F8 0%, #F5F8FF 70%, #FFFFFF 100%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.transaction-item-hover:hover::before {
+  opacity: 1;
+}
+
 /* 스켈레톤 shimmer 효과 */
 @keyframes shimmer {
   0% {

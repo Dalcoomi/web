@@ -1,14 +1,14 @@
 import React from "react";
 
-interface TransactionTotalV2Props {
+interface TransactionTotalProps {
   total: number;
   isSticky: boolean;
 }
 
-export default function TransactionTotalV2({
+export default function TransactionTotal({
   total,
   isSticky,
-}: TransactionTotalV2Props) {
+}: TransactionTotalProps) {
   const formatNumber = (num: number): string => {
     return num.toLocaleString("ko-KR");
   };

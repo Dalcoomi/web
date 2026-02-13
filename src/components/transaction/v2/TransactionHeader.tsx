@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-interface TransactionHeaderV2Props {
+interface TransactionHeaderProps {
   title: string;
   onPrevMonth: () => void;
   onNextMonth: () => void;
@@ -10,13 +10,13 @@ interface TransactionHeaderV2Props {
   className?: string;
 }
 
-export default function TransactionHeaderV2({
+export default function TransactionHeader({
   title,
   onPrevMonth,
   onNextMonth,
   onMenuClick,
   className = "",
-}: TransactionHeaderV2Props) {
+}: TransactionHeaderProps) {
   return (
     <div
       className={`flex items-center justify-start px-[24px] py-4 bg-transparent relative z-10 ${className}`}

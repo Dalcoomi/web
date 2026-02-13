@@ -1,9 +1,9 @@
 import React from "react";
 import Image from "next/image";
 import Skeleton from "./Skeleton";
-import TransactionFilterV2 from "@/components/transaction/v2/TransactionFilterV2";
+import TransactionFilter from "@/components/transaction/v2/TransactionFilter";
 
-// 거래내역 아이템 스켈레톤 - 실제 MyTransactionItemV2/GroupTransactionItemV2와 동일한 레이아웃
+// 거래내역 아이템 스켈레톤 - 실제 MyTransactionItem/GroupTransactionItem와 동일한 레이아웃
 function TransactionItemSkeleton() {
   return (
     <div className="flex items-baseline justify-between py-3 px-5 bg-white">
@@ -26,7 +26,7 @@ function TransactionItemSkeleton() {
 export default function TransactionPageSkeleton() {
   return (
     <>
-      {/* 요약 카드 - TransactionSummaryV2와 동일한 레이아웃 */}
+      {/* 요약 카드 - TransactionSummary와 동일한 레이아웃 */}
       <div className="px-5 pt-1 bg-gray-30">
         <div
           className="rounded-t-[18px] px-4 pt-3 flex flex-col items-center relative z-40"
@@ -61,7 +61,7 @@ export default function TransactionPageSkeleton() {
         </div>
       </div>
 
-      {/* 총액 카드 - TransactionTotalV2와 동일한 레이아웃 */}
+      {/* 총액 카드 - TransactionTotal와 동일한 레이아웃 */}
       <div className="sticky top-0 z-30 px-5 pb-3 bg-gray-30 -mt-px">
         <div className="bg-white pt-5 px-4 pb-4 rounded-b-[18px] shadow-xs">
           <div className="w-full bg-gray-50 rounded-xl py-3 px-4 flex items-center justify-between">
@@ -75,7 +75,7 @@ export default function TransactionPageSkeleton() {
 
       {/* 거래 내역 목록 영역 */}
       <div className="bg-white flex-1">
-        <TransactionFilterV2
+        <TransactionFilter
           showCategoryFilter={false}
           onCategoryToggle={() => {}}
         />

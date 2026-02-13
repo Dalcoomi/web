@@ -2,19 +2,19 @@ import React from "react";
 import Image from "next/image";
 import { BRAND_COLORS } from "@/constants/brandColors";
 
-interface GroupNameCardV2Props {
+interface GroupNameCardProps {
   groupName?: string;
   label?: string;
   profileImageUrl?: string | null;
   onInfoClick: () => void;
 }
 
-export default function GroupNameCardV2({
+export default function GroupNameCard({
   groupName,
   label,
   profileImageUrl,
   onInfoClick,
-}: GroupNameCardV2Props) {
+}: GroupNameCardProps) {
   // 라벨에 해당하는 색상 가져오기 (기본값: gray)
   const labelColor =
     label && label in BRAND_COLORS

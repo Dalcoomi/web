@@ -10,10 +10,21 @@ const ICON_MAP: Record<ToastType, string> = {
   info: "/images/transaction/v2/토스트_정보.svg",
 };
 
-function ToastItem({ toast }: { toast: Toast }) {
+function ToastItem({
+  toast,
+  index,
+  total,
+}: {
+  toast: Toast;
+  index: number;
+  total: number;
+}) {
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const removeToast = useToastStore((state) => state.removeToast);
+
+  // 역순 인덱스 (0이 가장 최신)
+  const reverseIndex = total - 1 - index;
 
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true));
@@ -32,14 +43,21 @@ function ToastItem({ toast }: { toast: Toast }) {
     };
   }, [toast.id, removeToast]);
 
+  // 스택 효과를 위한 스타일 계산
+  const offset = reverseIndex * 12; // 겹치는 간격
+  const scale = 1 - reverseIndex * 0.05; // 뒤로 갈수록 작아짐
+  const isHidden = reverseIndex > 2; // 3개까지만 보이게 처리
+
   return (
     <div
-      className="flex items-center min-h-12 bg-white rounded-full pl-3 pr-5 py-3 shadow-lg transition-transform duration-300 ease-out whitespace-nowrap"
+      className="col-start-1 row-start-1 flex items-center min-h-12 bg-white rounded-full pl-3 pr-5 py-3 shadow-lg transition-all duration-300 ease-out whitespace-nowrap pointer-events-auto"
       style={{
+        zIndex: total - reverseIndex,
         transform:
-          isVisible && !isLeaving ? "translateY(0)" : "translateY(-100%)",
-        opacity: isVisible && !isLeaving ? 1 : 0,
-        transition: "transform 300ms ease-out, opacity 300ms ease-out",
+          isVisible && !isLeaving
+            ? `translateY(${offset}px) scale(${scale})`
+            : `translateY(-20px) scale(0.9)`,
+        opacity: isVisible && !isLeaving && !isHidden ? 1 : 0,
       }}
     >
       <Image
@@ -62,9 +80,14 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="absolute top-12 left-1/2 -translate-x-1/2 z-9999 flex flex-col items-center gap-2">
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} />
+    <div className="absolute top-12 left-1/2 -translate-x-1/2 z-9999 grid place-items-center pointer-events-none">
+      {toasts.map((toast, index) => (
+        <ToastItem
+          key={toast.id}
+          toast={toast}
+          index={index}
+          total={toasts.length}
+        />
       ))}
     </div>
   );

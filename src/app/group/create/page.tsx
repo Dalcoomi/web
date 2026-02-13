@@ -1,7 +1,7 @@
 // app/group/create/page.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import CreateGroupPageClientV2 from "@/components/group/CreateGroupPageClientV2";
+import CreateGroupPageClient from "@/components/group/CreateGroupPageClient";
 
 export const metadata = {
   title: "그룹 생성",
@@ -17,5 +17,5 @@ export default async function CreateGroupPage() {
     redirect("/");
   }
 
-  return <CreateGroupPageClientV2 />;
+  return <CreateGroupPageClient />;
 }

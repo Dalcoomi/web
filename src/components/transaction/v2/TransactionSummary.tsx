@@ -1,17 +1,17 @@
 import React from "react";
 import Image from "next/image";
 
-interface TransactionSummaryV2Props {
+interface TransactionSummaryProps {
   income: number;
   expense: number;
   showCharacter?: boolean;
 }
 
-export default function TransactionSummaryV2({
+export default function TransactionSummary({
   income,
   expense,
   showCharacter = true,
-}: TransactionSummaryV2Props) {
+}: TransactionSummaryProps) {
   const isExpenseDay = expense > income;
   const isIncomeDay = income > expense;
 

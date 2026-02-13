@@ -79,10 +79,34 @@ export default function GroupInfoPageClient() {
     }
 
     try {
+      // 최신 Clipboard API 시도
       await navigator.clipboard.writeText(groupInfo.invitationCode);
       addToast("success", "초대 코드가 복사되었습니다!");
-    } catch (error) {
-      addToast("error", String(error) || "복사에 실패했습니다. 다시 시도해 주세요.");
+    } catch (err) {
+      // Clipboard API 실패 시 fallback (Safari 등)
+      const textArea = document.createElement("textarea");
+      textArea.value = groupInfo.invitationCode;
+      // 화면에 보이지 않게 처리
+      textArea.style.position = "fixed";
+      textArea.style.top = "-9999px";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand("copy");
+        if (successful) {
+          addToast("success", "초대 코드가 복사되었습니다!");
+        } else {
+          addToast("error", "복사에 실패했습니다. 다시 시도해 주세요.");
+        }
+      } catch (error) {
+        addToast(
+          "error",
+          String(error) || "복사에 실패했습니다. 다시 시도해 주세요.",
+        );
+      }
+      document.body.removeChild(textArea);
     }
   };
 
@@ -153,7 +177,7 @@ export default function GroupInfoPageClient() {
     if (newMemberLimit < currentMemberCount) {
       addToast(
         "error",
-        `최대 인원은 현재 인원(${currentMemberCount}명)보다 작을 수 없습니다.`
+        `최대 인원은 현재 인원(${currentMemberCount}명)보다 작을 수 없습니다.`,
       );
       return;
     }
@@ -179,7 +203,10 @@ export default function GroupInfoPageClient() {
       setEditMemberLimit(response.memberLimit.toString());
       setIsEditMode(false);
     } catch (error) {
-      addToast("error", String(error) || "그룹 정보 수정 중 오류가 발생했습니다.");
+      addToast(
+        "error",
+        String(error) || "그룹 정보 수정 중 오류가 발생했습니다.",
+      );
     } finally {
       setIsUpdating(false);
     }
@@ -263,7 +290,7 @@ export default function GroupInfoPageClient() {
   const getNewLeaderCandidates = () => {
     return (
       groupInfo?.members.filter(
-        (member) => member.nickname !== groupInfo.leaderNickname
+        (member) => member.nickname !== groupInfo.leaderNickname,
       ) || []
     );
   };

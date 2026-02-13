@@ -1,16 +1,18 @@
-// components/transaction/GroupTransactionItem.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface GroupTransactionItemProps {
   teamId: string;
-  date: string; // "MM.DD" 형식
+  date: string; // "MM.DD" 형식 (없으면 빈 문자열)
   category: string;
   description: string;
   creator: string;
+  creatorProfileImageUrl?: string | null;
   amount: number; // 양수는 수입, 음수는 지출
-  transactionId: string; // 거래 ID 추가
+  transactionId: string;
+  showSeparator?: boolean;
 }
 
 export default function GroupTransactionItem({
@@ -19,8 +21,10 @@ export default function GroupTransactionItem({
   category,
   description,
   creator,
+  creatorProfileImageUrl,
   amount,
   transactionId,
+  showSeparator = false,
 }: GroupTransactionItemProps) {
   const router = useRouter();
 
@@ -30,32 +34,11 @@ export default function GroupTransactionItem({
 
   const isIncome = amount >= 0;
 
-  // 텍스트 길이에 따른 자르기 함수
-  const truncateText = (text: string, maxLength: number): string => {
-    if (text == null) text = "";
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + "..";
-  };
-
-  // 금액 포맷팅 및 자르기 (1억자리까지 풀 표시)
+  // 금액 포맷팅
   const formatAmount = (): string => {
     const absAmount = Math.abs(amount);
     const sign = isIncome ? "+" : "-";
-    const formattedAmount = `${sign}${formatNumber(absAmount)}`;
-
-    // 1억 (100,000,000) 이하면 풀로 표시
-    if (absAmount <= 100000000) {
-      return formattedAmount;
-    }
-
-    // 1억 초과면 1억자리까지만 표시하고 ... 추가
-    // "+100,000,000" = 12자까지는 허용
-    if (formattedAmount.length <= 12) {
-      return formattedAmount;
-    }
-
-    // 13자 이상이면 10자까지만 표시하고 ... 추가
-    return formattedAmount.substring(0, 12) + "..";
+    return `${sign}${formatNumber(absAmount)}원`;
   };
 
   // 클릭 핸들러 - 수정 페이지로 이동
@@ -67,45 +50,50 @@ export default function GroupTransactionItem({
 
   return (
     <div
-      className="flex items-center py-2 px-4 bg-white cursor-pointer hover:bg-gray-100 transition-colors"
+      className={`flex items-start justify-between py-3 px-5 bg-white cursor-pointer transaction-item-hover ${
+        showSeparator ? "border-t border-gray-50" : ""
+      }`}
       onClick={handleClick}
     >
-      {/* 날짜 (있을 때만 표시) */}
-      <div className="w-11 text-xs">{date}</div>
+      {/* 좌측: 날짜 */}
+      <div className="w-12 shrink-0 text-left pt-0.5">
+        <span className="text-body2-semibold text-gray-400">{date}</span>
+      </div>
 
-      {/* 카테고리 (4글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate max-w-[65px]">
-        <span className="block w-full" title={category}>
-          {truncateText(category, 4)}
+      {/* 중앙: 내용 + 카테고리 */}
+      <div className="flex-1 flex flex-col gap-0.5 overflow-hidden pl-4 pr-2">
+        <span className="text-body1-semibold text-gray-900 truncate">
+          {description || "(내용 없음)"}
+        </span>
+        <span className="text-body2-regular text-gray-600 truncate">
+          {category}
         </span>
       </div>
 
-      {/* 내용 (7글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate max-w-[130px]">
-        <span className="block w-full" title={description}>
-          {truncateText(description, 7)}
-        </span>
-      </div>
-
-      {/* 작성자 (4글자까지, 넘으면 ...) */}
-      <div className="flex-1 text-left text-sm truncate max-w-[40px]">
-        <span className="block w-full" title={creator}>
-          {truncateText(creator, 4)}
-        </span>
-      </div>
-
-      {/* 금액 (1억자리까지, 넘으면 ...) */}
-      <div
-        className={`flex-1 text-right text-sm font-medium truncate ${
-          isIncome ? "text-[#0E7AFF]" : "text-[#FF005E]"
-        }`}
-      >
+      {/* 우측: 금액 + 작성자 */}
+      <div className="shrink-0 flex flex-col items-end gap-0.5">
         <span
-          className="block w-full"
-          title={`${isIncome ? "+" : "-"}${formatNumber(Math.abs(amount))}`}
+          className={`text-body1-semibold ${
+            isIncome ? "text-blue-600" : "text-red-600"
+          }`}
         >
           {formatAmount()}
         </span>
+        <div className="flex items-center gap-1">
+          <span className="text-body2-regular text-gray-600">{creator}</span>
+          {creatorProfileImageUrl ? (
+            <Image
+              src={creatorProfileImageUrl}
+              alt={creator}
+              width={20}
+              height={20}
+              className="rounded-full object-cover"
+              unoptimized
+            />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-gray-200" />
+          )}
+        </div>
       </div>
     </div>
   );

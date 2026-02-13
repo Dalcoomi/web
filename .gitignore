@@ -56,3 +56,10 @@ logs
 # Claude Code configuration
 CLAUDE.md
 .claude
+
+# Gemini
+GEMINI.md
+.gemini/
+
+# ai cowork
+/ai-context

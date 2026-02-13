@@ -4,17 +4,17 @@ import Image from "next/image";
 
 export type ViewMode = "personal" | "group";
 
-interface TransactionTypeToggleV2Props {
+interface TransactionTypeToggleProps {
   viewMode: ViewMode;
   onToggle: (mode: ViewMode) => void;
   className?: string;
 }
 
-export default function TransactionTypeToggleV2({
+export default function TransactionTypeToggle({
   viewMode,
   onToggle,
   className = "",
-}: TransactionTypeToggleV2Props) {
+}: TransactionTypeToggleProps) {
   return (
     <div
       className={`bg-white/80 backdrop-blur-md rounded-full flex items-center shadow-lg p-1 pointer-events-auto z-30 relative ${className}`}
