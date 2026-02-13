@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import BottomButton from "@/components/ui/BottomButton";
 
-export default function JoinSuccessPageClientV2() {
+export default function JoinSuccessPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const teamId = searchParams.get("teamId");

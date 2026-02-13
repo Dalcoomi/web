@@ -12,6 +12,7 @@ export interface Transaction {
   transactionDate: string;
   transactionType: "INCOME" | "EXPENSE";
   creatorNickname: string;
+  creatorProfileImageUrl?: string | null;
   categoryId: number;
   categoryName: string;
   iconUrl: string;

@@ -3,15 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import TransactionHeaderV2 from "@/components/transaction/v2/TransactionHeaderV2";
-import TransactionTypeToggleV2, {
+import TransactionHeader from "@/components/transaction/v2/TransactionHeader";
+import TransactionTypeToggle, {
   ViewMode,
-} from "@/components/transaction/v2/TransactionTypeToggleV2";
-import TransactionFloatingButtonV2 from "@/components/transaction/v2/TransactionFloatingButtonV2";
+} from "@/components/transaction/v2/TransactionTypeToggle";
+import TransactionFloatingButton from "@/components/transaction/v2/TransactionFloatingButton";
 import { useMemberStore } from "@/stores/useMemberStore";
-import SidebarV2 from "@/components/ui/SidebarV2";
+import Sidebar from "@/components/ui/Sidebar";
 
-export default function GroupTransactionEmptyPageClientV2() {
+export default function GroupTransactionEmptyPageClient() {
   const router = useRouter();
   const { fetchMember } = useMemberStore();
 
@@ -88,14 +88,14 @@ export default function GroupTransactionEmptyPageClientV2() {
   return (
     <div className="flex flex-col h-screen bg-gray-30 relative font-landing overflow-hidden">
       {/* 상단바 */}
-      <TransactionHeaderV2
+      <TransactionHeader
         title={formatDateForDisplay(selectedDate)}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         onMenuClick={handleMenuClick}
       />
 
-      <SidebarV2 isOpen={showSidebar} onClose={() => setShowSidebar(false)} />
+      <Sidebar isOpen={showSidebar} onClose={() => setShowSidebar(false)} />
 
       {/* 메인 컨텐츠 영역 - 팁 섹션(~142px) + 간격(120px) = bottom 약 350px */}
       <div
@@ -122,7 +122,7 @@ export default function GroupTransactionEmptyPageClientV2() {
       )}
 
       {/* 플로팅 버튼 위 안내 섹션 */}
-      {!isFloatingMenuOpen && (
+      {!isFloatingMenuOpen && !showSidebar && (
         <div
           className="absolute bottom-22 flex flex-col items-start pointer-events-none z-50"
           style={{ right: "45.65px" }}
@@ -145,12 +145,12 @@ export default function GroupTransactionEmptyPageClientV2() {
 
       {/* 하단 개인/그룹 토글 및 플로팅 버튼 */}
       <div className="absolute bottom-0 left-0 right-0 pb-6 px-4 flex items-end justify-between pointer-events-none">
-        <TransactionTypeToggleV2
+        <TransactionTypeToggle
           viewMode={viewMode}
           onToggle={handleViewModeToggle}
         />
 
-        <TransactionFloatingButtonV2
+        <TransactionFloatingButton
           isOpen={isFloatingMenuOpen}
           onToggle={handleFloatingButtonClick}
           onEnterInviteCode={handleEnterInviteCode}

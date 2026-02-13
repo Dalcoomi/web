@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-interface TransactionFloatingButtonV2Props {
+interface TransactionFloatingButtonProps {
   isOpen: boolean;
   onToggle: () => void;
   onWriteDirect?: () => void;
@@ -12,7 +12,7 @@ interface TransactionFloatingButtonV2Props {
   className?: string;
 }
 
-export default function TransactionFloatingButtonV2({
+export default function TransactionFloatingButton({
   isOpen,
   onToggle,
   onWriteDirect,
@@ -20,7 +20,7 @@ export default function TransactionFloatingButtonV2({
   onEnterInviteCode,
   onCreateGroup,
   className = "",
-}: TransactionFloatingButtonV2Props) {
+}: TransactionFloatingButtonProps) {
   const showWriteButtons = onWriteDirect || onWriteReceipt;
   const showGroupButtons = onEnterInviteCode || onCreateGroup;
 

@@ -1,194 +1,134 @@
-// components/group/JoinGroupPageClient.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { joinGroup } from "@/services/groupService";
-import TopBar from "@/components/ui/TopBar";
-import BottomBar from "@/components/ui/BottomBar";
+import BottomButton from "@/components/ui/BottomButton";
+import { useToastStore } from "@/stores/useToastStore";
 
 export default function JoinGroupPageClient() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(false);
-
-  // 폼 상태
+  const addToast = useToastStore((state) => state.addToast);
   const [inviteCode, setInviteCode] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
-  // 에러 상태
-  const [inviteCodeError, setInviteCodeError] = useState(false);
-  const [inviteCodeTouched, setInviteCodeTouched] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // 폼 유효성 검사
-  useEffect(() => {
-    // 초대 코드가 8자리인지 확인
-    setIsFormValid(inviteCode.trim().length === 8);
-  }, [inviteCode]);
-
-  // 초대 코드 입력 핸들러
-  const handleInviteCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // 영문자와 숫자만 허용, 대문자로 변환
-    const value = e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-
-    // 최대 8자리까지만 허용
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove non-alphanumeric characters and force uppercase
+    const value = e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     if (value.length <= 8) {
       setInviteCode(value);
-      // 입력하는 동안 에러 상태 해제
-      if (value.length > 0) {
-        setInviteCodeError(false);
-        setErrorMessage("");
-      }
     }
   };
 
-  // 초대 코드 유효성 검사
-  const validateInviteCode = (value: string) => {
-    if (value.trim() === "") {
-      return "초대 코드를 입력해 주세요.";
-    }
-    if (value.length !== 8) {
-      return "초대 코드는 8자리여야 합니다.";
-    }
-    return "";
-  };
-
-  // 그룹 참가 핸들러
   const handleSubmit = async () => {
-    // 이미 제출 중이면 무시
-    if (isSubmitting) {
-      return;
-    }
+    if (inviteCode.length !== 8 || isSubmitting) return;
 
-    if (!isFormValid) return;
-
-    // 제출 시작
     setIsSubmitting(true);
-
     try {
-      await joinGroup(inviteCode);
+      // 1. 그룹 참가 요청 (응답에 teamId, title 포함)
+      const { teamId, title } = await joinGroup(inviteCode);
 
-      // 성공 시 그룹 메인 페이지로 이동
-      router.push("/group");
-    } catch (error) {
-      // 에러 메시지 설정
-      if (
-        error.message.includes("404") ||
-        error.message.includes("찾을 수 없습니다")
-      ) {
-        setErrorMessage("존재하지 않는 초대 코드입니다.");
-      } else if (
-        error.message.includes("400") ||
-        error.message.includes("이미")
-      ) {
-        setErrorMessage("이미 참가한 그룹이거나 잘못된 코드입니다.");
-      } else {
-        setErrorMessage(error.message || "그룹 참가 중 오류가 발생했습니다.");
-      }
-
-      setInviteCodeError(true);
-
-      // 에러 발생 시에만 다시 활성화
+      // 2. 성공 페이지로 이동
+      router.push(
+        `/group/join/success?teamId=${teamId}&title=${encodeURIComponent(title)}`,
+      );
+    } catch (error: any) {
+      addToast(
+        "error",
+        error.message || "그룹 참여에 실패했습니다. 코드를 다시 확인해주세요.",
+      );
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      <TopBar />
-
-      {/* 그룹 참가 제목 블록 */}
-      <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">그룹 참가</h1>
-      </div>
-
-      {/* 폼 내용 */}
-      <div className="flex-1 px-4 py-6">
-        {/* 초대 코드 입력 */}
-        <div className="mb-6">
-          <label className="block font-medium text-md mb-3">
-            초대 코드<span className="text-[#FF472F]">*</span>
-          </label>
-          <input
-            type="text"
-            className={`w-full p-2 border-b-2 focus:outline-none text-sm transition-colors ${
-              (inviteCodeError && inviteCodeTouched) || errorMessage
-                ? "border-red-500 focus:border-red-500"
-                : "border-gray-300 focus:border-blue-500"
-            }`}
-            placeholder="그룹 초대 코드 8자리를 입력해 주세요"
-            value={inviteCode}
-            onChange={handleInviteCodeChange}
-            onBlur={(e) => {
-              const errorMsg = validateInviteCode(e.target.value);
-              setInviteCodeError(errorMsg !== "");
-              if (errorMsg) {
-                setErrorMessage(errorMsg);
-              }
-            }}
-            onFocus={() => {
-              setInviteCodeTouched(true);
-              setErrorMessage("");
-            }}
-            maxLength={8}
-            autoCapitalize="characters"
-            inputMode="text"
-            autoComplete="off"
-            enterKeyHint="done"
-          />
-          {((inviteCodeError && inviteCodeTouched) || errorMessage) && (
-            <p className="text-red-500 text-xs mt-1 ml-2">
-              {errorMessage || validateInviteCode(inviteCode)}
-            </p>
-          )}
+    <div className="flex flex-col h-screen bg-white overflow-hidden">
+      {/* 헤더 */}
+      <div className="z-50 bg-white">
+        <div className="flex items-center justify-end h-12 px-5">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center justify-center cursor-pointer"
+          >
+            <Image
+              src="/images/transaction/v2/페이지_닫기.svg"
+              alt="닫기"
+              width={24}
+              height={24}
+            />
+          </button>
         </div>
       </div>
 
-      {/* 완료 버튼 */}
-      <div className="px-10 pb-7">
-        <button
-          className={`w-full py-3 rounded-md font-medium transition-colors ${
-            isFormValid && !isSubmitting
-              ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
-              : isSubmitting
-              ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
-              : "bg-gray-300 text-white cursor-not-allowed"
-          }`}
-          onClick={handleSubmit}
-          disabled={!isFormValid || isSubmitting}
-          style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
-        >
-          {isSubmitting ? (
-            <span className="flex items-center justify-center cursor-not-allowed">
-              <svg
-                className="animate-spin h-5 w-5 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              처리 중...
-            </span>
-          ) : (
-            "완료"
-          )}
-        </button>
+      {/* 컨텐츠 */}
+      <div className="flex-1 px-5 flex flex-col items-center">
+        {/* 타이틀 - 헤더와 56px 간격 (헤더 높이 48px 제외하고 margin-top으로 조정) */}
+        <h1 className="text-title2 text-gray-900 text-center mt-14 mb-14 whitespace-pre-wrap">
+          그룹 가계부{"\n"}초대코드 입력하기
+        </h1>
+
+        {/* 입력창 (8자리) */}
+        <div className="relative">
+          <div className="flex gap-2">
+            {Array.from({ length: 8 }).map((_, index) => {
+              const char = inviteCode[index];
+              const isActive = isFocused && index === inviteCode.length;
+              const isLastAndFull =
+                inviteCode.length === 8 && index === 7 && isFocused;
+
+              return (
+                <div
+                  key={index}
+                  className="w-9 h-9 flex items-center justify-center relative"
+                >
+                  {char ? (
+                    <div className="relative flex items-center justify-center">
+                      <span className="text-title2 text-gray-900">{char}</span>
+                      {isLastAndFull && (
+                        <div className="absolute left-full ml-px w-[1.5px] h-5 bg-gray-900 animate-cursor-blink" />
+                      )}
+                    </div>
+                  ) : isActive ? (
+                    <div className="w-[1.5px] h-5 bg-gray-900 animate-cursor-blink" />
+                  ) : (
+                    <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 투명 입력 필드를 위에 덮어씌움 */}
+          <input
+            ref={inputRef}
+            type="text"
+            value={inviteCode}
+            onChange={handleInputChange}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            maxLength={8}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-text bg-transparent text-transparent caret-transparent"
+            autoFocus
+          />
+        </div>
       </div>
 
-      <BottomBar />
+      {/* 하단 고정 영역 */}
+      <BottomButton
+        text={isSubmitting ? "참여 중..." : "입력 완료"}
+        onClick={handleSubmit}
+        disabled={inviteCode.length !== 8 || isSubmitting}
+      >
+        {/* 안내 문구 */}
+        <p className="text-caption2-medium text-gray-500 text-center mb-5 whitespace-pre-wrap">
+          참여할 그룹 가계부의 초대코드를 입력해주세요.{"\n"}
+          그룹더보기 &gt; 그룹 초대하기에서 초대코드를 확인할 수 있어요.
+        </p>
+      </BottomButton>
     </div>
   );
 }

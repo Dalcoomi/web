@@ -14,7 +14,7 @@ export default function AddWritingMyTransactionPageClient() {
   const getTodayInSeoul = (): string => {
     const today = new Date();
     const seoulDate = new Date(
-      today.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+      today.toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
     );
 
     const year = seoulDate.getFullYear();
@@ -30,7 +30,7 @@ export default function AddWritingMyTransactionPageClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [transactionType, setTransactionType] = useState<"EXPENSE" | "INCOME">(
-    "EXPENSE"
+    "EXPENSE",
   );
   const [amount, setAmount] = useState<string>("");
   const [content, setContent] = useState<string>("");
@@ -128,7 +128,7 @@ export default function AddWritingMyTransactionPageClient() {
       // Asia/Seoul 시간대로 현재 시간 생성
       const now = new Date();
       const seoulNow = new Date(
-        now.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+        now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
       );
 
       // 선택한 날짜에 Seoul 시간대의 현재 시간 적용
@@ -154,7 +154,10 @@ export default function AddWritingMyTransactionPageClient() {
       await addTransaction(transactionData);
 
       // 등록된 거래의 날짜로 저장 (스크롤은 맨 위로)
-      sessionStorage.setItem("my-transaction-date", new Date(year, month - 1, day).toISOString());
+      sessionStorage.setItem(
+        "my-transaction-date",
+        new Date(year, month - 1, day).toISOString(),
+      );
       sessionStorage.setItem("my-transaction-scroll", "0");
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -162,7 +165,10 @@ export default function AddWritingMyTransactionPageClient() {
       // 성공 시 개인 거래 내역 조회 페이지로 이동
       router.push("/transaction/my");
     } catch (error) {
-      addToast("error", String(error) || "개인 거래 내역 저장 중 오류가 발생했습니다.");
+      addToast(
+        "error",
+        String(error) || "개인 거래 내역 저장 중 오류가 발생했습니다.",
+      );
 
       // 에러 발생 시에만 다시 활성화
       setIsSubmitting(false);
@@ -245,7 +251,9 @@ export default function AddWritingMyTransactionPageClient() {
       <div className="px-4">
         <label className="block font-medium text-md mb-1">
           내용
-          <span className="text-xs text-gray-500 ml-2">({content.length}/50)</span>
+          <span className="text-xs text-gray-500 ml-2">
+            ({content.length}/50)
+          </span>
         </label>
         <input
           type="text"
@@ -307,8 +315,8 @@ export default function AddWritingMyTransactionPageClient() {
             isFormValid && !isSubmitting && categoryId
               ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
               : isSubmitting
-              ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
-              : "bg-gray-300 text-white cursor-not-allowed"
+                ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
+                : "bg-gray-300 text-white cursor-not-allowed"
           }`}
           onClick={handleSubmit}
           disabled={!isFormValid || isSubmitting || !categoryId}

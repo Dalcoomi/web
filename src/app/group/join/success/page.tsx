@@ -1,10 +1,10 @@
-import JoinSuccessPageClientV2 from "@/components/group/JoinSuccessPageClientV2";
+import JoinSuccessPageClient from "@/components/group/JoinSuccessPageClient";
 import { Suspense } from "react";
 
 export default function JoinSuccessPage() {
   return (
     <Suspense>
-      <JoinSuccessPageClientV2 />
+      <JoinSuccessPageClient />
     </Suspense>
   );
 }

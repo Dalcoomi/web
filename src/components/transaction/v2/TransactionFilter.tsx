@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 
-interface TransactionFilterV2Props {
+interface TransactionFilterProps {
   showCategoryFilter: boolean;
   onCategoryToggle: () => void;
   onSortToggle?: () => void;
@@ -12,7 +12,7 @@ interface TransactionFilterV2Props {
   bgColor?: string;
 }
 
-export default function TransactionFilterV2({
+export default function TransactionFilter({
   showCategoryFilter,
   onCategoryToggle,
   onSortToggle,
@@ -21,7 +21,7 @@ export default function TransactionFilterV2({
   selectedCategory = "카테고리",
   selectedAll = "전체",
   bgColor = "bg-white",
-}: TransactionFilterV2Props) {
+}: TransactionFilterProps) {
   return (
     <div
       className={`sticky top-[90px] z-20 ${bgColor} pt-5 pb-4 px-5 flex items-center justify-between`}

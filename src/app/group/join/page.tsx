@@ -1,5 +1,5 @@
-import JoinGroupPageClientV2 from "@/components/group/JoinGroupPageClientV2";
+import JoinGroupPageClient from "@/components/group/JoinGroupPageClient";
 
 export default function JoinGroupPage() {
-  return <JoinGroupPageClientV2 />;
+  return <JoinGroupPageClient />;
 }
