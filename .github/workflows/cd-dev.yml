@@ -1,8 +1,5 @@
 name: Dalcoomi Frontend CD Dev
 
-env:
-  DEPLOY_ENABLED: "false"
-
 on:
   workflow_run:
     workflows: ["Dalcoomi Frontend CI Dev"]
@@ -12,7 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && env.DEPLOY_ENABLED == 'true' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && vars.DEPLOY_ENABLED_DEV == 'false' }}
 
     steps:
       - name: Checkout code
