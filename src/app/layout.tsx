@@ -32,8 +32,8 @@ export const metadata: Metadata = {
   creator: "달쿠미 팀",
   publisher: "달쿠미",
   icons: [
-    { rel: "apple-touch-icon", url: "/icons/icon-192x192.png" },
-    { rel: "icon", url: "/icons/icon-192x192.png" },
+    { rel: "apple-touch-icon", url: "/images/transaction/v2/메인_캐릭터.svg" },
+    { rel: "icon", url: "/images/transaction/v2/메인_캐릭터.svg" },
   ],
   metadataBase: new URL("https://dalcoomi.com"),
 };
@@ -152,8 +152,8 @@ export default async function RootLayout({
         />
 
         {/* 파비콘 및 아이콘 */}
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/images/transaction/v2/메인_캐릭터.svg" />
+        <link rel="icon" href="/images/transaction/v2/메인_캐릭터.svg" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="shortcut icon" href="/favicon.ico" />
 

@@ -96,7 +96,7 @@ export default function PWAInstallPrompt() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center space-x-3">
               <img
-                src="/icons/icon-72x72.png"
+                src="/images/transaction/v2/메인_캐릭터.svg"
                 alt="달쿠미"
                 className="w-14 h-14 rounded-xl"
               />
@@ -170,7 +170,7 @@ export default function PWAInstallPrompt() {
       <div className="bg-white rounded-xl shadow-2xl p-5 border border-gray-200">
         <div className="flex items-start space-x-4 mb-4">
           <img
-            src="/icons/icon-72x72.png"
+            src="/images/transaction/v2/메인_캐릭터.svg"
             alt="달쿠미"
             className="w-16 h-16 rounded-xl flex-shrink-0"
           />

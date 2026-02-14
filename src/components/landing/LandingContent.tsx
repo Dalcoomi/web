@@ -83,7 +83,7 @@ export default function LandingContent() {
           className="flex items-center gap-1 -mx-2 hover:cursor-pointer"
         >
           <img
-            src="/images/transaction/v2/요약_카드_캐릭터.svg"
+            src="/images/transaction/v2/메인_캐릭터.svg"
             alt="달쿠미"
             className="w-6 h-6 rounded"
           />
@@ -109,7 +109,7 @@ export default function LandingContent() {
               {/* 왼쪽 - 로고 */}
               <div className="flex-shrink-0">
                 <img
-                  src="/images/transaction/v2/요약_카드_캐릭터.svg"
+                  src="/images/transaction/v2/메인_캐릭터.svg"
                   alt="달쿠미 로고"
                   className="w-32 h-32 object-contain"
                 />
