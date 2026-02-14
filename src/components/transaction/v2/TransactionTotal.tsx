@@ -16,7 +16,9 @@ export default function TransactionTotal({
   return (
     <div
       data-sticky={isSticky}
-      className="bg-white p-[16px] flex flex-col items-center transition-all duration-300 rounded-[18px] shadow-xs"
+      className={`bg-white p-[16px] flex flex-col items-center transition-all duration-300 shadow-xs ${
+        isSticky ? "rounded-[18px]" : "rounded-b-[18px]"
+      }`}
     >
       <div className="w-full bg-gray-50 rounded-xl py-[12px] px-[16px] flex items-center justify-between">
         <div className="bg-gray-900 text-white px-2 pb-0.5 rounded-lg">
