@@ -86,7 +86,11 @@ export default function JoinGroupPageClient() {
         </h1>
 
         {/* 입력창 (8자리) */}
-        <div className="relative">
+        <div
+          className="relative"
+          onClick={() => inputRef.current?.focus()}
+          onTouchStart={() => inputRef.current?.focus()}
+        >
           <div className="flex gap-2">
             {Array.from({ length: 8 }).map((_, index) => {
               const char = inviteCode[index];
@@ -126,7 +130,11 @@ export default function JoinGroupPageClient() {
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             maxLength={8}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-text bg-transparent text-transparent caret-transparent"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
+            className="absolute inset-0 w-full h-full opacity-[0.01] cursor-text bg-transparent text-transparent caret-transparent"
             autoFocus
           />
         </div>

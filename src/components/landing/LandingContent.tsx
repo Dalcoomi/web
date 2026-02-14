@@ -117,7 +117,7 @@ export default function LandingContent() {
               {/* 오른쪽 - 타이틀 */}
               <div>
                 <p className="text-title1 text-sky-600">
-                  개인과 그룹을 위한 AI 가계부 서비스
+                  개인과 그룹을 위한 가계부 서비스
                 </p>
                 <p className="text-header text-sky-600">달쿠미</p>
               </div>

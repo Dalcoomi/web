@@ -26,15 +26,20 @@ export function useCopyToClipboard() {
       try {
         const textArea = document.createElement("textarea");
         textArea.value = text;
+        textArea.setAttribute("readonly", "");
 
         // 화면 밖으로 숨김 처리 (display: none은 focus가 안될 수 있음)
         textArea.style.position = "fixed";
         textArea.style.left = "-9999px";
         textArea.style.top = "0";
+        textArea.style.opacity = "0";
+        textArea.style.pointerEvents = "none";
+        textArea.style.fontSize = "16px";
 
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
+        textArea.setSelectionRange(0, textArea.value.length);
 
         const successful = document.execCommand("copy");
         document.body.removeChild(textArea);

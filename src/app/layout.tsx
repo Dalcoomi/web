@@ -9,11 +9,11 @@ import AppContainer from "@/components/common/AppContainer";
 
 export const metadata: Metadata = {
   title: {
-    default: "달쿠미 | 개인&그룹 AI 가계부",
+    default: "달쿠미 | 개인&그룹 가계부",
     template: "%s - 달쿠미",
   },
   description:
-    "개인과 그룹을 위한 AI 가계부 서비스. 간편한 가계부 작성, AI 영수증 분석, 그룹 작성 기능을 제공합니다.",
+    "개인과 그룹을 위한 가계부 서비스. 간편한 가계부 작성, AI 영수증 분석, 그룹 작성 기능을 제공합니다.",
   generator: "Next.js",
   manifest: "/manifest.json",
   keywords: [
@@ -133,7 +133,7 @@ export default async function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebApplication",
               name: "달쿠미",
-              description: "개인과 그룹을 위한 AI 가계부 서비스",
+              description: "개인과 그룹을 위한 가계부 서비스",
               url: "https://dalcoomi.com",
               applicationCategory: "FinanceApplication",
               operatingSystem: "All",

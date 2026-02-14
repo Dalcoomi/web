@@ -145,7 +145,10 @@ export default function LoginPageClient() {
         }
       }
     } catch (error) {
-      addToast("error", "로그인 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.");
+      addToast(
+        "error",
+        "로그인 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -294,9 +297,9 @@ export default function LoginPageClient() {
     <div className="relative w-full h-full">
       {/* SEO용 숨김 텍스트 */}
       <div className="sr-only">
-        <p>달쿠미 - 개인과 그룹을 위한 AI 가계부</p>
+        <p>달쿠미 - 개인과 그룹을 위한 가계부</p>
         <p>
-          개인과 그룹을 위한 AI 가계부 서비스 달쿠미. 간편한 가계부 작성과 AI
+          개인과 그룹을 위한 가계부 서비스 달쿠미. 간편한 가계부 작성과 AI
           영수증 분석, 그룹 가계부로 스마트한 지출 관리를 시작해 보세요!
         </p>
         <p>

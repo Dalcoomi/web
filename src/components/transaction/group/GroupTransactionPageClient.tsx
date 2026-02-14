@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type PointerEvent } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
@@ -108,6 +108,10 @@ export default function GroupTransactionPageClient() {
 
   const hasFetchedMember = useRef(false);
   const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modalDragStartYRef = useRef<number | null>(null);
+  const modalIsDraggingRef = useRef(false);
+  const [modalDragOffset, setModalDragOffset] = useState(0);
+  const MODAL_CLOSE_DRAG_THRESHOLD = 160;
 
   useEffect(() => {
     if (!hasFetchedMember.current) {
@@ -401,6 +405,7 @@ export default function GroupTransactionPageClient() {
   };
 
   const handleCloseGroupModal = () => {
+    setModalDragOffset(0);
     setShowGroupModal(false);
 
     if (closeModalTimerRef.current) {
@@ -412,6 +417,36 @@ export default function GroupTransactionPageClient() {
       router.replace(`/transaction/group/${teamId}`, { scroll: false });
       closeModalTimerRef.current = null;
     }, 220);
+  };
+
+  const handleModalHandlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    modalIsDraggingRef.current = true;
+    modalDragStartYRef.current = e.clientY;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleModalHandlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!modalIsDraggingRef.current || modalDragStartYRef.current === null) {
+      return;
+    }
+
+    const deltaY = Math.max(0, e.clientY - modalDragStartYRef.current);
+    setModalDragOffset(deltaY);
+  };
+
+  const handleModalHandlePointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (!modalIsDraggingRef.current) return;
+
+    modalIsDraggingRef.current = false;
+    modalDragStartYRef.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+
+    if (modalDragOffset > MODAL_CLOSE_DRAG_THRESHOLD) {
+      handleCloseGroupModal();
+      return;
+    }
+
+    setModalDragOffset(0);
   };
 
   const handleSelectGroup = (selectedTeamId: string) => {
@@ -525,7 +560,7 @@ export default function GroupTransactionPageClient() {
             />
 
             {/* 요약 카드 하단 (총액) - Sticky */}
-            <div className="sticky top-0 z-30 px-5 pb-3 bg-gray-30 -mt-[1px] transition-all duration-300">
+            <div className="sticky top-0 z-30 px-5 pb-3 bg-gray-30 transition-all duration-300">
               <TransactionTotal total={response.total} isSticky={isSticky} />
             </div>
 
@@ -603,16 +638,31 @@ export default function GroupTransactionPageClient() {
         <>
           <div
             className={`absolute inset-0 z-40 transition-opacity duration-200 ${
-              showGroupModal ? "bg-black/35 opacity-100" : "bg-black/35 opacity-0"
+              showGroupModal
+                ? "bg-[#d9d9d9] opacity-50"
+                : "bg-[#d9d9d9] opacity-0"
             }`}
             onClick={handleCloseGroupModal}
           />
           <div
-            className={`absolute left-0 right-0 bottom-0 z-50 bg-gray-30 rounded-t-[20px] rounded-b-none px-5 pt-3 pb-0 transition-transform duration-200 ease-out ${
-              showGroupModal ? "translate-y-0" : "translate-y-full"
+            className={`absolute left-0 right-0 bottom-0 z-50 bg-gray-30 rounded-t-[20px] rounded-b-none px-5 pt-3 pb-0 ${
+              modalIsDraggingRef.current
+                ? ""
+                : "transition-transform duration-200 ease-out"
             }`}
+            style={{
+              transform: showGroupModal
+                ? `translateY(${modalDragOffset}px)`
+                : "translateY(100%)",
+            }}
           >
-            <div className="w-16 h-[5px] bg-gray-100 rounded-[100px] mx-auto mb-5" />
+            <div
+              className="w-16 h-[5px] bg-gray-100 rounded-[100px] mx-auto mb-5 cursor-grab active:cursor-grabbing touch-none"
+              onPointerDown={handleModalHandlePointerDown}
+              onPointerMove={handleModalHandlePointerMove}
+              onPointerUp={handleModalHandlePointerUp}
+              onPointerCancel={handleModalHandlePointerUp}
+            />
 
             <p className="text-body2-semibold text-gray-500 mt-2 mb-3">
               그룹 목록
