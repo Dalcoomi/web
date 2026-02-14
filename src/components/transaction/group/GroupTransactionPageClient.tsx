@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef, type PointerEvent } from "react";
+import { useState, useEffect, useRef, useMemo, type PointerEvent } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
@@ -40,7 +40,7 @@ export default function GroupTransactionPageClient() {
   const searchParams = useSearchParams();
   const teamId = params.teamId as string;
   const groupModalQuery = searchParams.get("groupModal");
-  const { fetchMember } = useMemberStore();
+  const { member, fetchMember } = useMemberStore();
   const addToast = useToastStore((state) => state.addToast);
   const copyToClipboard = useCopyToClipboard();
 
@@ -92,6 +92,9 @@ export default function GroupTransactionPageClient() {
     transactions: [],
   });
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
+  const isCurrentUserLeader = useMemo(() => {
+    return groupInfo?.leaderNickname === member?.nickname;
+  }, [groupInfo?.leaderNickname, member?.nickname]);
 
   // 필터링 관련 상태
   const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
@@ -723,7 +726,7 @@ export default function GroupTransactionPageClient() {
                 onClick={handleGroupInfoEdit}
                 className="w-[335px] max-w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer"
               >
-                그룹 정보 확인하기
+                {isCurrentUserLeader ? "그룹 정보 수정하기" : "그룹 정보 확인하기"}
               </button>
               <button
                 onClick={handleGroupInvite}

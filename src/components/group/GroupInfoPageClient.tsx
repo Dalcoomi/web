@@ -1,534 +1,442 @@
-// components/group/GroupInfoPageClient.tsx
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
+import BottomButton from "@/components/ui/BottomButton";
+import { BRAND_COLORS } from "@/constants/brandColors";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
   getGroupInfo,
+  GroupInfo,
   leaveGroup,
   updateGroup,
-  GroupInfo,
 } from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
-import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
-import Image from "next/image";
-import TopBar from "@/components/ui/TopBar";
-import BottomBar from "@/components/ui/BottomBar";
+
+type TabKey = "group" | "member";
+
+const LABEL_COLORS = [
+  { id: "gray", value: BRAND_COLORS.gray },
+  { id: "green", value: BRAND_COLORS.green },
+  { id: "blue", value: BRAND_COLORS.blue },
+  { id: "red", value: BRAND_COLORS.red },
+  { id: "yellow", value: BRAND_COLORS.yellow },
+] as const;
 
 export default function GroupInfoPageClient() {
   const router = useRouter();
   const params = useParams();
   const teamId = params.teamId as string;
-  const { member: memberInfo, fetchMember } = useMemberStore();
+
+  const { member, fetchMember } = useMemberStore();
   const addToast = useToastStore((state) => state.addToast);
   const copyToClipboard = useCopyToClipboard();
 
+  const [activeTab, setActiveTab] = useState<TabKey>("group");
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [title, setTitle] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [selectedColor, setSelectedColor] = useState<string>(
+    LABEL_COLORS[0].id,
+  );
+
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showLeaderSelectModal, setShowLeaderSelectModal] = useState(false);
-  const [selectedNewLeader, setSelectedNewLeader] = useState<string>("");
+  const [selectedNewLeader, setSelectedNewLeader] = useState("");
 
-  // 수정 모드 상태
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editPurpose, setEditPurpose] = useState("");
-  const [editMemberLimit, setEditMemberLimit] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  // 회원 정보가 없으면 가져오기
   useEffect(() => {
-    if (!memberInfo) {
+    if (!member) {
       fetchMember();
     }
-  }, [memberInfo, fetchMember]);
+  }, [member, fetchMember]);
 
-  // 그룹 정보 로드
   useEffect(() => {
-    // 100ms 후에 실행
-    const timeoutId = setTimeout(async () => {
-      if (!teamId) {
-        router.replace("/group");
-        return;
-      }
+    if (!teamId) {
+      router.replace("/group");
+      return;
+    }
 
+    const loadGroupInfo = async () => {
+      setIsLoading(true);
       try {
-        const response = await getGroupInfo(teamId);
-
-        setGroupInfo(response);
-        // 수정 폼 초기값 설정
-        setEditTitle(response.title);
-        setEditPurpose(response.purpose || "");
-        setEditMemberLimit(response.memberLimit.toString());
+        const info = await getGroupInfo(teamId);
+        setGroupInfo(info);
+        setTitle(info.title);
+        setPurpose(info.purpose || "");
+        setSelectedColor(info.label || LABEL_COLORS[0].id);
       } catch (error) {
         addToast("error", String(error) || "그룹 정보를 불러올 수 없습니다.");
-
         router.replace("/group");
+      } finally {
+        setIsLoading(false);
       }
-    }, 100);
-
-    // cleanup: 다음 effect 실행 전에 이전 timeout 취소
-    return () => {
-      clearTimeout(timeoutId);
     };
+
+    loadGroupInfo();
   }, [teamId, router, addToast]);
 
-  // 초대 코드 복사
+  const isCurrentUserLeader = useMemo(() => {
+    return groupInfo?.leaderNickname === member?.nickname;
+  }, [groupInfo?.leaderNickname, member?.nickname]);
+
+  const isFormValid = title.trim().length > 0;
+
   const handleCopyInviteCode = async () => {
     if (!groupInfo?.invitationCode) {
-      addToast("error", "초대 코드가 없습니다.");
+      addToast("error", "초대번호를 찾을 수 없습니다.");
       return;
     }
 
-    await copyToClipboard(groupInfo.invitationCode, "초대 코드가 복사되었습니다!");
+    await copyToClipboard(groupInfo.invitationCode, "초대번호를 복사했어요.");
   };
 
-  // 수정 모드 진입
-  const handleEditClick = () => {
-    setIsEditMode(true);
-  };
-
-  // 수정 취소
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-    // 원래 값으로 되돌리기
-    if (groupInfo) {
-      setEditTitle(groupInfo.title);
-      setEditPurpose(groupInfo.purpose || "");
-      setEditMemberLimit(groupInfo.memberLimit.toString());
-    }
-  };
-
-  // 그룹명 입력 핸들러
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value.length <= 20) {
-      setEditTitle(value);
-    }
-  };
-
-  // 목표 입력 핸들러
-  const handlePurposeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value.length <= 30) {
-      setEditPurpose(value);
-    }
-  };
-
-  // 최대 인원 입력 핸들러
-  const handleMemberLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^\d]/g, ""); // 숫자만 허용
-
-    if (!groupInfo) return;
-
-    const currentMemberCount = groupInfo.members.length;
-    const newLimit = Number(value);
-
-    // 빈 값이거나 현재 인원 이상 10 이하인 경우만 허용
-    if (value === "" || (newLimit >= currentMemberCount && newLimit <= 10)) {
-      setEditMemberLimit(value);
-    }
-  };
-
-  // 그룹 정보 수정 완료
-  const handleUpdateGroup = async () => {
-    if (!groupInfo) return;
-
-    if (editTitle.trim().length === 0) {
-      addToast("error", "그룹명을 입력해주세요.");
+  const handleSubmit = async () => {
+    if (!groupInfo || !isCurrentUserLeader || !isFormValid || isSubmitting) {
       return;
     }
 
-    if (editMemberLimit.trim() === "") {
-      addToast("error", "최대 인원을 입력해주세요.");
-      return;
-    }
-
-    const newMemberLimit = Number(editMemberLimit);
-    const currentMemberCount = groupInfo.members.length;
-
-    if (newMemberLimit < currentMemberCount) {
-      addToast(
-        "error",
-        `최대 인원은 현재 인원(${currentMemberCount}명)보다 작을 수 없습니다.`,
-      );
-      return;
-    }
-
-    if (newMemberLimit < 1 || newMemberLimit > 10) {
-      addToast("error", "최대 인원은 1명에서 10명 사이여야 합니다.");
-      return;
-    }
-
-    setIsUpdating(true);
-
+    setIsSubmitting(true);
     try {
       await updateGroup({
-        teamId: teamId,
-        title: editTitle.trim(),
-        memberLimit: newMemberLimit,
-        purpose: editPurpose.trim() || null,
+        teamId,
+        title: title.trim(),
+        memberLimit: groupInfo.memberLimit,
+        purpose: purpose.trim() || null,
+        label: selectedColor,
       });
 
-      // 성공 시 그룹 정보 다시 로드
-      const response = await getGroupInfo(teamId);
-      setGroupInfo(response);
-      setEditMemberLimit(response.memberLimit.toString());
-      setIsEditMode(false);
+      const updated = await getGroupInfo(teamId);
+      setGroupInfo(updated);
+      setTitle(updated.title);
+      setPurpose(updated.purpose || "");
+      setSelectedColor(updated.label || LABEL_COLORS[0].id);
+      addToast("success", "그룹 정보를 수정했어요.");
     } catch (error) {
       addToast(
         "error",
         String(error) || "그룹 정보 수정 중 오류가 발생했습니다.",
       );
     } finally {
-      setIsUpdating(false);
+      setIsSubmitting(false);
     }
   };
 
-  // 그룹 떠나기 모달 열기
+  const getMemberIconColor = (index: number) => {
+    const colors = ["#F9F90C", "#94A7EF", "#FCC9EC", "#45D076"];
+    return colors[index % colors.length];
+  };
+
   const handleLeaveGroupClick = () => {
     setShowLeaveModal(true);
   };
 
-  // 첫 번째 모달에서 '네' 클릭
-  const handleFirstConfirm = () => {
-    if (isCurrentUserLeader()) {
-      // 리더인 경우 두 번째 모달로 이동
-      setShowLeaveModal(false);
-      setShowLeaderSelectModal(true);
-    } else {
-      // 일반 멤버인 경우 바로 떠나기
-      handleFinalLeave();
-    }
+  const handleCloseModals = () => {
+    setShowLeaveModal(false);
+    setShowLeaderSelectModal(false);
+    setSelectedNewLeader("");
   };
 
-  // 최종 그룹 나가기 실행
+  const handleFirstLeaveConfirm = () => {
+    if (!groupInfo) {
+      return;
+    }
+
+    if (isCurrentUserLeader && groupInfo.members.length > 1) {
+      setShowLeaveModal(false);
+      setShowLeaderSelectModal(true);
+      return;
+    }
+
+    void handleFinalLeave();
+  };
+
   const handleFinalLeave = async () => {
+    if (!groupInfo) {
+      return;
+    }
+
     if (
-      isCurrentUserLeader() &&
-      !selectedNewLeader &&
-      groupInfo &&
-      groupInfo.members.length > 1
+      isCurrentUserLeader &&
+      groupInfo.members.length > 1 &&
+      !selectedNewLeader
     ) {
       addToast("error", "새 그룹장을 선택해 주세요.");
       return;
     }
 
     try {
-      if (isCurrentUserLeader() && selectedNewLeader) {
-        // 그룹장인 경우 새 그룹장과 함께 떠나기 요청
+      if (isCurrentUserLeader && selectedNewLeader) {
         await leaveGroup(teamId, selectedNewLeader);
       } else {
-        // 일반 멤버인 경우
         await leaveGroup(teamId);
       }
 
-      addToast("success", "그룹을 떠났습니다.");
+      addToast("success", "그룹을 떠났어요.");
       router.replace("/group");
     } catch (error) {
       addToast("error", String(error) || "그룹 떠나기 중 오류가 발생했습니다.");
     }
   };
 
-  // 모달 닫기
-  const handleCloseModal = () => {
-    setShowLeaveModal(false);
-    setShowLeaderSelectModal(false);
-    setSelectedNewLeader("");
-  };
+  const newLeaderCandidates = useMemo(() => {
+    if (!groupInfo) {
+      return [];
+    }
 
-  // 멤버 아이콘 색상 (순서대로)
-  const getMemberIconColor = (index: number) => {
-    const colors = [
-      "#F9F90C", // 노란색
-      "#94A7EF", // 보라색
-      "#FCC9EC", // 연분홍
-      "#45D076", // 연녹색
-    ];
-    return colors[index % colors.length];
-  };
-
-  // 리더인지 확인하는 함수
-  const isLeader = (nickname: string) => {
-    return nickname === groupInfo?.leaderNickname;
-  };
-
-  // 현재 사용자가 그룹장인지 확인
-  const isCurrentUserLeader = () => {
-    // 그룹장 여부를 확인하는 로직
-    return groupInfo?.leaderNickname === memberInfo?.nickname;
-  };
-
-  // 새 그룹장 후보자 목록 (현재 그룹장 제외)
-  const getNewLeaderCandidates = () => {
-    return (
-      groupInfo?.members.filter(
-        (member) => member.nickname !== groupInfo.leaderNickname,
-      ) || []
+    return groupInfo.members.filter(
+      (groupMember) => groupMember.nickname !== groupInfo.leaderNickname,
     );
-  };
+  }, [groupInfo]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <p className="text-body2-medium text-gray-500">
+          그룹 정보를 불러오는 중...
+        </p>
+      </div>
+    );
+  }
 
   if (!groupInfo) {
     return (
-      <div className="flex flex-col h-screen bg-white">
-        <TopBar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-500">그룹 정보를 찾을 수 없습니다.</div>
-        </div>
-        <BottomBar />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <p className="text-body2-medium text-gray-500">
+          그룹 정보를 찾을 수 없습니다.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      <TopBar />
-
-      {/* 그룹 정보 제목 블록 */}
-      <div className="bg-[#11ABFF] text-white px-4 py-2 flex items-center">
-        <h1 className="text-xl font-light">그룹 정보</h1>
+    <div className="flex min-h-screen flex-col bg-white">
+      <div className="z-50 bg-white">
+        <div className="flex items-center h-[48px] px-0">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center justify-center ml-5 cursor-pointer"
+            aria-label="뒤로가기"
+          >
+            <Image
+              src="/images/transaction/v2/뒤로가기_버튼.svg"
+              alt="뒤로가기"
+              width={24}
+              height={24}
+            />
+          </button>
+          <h1 className="ml-3 text-subtitle text-gray-900">
+            그룹 정보 수정하기
+          </h1>
+        </div>
       </div>
 
-      {/* 메인 컨텐츠 */}
-      <div className="flex-1 px-5 py-5 space-y-3">
-        {/* 그룹명 */}
-        <div>
-          <h3 className="text-md font-medium py-1">
-            그룹명
-            {isEditMode && (
-              <span className="text-xs text-gray-500 ml-2">
-                ({editTitle.length}/20)
-              </span>
+      <div className="border-b border-gray-100 px-4">
+        <div className="flex gap-6">
+          <button
+            onClick={() => setActiveTab("group")}
+            className={`relative pb-3 pt-1 text-body2-semibold cursor-pointer ${
+              activeTab === "group" ? "text-gray-900" : "text-gray-400"
+            }`}
+          >
+            그룹 정보
+            {activeTab === "group" && (
+              <span className="absolute bottom-0 left-0 h-[2px] w-full bg-gray-900" />
             )}
-          </h3>
-          {isEditMode ? (
-            <input
-              type="text"
-              className="w-full text-sm border-b border-blue-500 text-gray-700 px-1 py-1 focus:outline-none"
-              value={editTitle}
-              onChange={handleTitleChange}
-              maxLength={20}
-              placeholder="그룹명을 입력해 주세요"
-            />
-          ) : (
-            <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
-              {groupInfo.title}
-            </p>
-          )}
-        </div>
-
-        {/* 초대 코드 */}
-        <div>
-          <h3 className="text-md font-medium py-1">초대 코드</h3>
-          <div className="relative">
-            <span className="text-sm border-b border-gray-300 text-gray-400 px-1 block pr-20">
-              {groupInfo.invitationCode}
-            </span>
-            <button
-              onClick={handleCopyInviteCode}
-              className="absolute right-1 bottom-1 px-5 py-1 ml-4 border-3 border-[#11ABFF] rounded-[5px] cursor-pointer text-[#11ABFF] text-sm hover:bg-blue-50 transition-colors"
-            >
-              복사하기
-            </button>
-          </div>
-        </div>
-
-        {/* 목표 */}
-        <div>
-          <h3 className="text-md font-medium py-1">
-            목표
-            {isEditMode && (
-              <span className="text-xs text-gray-500 ml-2">
-                ({editPurpose.length}/30)
-              </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("member")}
+            className={`relative pb-3 pt-1 text-body2-semibold cursor-pointer ${
+              activeTab === "member" ? "text-gray-900" : "text-gray-400"
+            }`}
+          >
+            멤버 정보
+            {activeTab === "member" && (
+              <span className="absolute bottom-0 left-0 h-[2px] w-full bg-gray-900" />
             )}
-          </h3>
-          {isEditMode ? (
-            <input
-              type="text"
-              className="w-full text-sm border-b border-blue-500 text-gray-700 px-1 py-1 focus:outline-none"
-              value={editPurpose}
-              onChange={handlePurposeChange}
-              maxLength={30}
-              placeholder="목표를 입력해 주세요"
-            />
-          ) : (
-            <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
-              {groupInfo.purpose || "-"}
-            </p>
-          )}
+          </button>
         </div>
+      </div>
 
-        {/* 인원 수 */}
-        <div>
-          <h3 className="text-md font-medium py-1">
-            인원 수
-            {isEditMode && (
-              <span className="text-xs text-gray-500 ml-2">
-                (현재 {groupInfo.members.length}명)
-              </span>
-            )}
-          </h3>
-          {isEditMode ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">
-                {groupInfo.members.length} /
-              </span>
+      <main className="flex-1 overflow-y-auto px-5 pb-6 pt-6 scrollbar-hide">
+        {activeTab === "group" ? (
+          <div className="space-y-8">
+            <div>
+              <label className="mb-2 flex items-start gap-1">
+                <span className="text-body2-semibold text-gray-600">
+                  그룹명
+                </span>
+                <span className="mt-[1px] h-1 w-1 rounded-full bg-red-500" />
+              </label>
               <input
                 type="text"
-                className="w-20 text-xs border-b border-blue-500 text-gray-700 px-1 py-1 focus:outline-none text-center"
-                value={editMemberLimit}
-                onChange={handleMemberLimitChange}
-                maxLength={2}
-                placeholder="최대 10명"
-                inputMode="numeric"
+                value={title}
+                onChange={(e) => {
+                  if (e.target.value.length <= 20) {
+                    setTitle(e.target.value);
+                  }
+                }}
+                className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-body1-regular text-gray-900 outline-none transition-colors focus:border-gray-850"
               />
             </div>
-          ) : (
-            <p className="text-sm border-b border-gray-300 text-gray-400 px-1">
-              {groupInfo.members.length} / {groupInfo.memberLimit}
-            </p>
-          )}
-        </div>
 
-        {/* 참여자 */}
-        <div>
-          <h3 className="text-md font-medium">참여자</h3>
-          <div className="grid grid-cols-2">
-            {groupInfo.members.map((member, index) => (
-              <div
-                key={member.nickname}
-                className="flex items-center space-x-3 p-1"
-              >
-                {/* 멤버 아이콘 */}
-                <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
-                  {member.profileImageUrl ? (
-                    <Image
-                      src={member.profileImageUrl}
-                      alt={member.nickname}
-                      width={24}
-                      height={24}
-                      className="w-full h-full"
-                      quality={100}
-                      unoptimized={true}
+            <div>
+              <label className="mb-2 flex items-start gap-1">
+                <span className="text-body2-semibold text-gray-600">
+                  라벨 컬러
+                </span>
+                <span className="mt-[1px] h-1 w-1 rounded-full bg-red-500" />
+              </label>
+              <div className="flex items-center gap-4">
+                {LABEL_COLORS.map((color) => (
+                  <button
+                    key={color.id}
+                    onClick={() => setSelectedColor(color.id)}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full cursor-pointer ${
+                      selectedColor === color.id
+                        ? "border-2 border-gray-900"
+                        : "border border-gray-100"
+                    }`}
+                    aria-label={`${color.id} 컬러 선택`}
+                  >
+                    <span
+                      className="h-9 w-9 rounded-full"
+                      style={{ backgroundColor: color.value }}
                     />
-                  ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center text-white text-sm font-light"
-                      style={{ backgroundColor: getMemberIconColor(index) }}
-                    >
-                      {member.nickname.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-
-                {/* 멤버 정보 */}
-                <div className="flex items-center">
-                  <span className="text-sm text-gray-400 -translate-x-1.5">
-                    {member.nickname}
-                  </span>
-                  {isLeader(member.nickname) && (
-                    <Image
-                      src="/images/group/그룹장_왕관.svg"
-                      alt="그룹장"
-                      width={20}
-                      height={20}
-                      className="-translate-y-0.5"
-                    />
-                  )}
-                </div>
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 하단 버튼 영역 - 바텀 시트로부터 고정 위치 */}
-      <div className="absolute bottom-18 left-5 right-5 flex items-center justify-between">
-        {/* 그룹 떠나기 버튼 */}
-        <button
-          onClick={handleLeaveGroupClick}
-          className="cursor-pointer hover:opacity-50 transition-opacity"
-          disabled={isEditMode}
-        >
-          <Image
-            src="/images/group/그룹_떠나기.svg"
-            alt="그룹 떠나기"
-            width={100}
-            height={40}
-            priority
-          />
-        </button>
-
-        {/* 수정 버튼 영역 - 그룹장만 보임 */}
-        {isCurrentUserLeader() && (
-          <div className="flex gap-2">
-            {isEditMode ? (
-              <>
-                {/* 수정 취소 버튼 */}
-                <button
-                  onClick={handleCancelEdit}
-                  disabled={isUpdating}
-                  className="px-4 py-2 bg-gray-300 text-white rounded-lg text-sm font-medium hover:bg-gray-400 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  취소
-                </button>
-                {/* 수정 완료 버튼 */}
-                <button
-                  onClick={handleUpdateGroup}
-                  disabled={
-                    isUpdating ||
-                    editTitle.trim().length === 0 ||
-                    editMemberLimit.trim().length === 0
-                  }
-                  className="px-4 py-2 bg-[#0EABFF] text-white rounded-lg text-sm font-medium hover:bg-blue-600 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isUpdating ? "처리 중..." : "완료"}
-                </button>
-              </>
-            ) : (
-              /* 수정 버튼 */
-              <button
-                onClick={handleEditClick}
-                className="px-4 py-2 bg-[#0EABFF] text-white rounded-lg text-sm font-medium hover:bg-blue-600 cursor-pointer transition-colors"
-              >
-                수정
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 첫 번째 모달: 그룹 떠나기 확인 */}
-      {showLeaveModal && (
-        <>
-          {/* 배경 오버레이 */}
-          <div
-            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
-            onClick={handleCloseModal}
-          ></div>
-
-          {/* 모달 컨텐츠 */}
-          <div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] p-2 w-[80%] z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 모달 메시지 */}
-            <div className="px-5 py-7 text-center">
-              <p className="text-lg leading-relaxed">그룹을 떠나시겠습니까?</p>
             </div>
 
-            {/* 버튼들 */}
-            <div className="flex">
+            <div>
+              <label className="mb-2 block text-body2-semibold text-gray-600">
+                초대코드
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={groupInfo.invitationCode}
+                  disabled
+                  className="h-12 flex-1 rounded-xl border border-gray-100 bg-gray-50 px-4 text-body1-regular text-gray-400"
+                />
+                <button
+                  onClick={handleCopyInviteCode}
+                  className="h-12 min-w-[96px] rounded-xl border border-gray-900 bg-white px-4 text-body2-semibold text-gray-900 cursor-pointer"
+                >
+                  복사하기
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-body2-semibold text-gray-600">
+                목표
+              </label>
+              <input
+                type="text"
+                value={purpose}
+                onChange={(e) => {
+                  if (e.target.value.length <= 30) {
+                    setPurpose(e.target.value);
+                  }
+                }}
+                className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-body1-regular text-gray-900 outline-none transition-colors focus:border-gray-850"
+                placeholder="하루 10만원으로 여행하기"
+              />
+            </div>
+
+            <button
+              onClick={handleLeaveGroupClick}
+              className="text-body1-semibold text-red-500 cursor-pointer"
+            >
+              그룹 떠나기
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-0">
+            {groupInfo.members.map((groupMember) => {
+              const isLeader =
+                groupMember.nickname === groupInfo.leaderNickname;
+              const isMe = groupMember.nickname === member?.nickname;
+
+              return (
+                <div
+                  key={groupMember.nickname}
+                  className="flex items-center justify-between py-[12px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 overflow-hidden rounded-full bg-gray-100">
+                      {groupMember.profileImageUrl ? (
+                        <Image
+                          src={groupMember.profileImageUrl}
+                          alt={groupMember.nickname}
+                          width={40}
+                          height={40}
+                          className="h-full w-full object-cover"
+                          quality={100}
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="h-full w-full" />
+                      )}
+                    </div>
+                    <p className="text-body1-semibold text-gray-900">
+                      {groupMember.nickname}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {isMe && (
+                      <span className="rounded-[8px] bg-gray-50 px-2 py-1 text-caption1-medium text-gray-500">
+                        나
+                      </span>
+                    )}
+                    {isLeader && (
+                      <span className="rounded-[8px] bg-blue-50 px-2 py-1 text-caption1-medium text-blue-500">
+                        그룹장
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      {activeTab === "group" && isCurrentUserLeader && (
+        <BottomButton
+          text={isSubmitting ? "수정 중..." : "수정 완료"}
+          onClick={handleSubmit}
+          disabled={isSubmitting || !isFormValid}
+          className="pb-4"
+        />
+      )}
+
+      {showLeaveModal && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={handleCloseModals}
+          />
+          <div className="fixed left-1/2 top-1/2 z-50 w-[88%] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-5">
+            <p className="text-center text-body1-medium text-gray-900">
+              그룹을 떠나시겠어요?
+            </p>
+            <div className="mt-5 flex gap-2">
               <button
-                onClick={handleFirstConfirm}
-                className="flex-1 mx-3 mb-4 py-3 text-white text-base font-light border rounded-[10px] bg-pink-500 hover:bg-pink-600 cursor-pointer transition-colors"
+                onClick={handleFirstLeaveConfirm}
+                className="h-12 flex-1 rounded-xl bg-red-500 text-body2-semibold text-white cursor-pointer"
               >
                 떠나기
               </button>
               <button
-                onClick={handleCloseModal}
-                className="flex-1 mx-3 mb-4 py-3 text-white text-base font-light border rounded-[10px] bg-[#D4D4D4] hover:bg-gray-400 cursor-pointer transition-colors"
+                onClick={handleCloseModals}
+                className="h-12 flex-1 rounded-xl bg-gray-200 text-body2-semibold text-gray-700 cursor-pointer"
               >
                 취소
               </button>
@@ -537,143 +445,72 @@ export default function GroupInfoPageClient() {
         </>
       )}
 
-      {/* 두 번째 모달: 새 그룹장 선택 (리더인 경우만) */}
       {showLeaderSelectModal && (
         <>
-          {/* 배경 오버레이 */}
           <div
-            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
-            onClick={handleCloseModal}
-          ></div>
-
-          {/* 모달 컨텐츠 */}
-          <div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] w-[80%] max-w-md z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 모달 헤더 */}
-            <div className="text-center py-5 px-6">
-              {groupInfo && groupInfo.members.length === 1 ? (
-                <>
-                  <p className="text-lg">⚠️마지막 그룹원이 떠날 경우</p>
-                  <p className="text-lg">그룹이 삭제됩니다</p>
-                  <br></br>
-                  <p className="text-lg text-red-500">그래도 떠나시겠습니까?</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-lg">그룹을 떠나기 전에</p>
-                  <p className="text-lg">새 그룹장을 지정해 주세요</p>
-                </>
-              )}
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={handleCloseModals}
+          />
+          <div className="fixed left-1/2 top-1/2 z-50 w-[88%] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-5">
+            <p className="text-center text-body1-medium text-gray-900">
+              새 그룹장을 선택해 주세요.
+            </p>
+            <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
+              {newLeaderCandidates.map((candidate, index) => (
+                <button
+                  key={candidate.nickname}
+                  onClick={() => setSelectedNewLeader(candidate.nickname)}
+                  className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left cursor-pointer ${
+                    selectedNewLeader === candidate.nickname
+                      ? "border-gray-900"
+                      : "border-gray-100"
+                  }`}
+                >
+                  <div className="h-8 w-8 overflow-hidden rounded-full">
+                    {candidate.profileImageUrl ? (
+                      <Image
+                        src={candidate.profileImageUrl}
+                        alt={candidate.nickname}
+                        width={32}
+                        height={32}
+                        className="h-full w-full object-cover"
+                        quality={100}
+                        unoptimized
+                      />
+                    ) : (
+                      <div
+                        className="flex h-full w-full items-center justify-center text-caption1-medium text-white"
+                        style={{ backgroundColor: getMemberIconColor(index) }}
+                      >
+                        {candidate.nickname.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-body2-medium text-gray-900">
+                    {candidate.nickname}
+                  </span>
+                </button>
+              ))}
             </div>
 
-            {/* 멤버 목록 - 마지막 멤버가 아닌 경우만 표시 */}
-            {groupInfo && groupInfo.members.length > 1 && (
-              <div className="px-6 pb-6">
-                <div className="max-h-80 overflow-y-auto">
-                  {getNewLeaderCandidates().map((member, index) => (
-                    <div
-                      key={member.nickname}
-                      onClick={() => setSelectedNewLeader(member.nickname)}
-                      className={`flex items-center space-x-2 p-2 rounded-[10px] cursor-pointer transition-colors border-white ${
-                        selectedNewLeader === member.nickname
-                          ? "border-4 border-yellow-300"
-                          : "hover:bg-yellow-100"
-                      }`}
-                    >
-                      {/* 멤버 아이콘 */}
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
-                        {member.profileImageUrl ? (
-                          <Image
-                            src={member.profileImageUrl}
-                            alt={member.nickname}
-                            width={64}
-                            height={64}
-                            className="w-full h-full object-cover"
-                            quality={100}
-                            unoptimized={true}
-                          />
-                        ) : (
-                          <div
-                            className="w-full h-full flex items-center justify-center text-white text-sm font-light"
-                            style={{
-                              backgroundColor: getMemberIconColor(index),
-                            }}
-                          >
-                            {member.nickname.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 멤버 정보 */}
-                      <div className="flex-1">
-                        <span className="text-sm text-gray-400">
-                          {member.nickname}
-                        </span>
-                      </div>
-
-                      {/* 선택 표시 */}
-                      {selectedNewLeader === member.nickname && (
-                        <Image
-                          src="/images/group/그룹장_왕관.svg"
-                          alt="그룹장"
-                          width={20}
-                          height={20}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 버튼들 */}
-            <div className="flex px-6 pb-6 space-x-7">
-              {groupInfo && groupInfo.members.length === 1 ? (
-                // 마지막 멤버인 경우: 떠나기/취소 버튼
-                <>
-                  <button
-                    onClick={handleFinalLeave}
-                    className="flex-1 py-3 px-4 bg-pink-500 text-white rounded-[10px] font-light hover:bg-pink-600 cursor-pointer transition-colors"
-                  >
-                    떠나기
-                  </button>
-                  <button
-                    onClick={handleCloseModal}
-                    className="flex-1 py-3 px-4 bg-[#D4D4D4] text-white rounded-[10px] font-light hover:bg-gray-400 cursor-pointer transition-colors"
-                  >
-                    취소
-                  </button>
-                </>
-              ) : (
-                // 다른 멤버가 있는 경우: 지정/취소 버튼
-                <>
-                  <button
-                    onClick={handleFinalLeave}
-                    className={`flex-1 py-3 px-4 rounded-[10px] font-light transition-colors ${
-                      selectedNewLeader
-                        ? "bg-[#0EABFF] text-white hover:bg-blue-600 cursor-pointer"
-                        : "bg-[#D4D4D4] text-white cursor-not-allowed"
-                    }`}
-                    disabled={!selectedNewLeader}
-                  >
-                    지정
-                  </button>
-                  <button
-                    onClick={handleCloseModal}
-                    className="flex-1 py-3 px-4 bg-[#D4D4D4] text-white rounded-[10px] font-light hover:bg-gray-400 cursor-pointer transition-colors"
-                  >
-                    취소
-                  </button>
-                </>
-              )}
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={handleFinalLeave}
+                disabled={!selectedNewLeader}
+                className="h-12 flex-1 rounded-xl bg-gray-900 text-body2-semibold text-white cursor-pointer disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
+              >
+                확정
+              </button>
+              <button
+                onClick={handleCloseModals}
+                className="h-12 flex-1 rounded-xl bg-gray-200 text-body2-semibold text-gray-700 cursor-pointer"
+              >
+                취소
+              </button>
             </div>
           </div>
         </>
       )}
-
-      <BottomBar />
     </div>
   );
 }

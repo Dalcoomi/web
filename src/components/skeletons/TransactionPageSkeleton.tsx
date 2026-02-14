@@ -41,7 +41,7 @@ export default function TransactionPageSkeleton() {
           {/* 캐릭터 */}
           <div className="mb-[20px]">
             <Image
-              src="/images/transaction/v2/요약_카드_캐릭터.svg"
+              src="/images/transaction/v2/메인_캐릭터.svg"
               alt="캐릭터"
               width={100}
               height={100}
