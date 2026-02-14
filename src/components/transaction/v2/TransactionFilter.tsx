@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import Image from "next/image";
 
 interface TransactionFilterProps {
@@ -10,6 +10,7 @@ interface TransactionFilterProps {
   selectedCategory?: string;
   selectedAll?: string;
   bgColor?: string;
+  stickyTopClass?: string;
 }
 
 export default function TransactionFilter({
@@ -21,10 +22,11 @@ export default function TransactionFilter({
   selectedCategory = "카테고리",
   selectedAll = "전체",
   bgColor = "bg-white",
+  stickyTopClass = "top-[102px]",
 }: TransactionFilterProps) {
   return (
     <div
-      className={`sticky top-[90px] z-20 ${bgColor} pt-5 pb-4 px-5 flex items-center justify-between`}
+      className={`sticky ${stickyTopClass} z-20 ${bgColor} pt-5 pb-4 px-5 flex items-center justify-between`}
     >
       {/* 좌측: 최신순 */}
       <button
@@ -78,3 +80,4 @@ export default function TransactionFilter({
     </div>
   );
 }
+

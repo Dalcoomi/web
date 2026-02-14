@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, type PointerEvent } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -105,6 +105,8 @@ export default function GroupTransactionPageClient() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const shouldRestoreScroll = useRef(false);
   const [isRestoringScroll, setIsRestoringScroll] = useState(false);
+  const summarySectionRef = useRef<HTMLDivElement>(null);
+  const stickyThresholdRef = useRef(0);
 
   const hasFetchedMember = useRef(false);
   const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -202,29 +204,26 @@ export default function GroupTransactionPageClient() {
     }
   }, [isLoading, response.transactions, teamId]);
 
-  // 스크롤 시 총액 섹션 스타일 변경을 위한 상태 및 관찰자
+  // 스크롤 시 총액 섹션 스타일 변경을 위한 상태
   const [isSticky, setIsSticky] = useState(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsSticky(!entry.isIntersecting);
-      },
-      { threshold: [0, 1] },
-    );
+    if (isLoading) return;
 
-    const sentinelNode = sentinelRef.current;
-    if (sentinelNode) {
-      observer.observe(sentinelNode);
-    }
+    const updateStickyThreshold = () => {
+      stickyThresholdRef.current = summarySectionRef.current?.offsetHeight ?? 0;
+      const scrollPos = scrollContainerRef.current?.scrollTop ?? 0;
+      setIsSticky(scrollPos >= stickyThresholdRef.current);
+    };
+
+    const rafId = requestAnimationFrame(updateStickyThreshold);
+    window.addEventListener("resize", updateStickyThreshold);
 
     return () => {
-      if (sentinelNode) {
-        observer.unobserve(sentinelNode);
-      }
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", updateStickyThreshold);
     };
-  }, []);
+  }, [isLoading, response.transactions.length]);
 
   // 날짜 변경 시 저장
   useEffect(() => {
@@ -354,6 +353,7 @@ export default function GroupTransactionPageClient() {
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const scrollPos = scrollContainerRef.current.scrollTop;
+      setIsSticky(scrollPos >= stickyThresholdRef.current);
       sessionStorage.setItem(
         `group-transaction-scroll-${teamId}`,
         scrollPos.toString(),
@@ -545,7 +545,7 @@ export default function GroupTransactionPageClient() {
         ) : (
           <>
             {/* 요약 카드 상단 (스크롤됨) */}
-            <div className="px-5 pt-1 bg-gray-30">
+            <div ref={summarySectionRef} className="px-5 pt-1 bg-gray-30">
               <TransactionSummary
                 income={response.income}
                 expense={response.expense}
@@ -553,14 +553,12 @@ export default function GroupTransactionPageClient() {
               />
             </div>
 
-            {/* Sticky 감지용 Sentinel */}
-            <div
-              ref={sentinelRef}
-              className="absolute w-full h-px -mt-px pointer-events-none opacity-0"
-            />
-
             {/* 요약 카드 하단 (총액) - Sticky */}
-            <div className="sticky top-0 z-30 px-5 pb-3 bg-gray-30 transition-all duration-300">
+            <div
+              className={`sticky top-0 z-30 px-5 pb-5 bg-gray-30 transition-all duration-300 ${
+                isSticky ? "pt-1" : "pt-0"
+              }`}
+            >
               <TransactionTotal total={response.total} isSticky={isSticky} />
             </div>
 
@@ -570,6 +568,7 @@ export default function GroupTransactionPageClient() {
               <TransactionFilter
                 showCategoryFilter={showCategoryFilter}
                 onCategoryToggle={handleCategoryFilterToggle}
+                stickyTopClass={isSticky ? "top-[106px]" : "top-[102px]"}
               />
 
               {/* 리스트 */}
@@ -767,3 +766,4 @@ export default function GroupTransactionPageClient() {
     </div>
   );
 }
+
