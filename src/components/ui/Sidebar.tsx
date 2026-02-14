@@ -57,14 +57,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* 반투명 오버레이 */}
       <div
-        className="absolute inset-0 bg-[#d9d9d9] opacity-50 z-40"
+        className="absolute inset-0 bg-[#d9d9d9] opacity-50 z-60"
         onClick={onClose}
       />
 
       {/* 사이드바 본문 */}
       <div
         ref={sidebarRef}
-        className="absolute top-0 right-0 h-full w-48 bg-white shadow-lg border-l border-[#E0E0E0] transform transition-transform duration-300 ease-in-out z-50"
+        className="absolute top-0 right-0 h-full w-48 bg-white shadow-lg border-l border-[#E0E0E0] transform transition-transform duration-300 ease-in-out z-70"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pt-6 px-4">

@@ -379,7 +379,7 @@ export default function MyTransactionPageClient() {
             />
 
             {/* 요약 카드 하단 (총액) - Sticky */}
-            <div className="sticky top-0 z-30 px-5 pb-3 bg-gray-30 -mt-[1px] transition-all duration-300">
+            <div className="sticky top-0 z-30 px-5 pb-3 bg-gray-30 transition-all duration-300">
               <TransactionTotal total={response.total} isSticky={isSticky} />
             </div>
 
