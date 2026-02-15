@@ -83,16 +83,17 @@ export default function GroupInfoPageClient() {
   const isCurrentUserLeader = useMemo(() => {
     return groupInfo?.leaderNickname === member?.nickname;
   }, [groupInfo?.leaderNickname, member?.nickname]);
+  const canEditGroupInfo = isCurrentUserLeader;
 
   const isFormValid = title.trim().length > 0;
 
   const handleCopyInviteCode = async () => {
     if (!groupInfo?.invitationCode) {
-      addToast("error", "초대번호를 찾을 수 없습니다.");
+      addToast("error", "초대코드를 찾을 수 없습니다.");
       return;
     }
 
-    await copyToClipboard(groupInfo.invitationCode, "초대번호를 복사했어요.");
+    await copyToClipboard(groupInfo.invitationCode, "초대코드를 복사했어요.");
   };
 
   const handleSubmit = async () => {
@@ -235,12 +236,12 @@ export default function GroupInfoPageClient() {
         </div>
       </div>
 
-      <div className="border-b border-gray-100 px-4">
+      <div className="border-b border-gray-100 px-5">
         <div className="flex gap-6">
           <button
             onClick={() => setActiveTab("group")}
-            className={`relative pb-3 pt-1 text-body2-semibold cursor-pointer ${
-              activeTab === "group" ? "text-gray-900" : "text-gray-400"
+            className={`relative pb-2 pt-3 text-body1-semibold cursor-pointer ${
+              activeTab === "group" ? "text-gray-900" : "text-gray-300"
             }`}
           >
             그룹 정보
@@ -250,8 +251,8 @@ export default function GroupInfoPageClient() {
           </button>
           <button
             onClick={() => setActiveTab("member")}
-            className={`relative pb-3 pt-1 text-body2-semibold cursor-pointer ${
-              activeTab === "member" ? "text-gray-900" : "text-gray-400"
+            className={`relative pb-2 pt-3 text-body1-semibold cursor-pointer ${
+              activeTab === "member" ? "text-gray-900" : "text-gray-300"
             }`}
           >
             멤버 정보
@@ -262,7 +263,7 @@ export default function GroupInfoPageClient() {
         </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto px-5 pb-6 pt-6 scrollbar-hide">
+      <main className="flex-1 overflow-y-auto px-5 pb-6 pt-8 scrollbar-hide">
         {activeTab === "group" ? (
           <div className="space-y-8">
             <div>
@@ -270,17 +271,25 @@ export default function GroupInfoPageClient() {
                 <span className="text-body2-semibold text-gray-600">
                   그룹명
                 </span>
-                <span className="mt-[1px] h-1 w-1 rounded-full bg-red-500" />
+                {canEditGroupInfo && (
+                  <span className="mt-[1px] h-1 w-1 rounded-full bg-red-500" />
+                )}
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => {
+                  if (!canEditGroupInfo) return;
                   if (e.target.value.length <= 20) {
                     setTitle(e.target.value);
                   }
                 }}
-                className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-body1-regular text-gray-900 outline-none transition-colors focus:border-gray-850"
+                disabled={!canEditGroupInfo}
+                className={`h-12 w-full rounded-xl border border-gray-100 px-4 text-body1-regular transition-colors ${
+                  canEditGroupInfo
+                    ? "bg-white text-gray-900 outline-none focus:border-gray-850"
+                    : "bg-gray-30 text-gray-400 cursor-not-allowed"
+                }`}
               />
             </div>
 
@@ -289,26 +298,31 @@ export default function GroupInfoPageClient() {
                 <span className="text-body2-semibold text-gray-600">
                   라벨 컬러
                 </span>
-                <span className="mt-[1px] h-1 w-1 rounded-full bg-red-500" />
+                {canEditGroupInfo && (
+                  <span className="mt-[1px] h-1 w-1 rounded-full bg-red-500" />
+                )}
               </label>
-              <div className="flex items-center gap-4">
-                {LABEL_COLORS.map((color) => (
-                  <button
-                    key={color.id}
-                    onClick={() => setSelectedColor(color.id)}
-                    className={`flex h-11 w-11 items-center justify-center rounded-full cursor-pointer ${
-                      selectedColor === color.id
-                        ? "border-2 border-gray-900"
-                        : "border border-gray-100"
-                    }`}
-                    aria-label={`${color.id} 컬러 선택`}
-                  >
-                    <span
-                      className="h-9 w-9 rounded-full"
-                      style={{ backgroundColor: color.value }}
-                    />
-                  </button>
-                ))}
+              <div className="overflow-x-auto scrollbar">
+                <div className="flex items-center gap-4 w-max min-w-full">
+                  {LABEL_COLORS.map((color) => (
+                    <button
+                      key={color.id}
+                      onClick={() => setSelectedColor(color.id)}
+                      disabled={!canEditGroupInfo}
+                      className={`shrink-0 flex h-11 w-11 items-center justify-center rounded-full ${
+                        selectedColor === color.id
+                          ? "border-2 border-gray-900"
+                          : "border border-gray-100"
+                      } ${canEditGroupInfo ? "cursor-pointer" : "cursor-not-allowed"}`}
+                      aria-label={`${color.id} 컬러 선택`}
+                    >
+                      <span
+                        className="h-9 w-9 rounded-full"
+                        style={{ backgroundColor: color.value }}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -316,16 +330,26 @@ export default function GroupInfoPageClient() {
               <label className="mb-2 block text-body2-semibold text-gray-600">
                 초대코드
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 min-[360px]:flex-row min-[360px]:items-center">
                 <input
                   type="text"
                   value={groupInfo.invitationCode}
-                  disabled
-                  className="h-12 flex-1 rounded-xl border border-gray-100 bg-gray-50 px-4 text-body1-regular text-gray-400"
+                  readOnly
+                  aria-readonly
+                  onClick={() => {
+                    void handleCopyInviteCode();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      void handleCopyInviteCode();
+                    }
+                  }}
+                  className="h-12 min-w-0 flex-1 rounded-xl border border-gray-100 bg-gray-30 px-4 text-body1-regular text-gray-400 outline-none cursor-pointer"
                 />
                 <button
                   onClick={handleCopyInviteCode}
-                  className="h-12 min-w-[96px] rounded-xl border border-gray-900 bg-white px-4 text-body2-semibold text-gray-900 cursor-pointer"
+                  className="h-12 w-full min-[360px]:w-auto min-[360px]:min-w-[96px] shrink-0 whitespace-nowrap rounded-xl border border-gray-800 bg-white px-5 text-body1-semibold text-gray-900 cursor-pointer"
                 >
                   복사하기
                 </button>
@@ -340,12 +364,17 @@ export default function GroupInfoPageClient() {
                 type="text"
                 value={purpose}
                 onChange={(e) => {
+                  if (!canEditGroupInfo) return;
                   if (e.target.value.length <= 30) {
                     setPurpose(e.target.value);
                   }
                 }}
-                className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-body1-regular text-gray-900 outline-none transition-colors focus:border-gray-850"
-                placeholder="하루 10만원으로 여행하기"
+                disabled={!canEditGroupInfo}
+                className={`h-12 w-full rounded-xl border border-gray-100 px-4 text-body1-regular transition-colors ${
+                  canEditGroupInfo
+                    ? "bg-white text-gray-900 outline-none focus:border-gray-850"
+                    : "bg-gray-30 text-gray-400 cursor-not-allowed"
+                }`}
               />
             </div>
 
@@ -366,16 +395,16 @@ export default function GroupInfoPageClient() {
               return (
                 <div
                   key={groupMember.nickname}
-                  className="flex items-center justify-between py-[12px]"
+                  className="flex items-center justify-between pb-6"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 overflow-hidden rounded-full bg-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="h-9 w-9 overflow-hidden rounded-full bg-gray-100">
                       {groupMember.profileImageUrl ? (
                         <Image
                           src={groupMember.profileImageUrl}
                           alt={groupMember.nickname}
-                          width={40}
-                          height={40}
+                          width={36}
+                          height={36}
                           className="h-full w-full object-cover"
                           quality={100}
                           unoptimized
@@ -389,14 +418,14 @@ export default function GroupInfoPageClient() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     {isMe && (
-                      <span className="rounded-[8px] bg-gray-50 px-2 py-1 text-caption1-medium text-gray-500">
+                      <span className="rounded-[6px] bg-gray-50 px-2 py-1 text-caption1-semibold text-gray-700">
                         나
                       </span>
                     )}
                     {isLeader && (
-                      <span className="rounded-[8px] bg-blue-50 px-2 py-1 text-caption1-medium text-blue-500">
+                      <span className="rounded-[6px] bg-blue-50 px-2 py-1 text-caption1-semibold text-blue-600">
                         그룹장
                       </span>
                     )}
