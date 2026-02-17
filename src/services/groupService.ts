@@ -1,25 +1,23 @@
-// services/groupService.ts
-import { get, post, put, del, patch } from "@/utils/apiClient";
+﻿// services/groupService.ts
+import { get, post, del, patch } from "@/utils/apiClient";
 import { useToastStore } from "@/stores/useToastStore";
 
-// 🔥 중복 요청 방지를 위한 Promise 캐시
 let pendingGroupsRequest: Promise<GetMyTeamsResponse> | null = null;
 const pendingGroupInfoRequests = new Map<string, Promise<GroupInfo>>();
 
-// 그룹 타입 정의
 export interface Group {
-  teamId: string; // Long을 string으로 처리
+  teamId: string;
   title: string;
   memberCount: number;
   memberLimit: number;
   label: string;
+  isLeader?: boolean;
 }
 
 export interface GetMyTeamsResponse {
   groups: Group[];
 }
 
-// 그룹 정보 타입 (백엔드 응답에 맞게 수정)
 export interface GroupInfo {
   teamId: string;
   title: string;
@@ -29,6 +27,7 @@ export interface GroupInfo {
   leaderNickname: string;
   members: GroupMember[];
   label: string;
+  isLeader?: boolean;
 }
 
 export interface GroupMember {
@@ -36,37 +35,35 @@ export interface GroupMember {
   profileImageUrl: string;
 }
 
-// 그룹 생성/수정 요청 DTO
 export interface GroupRequestDto {
-  teamId: string | null; // 생성 시 null, 수정 시 teamId
+  teamId: string | null;
   title: string;
   memberLimit: number;
   purpose: string | null;
   label: string;
 }
 
-// 그룹 생성 API
-export const createGroup = async (groupData: Omit<GroupRequestDto, 'teamId'>) => {
+export const createGroup = async (
+  groupData: Omit<GroupRequestDto, "teamId">,
+) => {
   const requestData: GroupRequestDto = {
-    teamId: null, // 생성 시 null
+    teamId: null,
     ...groupData,
   };
   return post("/api/teams", requestData);
 };
 
-// 그룹 참가 API
-export const joinGroup = async (invitationCode: string): Promise<{ teamId: string; title: string }> => {
+export const joinGroup = async (
+  invitationCode: string,
+): Promise<{ teamId: string; title: string }> => {
   return post(`/api/teams/join/${invitationCode}`, {});
 };
 
-// 내 그룹 리스트 조회 API
 export const getGroups = async (): Promise<GetMyTeamsResponse> => {
-  // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
   if (pendingGroupsRequest) {
     return pendingGroupsRequest;
   }
 
-  // 🔥 새로운 요청 시작
   pendingGroupsRequest = (async () => {
     try {
       const response = await get("/api/teams");
@@ -77,7 +74,6 @@ export const getGroups = async (): Promise<GetMyTeamsResponse> => {
         groups: [],
       };
     } finally {
-      // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
       setTimeout(() => {
         pendingGroupsRequest = null;
       }, 50);
@@ -87,24 +83,18 @@ export const getGroups = async (): Promise<GetMyTeamsResponse> => {
   return pendingGroupsRequest;
 };
 
-// 그룹 정보 조회 API
 export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
   const url = `/api/teams/${teamId}`;
 
-  // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
   if (pendingGroupInfoRequests.has(url)) {
     return pendingGroupInfoRequests.get(url)!;
   }
 
-  // 🔥 새로운 요청 시작
   const requestPromise = (async () => {
     try {
       const response = await get(url);
       return response;
-    } catch (error) {
-      throw error;
     } finally {
-      // 🔥 요청 완료 후 캐시에서 제거 (50ms 후)
       setTimeout(() => {
         pendingGroupInfoRequests.delete(url);
       }, 50);
@@ -115,19 +105,13 @@ export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
   return requestPromise;
 };
 
-// 그룹 수정 API
 export const updateGroup = async (groupData: GroupRequestDto): Promise<void> => {
-  try {
-    await patch("/api/teams", groupData);
-  } catch (error) {
-    throw error;
-  }
+  await patch("/api/teams", groupData);
 };
 
-// 그룹 나가기 API
 export const leaveGroup = async (
   teamId: string,
-  nextLeaderNickname?: string
+  nextLeaderNickname?: string,
 ): Promise<void> => {
   try {
     const requestBody = {
@@ -138,23 +122,17 @@ export const leaveGroup = async (
     await del(`/api/teams/leave`, requestBody);
   } catch (error) {
     useToastStore.getState().addToast("error", String(error));
-
     throw error;
   }
 };
 
-// 🔥 그룹 순서 변경 API
 export interface GroupOrderItem {
   teamId: string;
   displayOrder: number;
 }
 
 export const updateGroupOrder = async (
-  orders: GroupOrderItem[]
+  orders: GroupOrderItem[],
 ): Promise<void> => {
-  try {
-    await patch("/api/teams/order", { orders });
-  } catch (error) {
-    throw error;
-  }
+  await patch("/api/teams/order", { orders });
 };

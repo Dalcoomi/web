@@ -9,7 +9,6 @@ import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
   getGroupInfo,
   GroupInfo,
-  leaveGroup,
   updateGroup,
 } from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
@@ -45,10 +44,6 @@ export default function GroupInfoPageClient() {
     LABEL_COLORS[0].id,
   );
 
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [showLeaderSelectModal, setShowLeaderSelectModal] = useState(false);
-  const [selectedNewLeader, setSelectedNewLeader] = useState("");
-
   useEffect(() => {
     if (!member) {
       fetchMember();
@@ -81,8 +76,12 @@ export default function GroupInfoPageClient() {
   }, [teamId, router, addToast]);
 
   const isCurrentUserLeader = useMemo(() => {
+    if (typeof groupInfo?.isLeader === "boolean") {
+      return groupInfo.isLeader;
+    }
+
     return groupInfo?.leaderNickname === member?.nickname;
-  }, [groupInfo?.leaderNickname, member?.nickname]);
+  }, [groupInfo, member?.nickname]);
   const canEditGroupInfo = isCurrentUserLeader;
 
   const isFormValid = title.trim().length > 0;
@@ -127,72 +126,9 @@ export default function GroupInfoPageClient() {
     }
   };
 
-  const getMemberIconColor = (index: number) => {
-    const colors = ["#F9F90C", "#94A7EF", "#FCC9EC", "#45D076"];
-    return colors[index % colors.length];
-  };
-
   const handleLeaveGroupClick = () => {
-    setShowLeaveModal(true);
+    router.push(`/group/info/${teamId}/leave`);
   };
-
-  const handleCloseModals = () => {
-    setShowLeaveModal(false);
-    setShowLeaderSelectModal(false);
-    setSelectedNewLeader("");
-  };
-
-  const handleFirstLeaveConfirm = () => {
-    if (!groupInfo) {
-      return;
-    }
-
-    if (isCurrentUserLeader && groupInfo.members.length > 1) {
-      setShowLeaveModal(false);
-      setShowLeaderSelectModal(true);
-      return;
-    }
-
-    void handleFinalLeave();
-  };
-
-  const handleFinalLeave = async () => {
-    if (!groupInfo) {
-      return;
-    }
-
-    if (
-      isCurrentUserLeader &&
-      groupInfo.members.length > 1 &&
-      !selectedNewLeader
-    ) {
-      addToast("error", "새 그룹장을 선택해 주세요.");
-      return;
-    }
-
-    try {
-      if (isCurrentUserLeader && selectedNewLeader) {
-        await leaveGroup(teamId, selectedNewLeader);
-      } else {
-        await leaveGroup(teamId);
-      }
-
-      addToast("success", "그룹을 떠났어요.");
-      router.replace("/group");
-    } catch (error) {
-      addToast("error", String(error) || "그룹 떠나기 중 오류가 발생했습니다.");
-    }
-  };
-
-  const newLeaderCandidates = useMemo(() => {
-    if (!groupInfo) {
-      return [];
-    }
-
-    return groupInfo.members.filter(
-      (groupMember) => groupMember.nickname !== groupInfo.leaderNickname,
-    );
-  }, [groupInfo]);
 
   if (isLoading) {
     return (
@@ -446,100 +382,6 @@ export default function GroupInfoPageClient() {
         />
       )}
 
-      {showLeaveModal && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/40"
-            onClick={handleCloseModals}
-          />
-          <div className="fixed left-1/2 top-1/2 z-50 w-[88%] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-5">
-            <p className="text-center text-body1-medium text-gray-900">
-              그룹을 떠나시겠어요?
-            </p>
-            <div className="mt-5 flex gap-2">
-              <button
-                onClick={handleFirstLeaveConfirm}
-                className="h-12 flex-1 rounded-xl bg-red-500 text-body2-semibold text-white cursor-pointer"
-              >
-                떠나기
-              </button>
-              <button
-                onClick={handleCloseModals}
-                className="h-12 flex-1 rounded-xl bg-gray-200 text-body2-semibold text-gray-700 cursor-pointer"
-              >
-                취소
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
-      {showLeaderSelectModal && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/40"
-            onClick={handleCloseModals}
-          />
-          <div className="fixed left-1/2 top-1/2 z-50 w-[88%] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-5">
-            <p className="text-center text-body1-medium text-gray-900">
-              새 그룹장을 선택해 주세요.
-            </p>
-            <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
-              {newLeaderCandidates.map((candidate, index) => (
-                <button
-                  key={candidate.nickname}
-                  onClick={() => setSelectedNewLeader(candidate.nickname)}
-                  className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left cursor-pointer ${
-                    selectedNewLeader === candidate.nickname
-                      ? "border-gray-900"
-                      : "border-gray-100"
-                  }`}
-                >
-                  <div className="h-8 w-8 overflow-hidden rounded-full">
-                    {candidate.profileImageUrl ? (
-                      <Image
-                        src={candidate.profileImageUrl}
-                        alt={candidate.nickname}
-                        width={32}
-                        height={32}
-                        className="h-full w-full object-cover"
-                        quality={100}
-                        unoptimized
-                      />
-                    ) : (
-                      <div
-                        className="flex h-full w-full items-center justify-center text-caption1-medium text-white"
-                        style={{ backgroundColor: getMemberIconColor(index) }}
-                      >
-                        {candidate.nickname.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-body2-medium text-gray-900">
-                    {candidate.nickname}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-5 flex gap-2">
-              <button
-                onClick={handleFinalLeave}
-                disabled={!selectedNewLeader}
-                className="h-12 flex-1 rounded-xl bg-gray-900 text-body2-semibold text-white cursor-pointer disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
-              >
-                확정
-              </button>
-              <button
-                onClick={handleCloseModals}
-                className="h-12 flex-1 rounded-xl bg-gray-200 text-body2-semibold text-gray-700 cursor-pointer"
-              >
-                취소
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
