@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef, useMemo, type PointerEvent } from "react";
+import { useState, useEffect, useRef, useCallback, type PointerEvent } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
@@ -52,6 +52,9 @@ export default function GroupTransactionPageClient() {
   const [showGroupModal, setShowGroupModal] = useState(
     groupModalQuery === "open",
   );
+  const [groupInfoActionLabel, setGroupInfoActionLabel] = useState(
+    "그룹 정보 확인하기",
+  );
   const [groups, setGroups] = useState<Group[]>(cachedGroupModalList);
 
   // 개인/그룹 토글 상태
@@ -92,9 +95,6 @@ export default function GroupTransactionPageClient() {
     transactions: [],
   });
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
-  const isCurrentUserLeader = useMemo(() => {
-    return groupInfo?.leaderNickname === member?.nickname;
-  }, [groupInfo?.leaderNickname, member?.nickname]);
 
   // 필터링 관련 상태
   const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
@@ -111,12 +111,36 @@ export default function GroupTransactionPageClient() {
   const summarySectionRef = useRef<HTMLDivElement>(null);
   const stickyThresholdRef = useRef(0);
 
-  const hasFetchedMember = useRef(false);
   const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasFetchedMember = useRef(false);
+  const hasOpenedFromQueryRef = useRef(false);
   const modalDragStartYRef = useRef<number | null>(null);
   const modalIsDraggingRef = useRef(false);
   const [modalDragOffset, setModalDragOffset] = useState(0);
   const MODAL_CLOSE_DRAG_THRESHOLD = 160;
+  const getCanEditGroupInfo = useCallback((
+    info: GroupInfo | null,
+    groupList: Group[],
+    currentTeamId: string,
+    nickname?: string,
+  ) => {
+    if (typeof info?.isLeader === "boolean") {
+      return info.isLeader;
+    }
+
+    const currentGroup = groupList.find(
+      (group) => String(group.teamId) === String(currentTeamId),
+    );
+    if (typeof currentGroup?.isLeader === "boolean") {
+      return currentGroup.isLeader;
+    }
+
+    if (!nickname || !info?.leaderNickname) {
+      return false;
+    }
+
+    return info.leaderNickname === nickname;
+  }, []);
 
   useEffect(() => {
     if (!hasFetchedMember.current) {
@@ -126,17 +150,6 @@ export default function GroupTransactionPageClient() {
   }, [fetchMember]);
 
   useEffect(() => {
-    if (groupModalQuery === "open") {
-      if (closeModalTimerRef.current) {
-        clearTimeout(closeModalTimerRef.current);
-        closeModalTimerRef.current = null;
-      }
-      setIsGroupModalMounted(true);
-      setShowGroupModal(true);
-    }
-  }, [groupModalQuery]);
-
-  useEffect(() => {
     return () => {
       if (closeModalTimerRef.current) {
         clearTimeout(closeModalTimerRef.current);
@@ -144,21 +157,35 @@ export default function GroupTransactionPageClient() {
     };
   }, []);
 
+  useEffect(() => {
+    setGroupInfoActionLabel("그룹 정보 확인하기");
+    setGroupInfo(null);
+  }, [teamId]);
+
   // 그룹 정보 로딩
   useEffect(() => {
-    if (!teamId || groupInfo) return;
+    if (!teamId) return;
+
+    let isCancelled = false;
 
     const fetchGroupInfo = async () => {
       try {
         const info = await getGroupInfo(teamId);
-        setGroupInfo(info);
+        if (!isCancelled) {
+          setGroupInfo(info);
+        }
       } catch (error) {
         console.error("Failed to fetch group info:", error);
         // router.replace("/group"); // 에러 시 그룹 목록으로 이동? 일단 유지
       }
     };
+
     fetchGroupInfo();
-  }, [teamId, groupInfo]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [teamId]);
 
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
@@ -385,8 +412,35 @@ export default function GroupTransactionPageClient() {
     setShowCategoryFilter((prev) => !prev);
   };
 
-  // 그룹 정보 이동
-  const handleGroupInfo = () => {
+  const openGroupModalWithResolvedLabel = useCallback(async () => {
+    hasOpenedFromQueryRef.current = true;
+
+    try {
+      const [info, groupsResponse] = await Promise.all([
+        getGroupInfo(teamId),
+        getGroups(),
+      ]);
+      setGroupInfo(info);
+      const fetchedGroups = groupsResponse.groups ?? [];
+      setGroups(fetchedGroups);
+
+      const canEdit = getCanEditGroupInfo(
+        info,
+        fetchedGroups,
+        teamId,
+        member?.nickname,
+      );
+
+      setGroupInfoActionLabel(canEdit ? "그룹 정보 수정하기" : "그룹 정보 확인하기");
+    } catch {
+      setGroupInfoActionLabel("그룹 정보 확인하기");
+    }
+
+    if (closeModalTimerRef.current) {
+      clearTimeout(closeModalTimerRef.current);
+      closeModalTimerRef.current = null;
+    }
+
     if (!isGroupModalMounted) {
       setIsGroupModalMounted(true);
       requestAnimationFrame(() => setShowGroupModal(true));
@@ -397,6 +451,25 @@ export default function GroupTransactionPageClient() {
     router.replace(`/transaction/group/${teamId}?groupModal=open`, {
       scroll: false,
     });
+  }, [getCanEditGroupInfo, isGroupModalMounted, member?.nickname, router, teamId]);
+
+  useEffect(() => {
+    if (groupModalQuery !== "open") {
+      hasOpenedFromQueryRef.current = false;
+      return;
+    }
+
+    if (hasOpenedFromQueryRef.current) {
+      return;
+    }
+
+    hasOpenedFromQueryRef.current = true;
+    void openGroupModalWithResolvedLabel();
+  }, [groupModalQuery, openGroupModalWithResolvedLabel]);
+
+  // 그룹 정보 이동
+  const handleGroupInfo = async () => {
+    await openGroupModalWithResolvedLabel();
   };
 
   const handleEnterInviteCode = () => {
@@ -726,7 +799,7 @@ export default function GroupTransactionPageClient() {
                 onClick={handleGroupInfoEdit}
                 className="w-[335px] max-w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer"
               >
-                {isCurrentUserLeader ? "그룹 정보 수정하기" : "그룹 정보 확인하기"}
+                {groupInfoActionLabel}
               </button>
               <button
                 onClick={handleGroupInvite}
