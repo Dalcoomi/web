@@ -2,25 +2,19 @@
 import Image from "next/image";
 
 interface TransactionFilterProps {
-  showCategoryFilter: boolean;
-  onCategoryToggle: () => void;
   onSortToggle?: () => void;
   onAllToggle?: () => void;
   selectedSort?: string;
-  selectedCategory?: string;
   selectedAll?: string;
   bgColor?: string;
   stickyTopClass?: string;
 }
 
 export default function TransactionFilter({
-  showCategoryFilter,
-  onCategoryToggle,
   onSortToggle,
   onAllToggle,
   selectedSort = "최신순",
-  selectedCategory = "카테고리",
-  selectedAll = "전체",
+  selectedAll = "필터",
   bgColor = "bg-white",
   stickyTopClass = "top-[102px]",
 }: TransactionFilterProps) {
@@ -42,26 +36,8 @@ export default function TransactionFilter({
         />
       </button>
 
-      {/* 우측: 카테고리, 전체 */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onCategoryToggle}
-          className="flex items-center gap-1 rounded-[100px] border border-gray-200 bg-white cursor-pointer pt-[6px] pb-[6px] pl-[14px] pr-[10px]"
-        >
-          <span className="text-body2-regular text-gray-900">
-            {selectedCategory}
-          </span>
-          <Image
-            src="/images/transaction/v2/필터_드롭다운.svg"
-            alt="드롭다운"
-            width={16}
-            height={16}
-            className={`transform transition-transform duration-200 ${
-              showCategoryFilter ? "rotate-180" : ""
-            }`}
-          />
-        </button>
-
+      {/* 우측: 필터 */}
+      <div className="flex items-center">
         <button
           onClick={onAllToggle}
           className="flex items-center gap-1 rounded-[100px] border border-gray-200 bg-white cursor-pointer pt-[6px] pb-[6px] pl-[14px] pr-[10px]"

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -10,31 +10,17 @@ import TransactionTypeToggle, {
 import TransactionFloatingButton from "@/components/transaction/v2/TransactionFloatingButton";
 import { useMemberStore } from "@/stores/useMemberStore";
 import Sidebar from "@/components/ui/Sidebar";
+import { getGroups } from "@/services/groupService";
 
 export default function GroupTransactionEmptyPageClient() {
   const router = useRouter();
   const { fetchMember } = useMemberStore();
 
-  // 사이드바 상태
   const [showSidebar, setShowSidebar] = useState(false);
-
-  // 개인/그룹 토글 상태
   const [viewMode, setViewMode] = useState<ViewMode>("group");
-
-  const handleViewModeToggle = (mode: ViewMode) => {
-    if (mode === "personal") {
-      router.push("/transaction/my");
-    } else {
-      // 이미 그룹 모드이므로 유지
-      setViewMode(mode);
-    }
-  };
-
-  // 플로팅 버튼 토글 상태
   const [isFloatingMenuOpen, setIsFloatingMenuOpen] = useState<boolean>(false);
-
-  // 날짜 관련 상태 (표시용)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [hasResolvedGroups, setHasResolvedGroups] = useState(false);
 
   const hasFetchedMember = useRef(false);
 
@@ -45,7 +31,42 @@ export default function GroupTransactionEmptyPageClient() {
     }
   }, [fetchMember]);
 
-  // 사이드바 메뉴 핸들러
+  useEffect(() => {
+    let isCancelled = false;
+
+    const resolveGroups = async () => {
+      try {
+        const response = await getGroups();
+        const groups = response.groups ?? [];
+
+        if (!isCancelled && groups.length > 0) {
+          router.replace(`/transaction/group/${groups[0].teamId}`);
+          return;
+        }
+      } catch {
+        // 그룹 조회 실패 시에는 기존 빈 상태 화면을 유지
+      } finally {
+        if (!isCancelled) {
+          setHasResolvedGroups(true);
+        }
+      }
+    };
+
+    resolveGroups();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [router]);
+
+  const handleViewModeToggle = (mode: ViewMode) => {
+    if (mode === "personal") {
+      router.push("/transaction/my");
+    } else {
+      setViewMode(mode);
+    }
+  };
+
   const handleMenuClick = () => {
     setShowSidebar(true);
   };
@@ -72,7 +93,6 @@ export default function GroupTransactionEmptyPageClient() {
     setSelectedDate(newDate);
   };
 
-  // 플로팅 버튼 핸들러
   const handleFloatingButtonClick = () => {
     setIsFloatingMenuOpen((prev) => !prev);
   };
@@ -87,7 +107,6 @@ export default function GroupTransactionEmptyPageClient() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-30 relative font-landing overflow-hidden">
-      {/* 상단바 */}
       <TransactionHeader
         title={formatDateForDisplay(selectedDate)}
         onPrevMonth={handlePrevMonth}
@@ -97,22 +116,46 @@ export default function GroupTransactionEmptyPageClient() {
 
       <Sidebar isOpen={showSidebar} onClose={() => setShowSidebar(false)} />
 
-      {/* 메인 컨텐츠 영역 - 팁 섹션(~142px) + 간격(120px) = bottom 약 350px */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
-        style={{ bottom: "350px" }}
-      >
-        <Image
-          src="/images/transaction/v2/empty_캐릭터.svg"
-          alt="참여 중인 그룹 없음"
-          width={120}
-          height={120}
-          className="opacity-40 mix-blend-luminosity"
-        />
-        <span className="text-subtitle text-gray-300">
-          참여 중인 그룹이 없어요.
-        </span>
-      </div>
+      {hasResolvedGroups && (
+        <>
+          <div
+            className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+            style={{ bottom: "350px" }}
+          >
+            <Image
+              src="/images/transaction/v2/empty_캐릭터.svg"
+              alt="참여 중인 그룹 없음"
+              width={120}
+              height={120}
+              className="opacity-40 mix-blend-luminosity"
+            />
+            <span className="text-subtitle text-gray-300">
+              참여 중인 그룹이 없어요.
+            </span>
+          </div>
+
+          {!isFloatingMenuOpen && !showSidebar && (
+            <div
+              className="absolute bottom-22 flex flex-col items-start pointer-events-none z-50"
+              style={{ right: "45.65px" }}
+            >
+              <span className="text-caption2-semibold text-green-600">Tip</span>
+              <span className="text-caption1-semibold text-gray-900 mt-2">
+                새로운 그룹을 생성하거나
+                <br />
+                초대 코드를 입력해보세요!
+              </span>
+              <Image
+                src="/images/transaction/v2/그룹_안내_arrow.svg"
+                alt="안내 화살표"
+                width={64}
+                height={64}
+                className="mt-3 self-end"
+              />
+            </div>
+          )}
+        </>
+      )}
 
       {isFloatingMenuOpen && (
         <div
@@ -121,29 +164,6 @@ export default function GroupTransactionEmptyPageClient() {
         />
       )}
 
-      {/* 플로팅 버튼 위 안내 섹션 */}
-      {!isFloatingMenuOpen && !showSidebar && (
-        <div
-          className="absolute bottom-22 flex flex-col items-start pointer-events-none z-50"
-          style={{ right: "45.65px" }}
-        >
-          <span className="text-caption2-semibold text-green-600">Tip</span>
-          <span className="text-caption1-semibold text-gray-900 mt-2">
-            새로운 그룹을 생성하거나,
-            <br />
-            초대 코드를 입력해보세요!
-          </span>
-          <Image
-            src="/images/transaction/v2/그룹_안내_arrow.svg"
-            alt="안내 화살표"
-            width={64}
-            height={64}
-            className="mt-3 self-end"
-          />
-        </div>
-      )}
-
-      {/* 하단 개인/그룹 토글 및 플로팅 버튼 */}
       <div className="absolute bottom-0 left-0 right-0 pb-6 px-4 flex items-end justify-between pointer-events-none">
         <TransactionTypeToggle
           viewMode={viewMode}
