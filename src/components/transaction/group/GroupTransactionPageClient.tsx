@@ -9,6 +9,9 @@ import GroupNameCard from "@/components/transaction/v2/GroupNameCard";
 import TransactionSummary from "@/components/transaction/v2/TransactionSummary";
 import TransactionTotal from "@/components/transaction/v2/TransactionTotal";
 import TransactionFilter from "@/components/transaction/v2/TransactionFilter";
+import SortBottomSheet, {
+  SortOption,
+} from "@/components/transaction/v2/SortBottomSheet";
 import TransactionTypeToggle, {
   ViewMode,
 } from "@/components/transaction/v2/TransactionTypeToggle";
@@ -39,6 +42,7 @@ export default function GroupTransactionPageClient() {
   const params = useParams();
   const searchParams = useSearchParams();
   const teamId = params.teamId as string;
+  const isValidTeamId = /^\d+$/.test(teamId);
   const groupModalQuery = searchParams.get("groupModal");
   const { member, fetchMember } = useMemberStore();
   const addToast = useToastStore((state) => state.addToast);
@@ -72,6 +76,9 @@ export default function GroupTransactionPageClient() {
 
   // 플로팅 버튼 토글 상태
   const [isFloatingMenuOpen, setIsFloatingMenuOpen] = useState<boolean>(false);
+  const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
+  const [isSortModalMounted, setIsSortModalMounted] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
 
   // 날짜 관련 상태
   const getSavedDate = (): Date => {
@@ -97,7 +104,6 @@ export default function GroupTransactionPageClient() {
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
   // 필터링 관련 상태
-  const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
   const [currentCategoryFilter] = useState<string | null>(null);
 
   // 중복 호출 방지를 위한 ref
@@ -107,11 +113,11 @@ export default function GroupTransactionPageClient() {
   // 스크롤 위치 저장/복원을 위한 ref
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const shouldRestoreScroll = useRef(false);
-  const [isRestoringScroll, setIsRestoringScroll] = useState(false);
   const summarySectionRef = useRef<HTMLDivElement>(null);
   const stickyThresholdRef = useRef(0);
 
   const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sortModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasFetchedMember = useRef(false);
   const hasOpenedFromQueryRef = useRef(false);
   const modalDragStartYRef = useRef<number | null>(null);
@@ -150,9 +156,39 @@ export default function GroupTransactionPageClient() {
   }, [fetchMember]);
 
   useEffect(() => {
+    let isCancelled = false;
+
+    const validateTeamRoute = async () => {
+      if (!isValidTeamId) {
+        router.replace("/transaction/group");
+        return;
+      }
+
+      const groupsResponse = await getGroups();
+      const myGroups = groupsResponse.groups ?? [];
+      const isMemberOfTeam = myGroups.some(
+        (group) => String(group.teamId) === String(teamId),
+      );
+
+      if (!isCancelled && !isMemberOfTeam) {
+        router.replace("/transaction/group");
+      }
+    };
+
+    void validateTeamRoute();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isValidTeamId, router, teamId]);
+
+  useEffect(() => {
     return () => {
       if (closeModalTimerRef.current) {
         clearTimeout(closeModalTimerRef.current);
+      }
+      if (sortModalCloseTimerRef.current) {
+        clearTimeout(sortModalCloseTimerRef.current);
       }
     };
   }, []);
@@ -164,7 +200,7 @@ export default function GroupTransactionPageClient() {
 
   // 그룹 정보 로딩
   useEffect(() => {
-    if (!teamId) return;
+    if (!teamId || !isValidTeamId) return;
 
     let isCancelled = false;
 
@@ -185,7 +221,7 @@ export default function GroupTransactionPageClient() {
     return () => {
       isCancelled = true;
     };
-  }, [teamId]);
+  }, [isValidTeamId, teamId]);
 
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
@@ -194,14 +230,16 @@ export default function GroupTransactionPageClient() {
 
   // 페이지 진입 시 스크롤 위치 복원 플래그 설정
   useEffect(() => {
+    if (!isValidTeamId) return;
+
     const savedScroll = sessionStorage.getItem(
       `group-transaction-scroll-${teamId}`,
     );
-    if (savedScroll) {
+    const scrollPos = savedScroll ? parseInt(savedScroll, 10) : 0;
+    if (Number.isFinite(scrollPos) && scrollPos > 0) {
       shouldRestoreScroll.current = true;
-      setIsRestoringScroll(true);
     }
-  }, [teamId]);
+  }, [isValidTeamId, teamId]);
 
   // 데이터 로딩 완료 후 스크롤 복원
   useEffect(() => {
@@ -221,16 +259,12 @@ export default function GroupTransactionPageClient() {
             if (scrollContainerRef.current) {
               scrollContainerRef.current.scrollTop = scrollPos;
               shouldRestoreScroll.current = false;
-              setTimeout(() => {
-                setIsRestoringScroll(false);
-              }, 50);
             }
           });
         }, 100);
       }
     } else if (!isLoading && shouldRestoreScroll.current) {
       shouldRestoreScroll.current = false;
-      setIsRestoringScroll(false);
     }
   }, [isLoading, response.transactions, teamId]);
 
@@ -265,7 +299,7 @@ export default function GroupTransactionPageClient() {
 
   // 통합된 useEffect로 중복 호출 방지
   useEffect(() => {
-    if (!teamId) return;
+    if (!teamId || !isValidTeamId) return;
 
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
@@ -328,11 +362,11 @@ export default function GroupTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [selectedDate, currentCategoryFilter, teamId]);
+  }, [isValidTeamId, selectedDate, currentCategoryFilter, teamId]);
 
   // 필터링된 거래 내역 가져오기
   const getFilteredTransactions = () => {
-    return response.transactions.filter((transaction) => {
+    const filtered = response.transactions.filter((transaction) => {
       if (
         currentCategoryFilter &&
         transaction.categoryName !== currentCategoryFilter
@@ -340,6 +374,28 @@ export default function GroupTransactionPageClient() {
         return false;
       }
       return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (selectedSort === "오래된 순") {
+        return (
+          new Date(a.transactionDate).getTime() -
+          new Date(b.transactionDate).getTime()
+        );
+      }
+
+      if (selectedSort === "높은 금액 순") {
+        return b.amount - a.amount;
+      }
+
+      if (selectedSort === "낮은 금액 순") {
+        return a.amount - b.amount;
+      }
+
+      return (
+        new Date(b.transactionDate).getTime() -
+        new Date(a.transactionDate).getTime()
+      );
     });
   };
 
@@ -407,9 +463,39 @@ export default function GroupTransactionPageClient() {
     addToast("info", "서비스 점검 중입니다.");
   };
 
-  // 카테고리 필터 핸들러
-  const handleCategoryFilterToggle = () => {
-    setShowCategoryFilter((prev) => !prev);
+  const handleOpenSortModal = () => {
+    setIsFloatingMenuOpen(false);
+
+    if (sortModalCloseTimerRef.current) {
+      clearTimeout(sortModalCloseTimerRef.current);
+      sortModalCloseTimerRef.current = null;
+    }
+
+    if (!isSortModalMounted) {
+      setIsSortModalMounted(true);
+      requestAnimationFrame(() => setShowSortModal(true));
+      return;
+    }
+
+    setShowSortModal(true);
+  };
+
+  const handleCloseSortModal = () => {
+    setShowSortModal(false);
+
+    if (sortModalCloseTimerRef.current) {
+      clearTimeout(sortModalCloseTimerRef.current);
+    }
+
+    sortModalCloseTimerRef.current = setTimeout(() => {
+      setIsSortModalMounted(false);
+      sortModalCloseTimerRef.current = null;
+    }, 220);
+  };
+
+  const handleSelectSort = (sort: SortOption) => {
+    setSelectedSort(sort);
+    handleCloseSortModal();
   };
 
   const openGroupModalWithResolvedLabel = useCallback(async () => {
@@ -611,10 +697,6 @@ export default function GroupTransactionPageClient() {
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto flex flex-col relative scrollbar-hide z-10 bg-gray-30"
-        style={{
-          opacity: isRestoringScroll ? 0 : 1,
-          transition: "opacity 0.15s",
-        }}
       >
         {isLoading ? (
           <TransactionPageSkeleton />
@@ -642,8 +724,8 @@ export default function GroupTransactionPageClient() {
             <div className="bg-white flex-1">
               {/* 필터 버튼 영역 (Sticky) */}
               <TransactionFilter
-                showCategoryFilter={showCategoryFilter}
-                onCategoryToggle={handleCategoryFilterToggle}
+                selectedSort={selectedSort}
+                onSortToggle={handleOpenSortModal}
                 stickyTopClass={isSticky ? "top-[106px]" : "top-[102px]"}
               />
 
@@ -709,6 +791,14 @@ export default function GroupTransactionPageClient() {
         )}
       </div>
 
+      <SortBottomSheet
+        isMounted={isSortModalMounted}
+        isOpen={showSortModal}
+        selectedSort={selectedSort}
+        onClose={handleCloseSortModal}
+        onSelect={handleSelectSort}
+      />
+
       {isGroupModalMounted && (
         <>
           <div
@@ -748,7 +838,7 @@ export default function GroupTransactionPageClient() {
                 <button
                   key={group.teamId}
                   onClick={() => handleSelectGroup(group.teamId)}
-                  className="w-[335px] max-w-full h-[46px] px-2 py-3 flex items-center cursor-pointer"
+                  className="w-full h-[46px] px-2 py-3 flex items-center cursor-pointer"
                 >
                   <div className="flex items-center gap-4 min-w-0 flex-1">
                     <span
@@ -777,7 +867,7 @@ export default function GroupTransactionPageClient() {
                 setShowGroupModal(false);
                 handleCreateGroup();
               }}
-              className="w-[335px] max-w-full h-12 px-5 py-3 rounded-[100px] bg-gray-50 border border-gray-100 cursor-pointer mb-2 flex items-center justify-center gap-2"
+              className="w-full h-12 px-5 py-3 rounded-[100px] bg-gray-50 border border-gray-100 cursor-pointer mb-2 flex items-center justify-center gap-2"
             >
               <Image
                 src="/images/transaction/v2/증가_가능.svg"
@@ -797,13 +887,13 @@ export default function GroupTransactionPageClient() {
             <div className="mt-2 space-y-0">
               <button
                 onClick={handleGroupInfoEdit}
-                className="w-[335px] max-w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer"
+                className="w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer"
               >
                 {groupInfoActionLabel}
               </button>
               <button
                 onClick={handleGroupInvite}
-                className="w-[335px] max-w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer mb-8"
+                className="w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer mb-8"
               >
                 그룹 초대하기
               </button>
@@ -812,7 +902,7 @@ export default function GroupTransactionPageClient() {
         </>
       )}
 
-      {!isGroupModalMounted && (
+      {!isGroupModalMounted && !isSortModalMounted && (
         <>
           {isFloatingMenuOpen && (
             <div

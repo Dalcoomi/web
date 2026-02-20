@@ -8,6 +8,9 @@ import TransactionHeader from "@/components/transaction/v2/TransactionHeader";
 import TransactionSummary from "@/components/transaction/v2/TransactionSummary";
 import TransactionTotal from "@/components/transaction/v2/TransactionTotal";
 import TransactionFilter from "@/components/transaction/v2/TransactionFilter";
+import SortBottomSheet, {
+  SortOption,
+} from "@/components/transaction/v2/SortBottomSheet";
 import TransactionTypeToggle, {
   ViewMode,
 } from "@/components/transaction/v2/TransactionTypeToggle";
@@ -59,6 +62,9 @@ export default function MyTransactionPageClient() {
 
   // 플로팅 버튼 토글 상태
   const [isFloatingMenuOpen, setIsFloatingMenuOpen] = useState<boolean>(false);
+  const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
+  const [isSortModalMounted, setIsSortModalMounted] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
 
   // 날짜 관련 상태
   const getSavedDate = (): Date => {
@@ -83,7 +89,6 @@ export default function MyTransactionPageClient() {
   });
 
   // 필터링 관련 상태
-  const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<string[]>([]);
   const [currentCategoryFilter, setCurrentCategoryFilter] = useState<
@@ -97,11 +102,11 @@ export default function MyTransactionPageClient() {
   // 스크롤 위치 저장/복원을 위한 ref
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const shouldRestoreScroll = useRef(false);
-  const [isRestoringScroll, setIsRestoringScroll] = useState(false);
   const summarySectionRef = useRef<HTMLDivElement>(null);
   const stickyThresholdRef = useRef(0);
 
   const hasFetchedMember = useRef(false);
+  const sortModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!hasFetchedMember.current) {
@@ -109,6 +114,14 @@ export default function MyTransactionPageClient() {
       hasFetchedMember.current = true;
     }
   }, [fetchMember]);
+
+  useEffect(() => {
+    return () => {
+      if (sortModalCloseTimerRef.current) {
+        clearTimeout(sortModalCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
@@ -118,9 +131,9 @@ export default function MyTransactionPageClient() {
   // 페이지 진입 시 스크롤 위치 복원 플래그 설정
   useEffect(() => {
     const savedScroll = sessionStorage.getItem("my-transaction-scroll");
-    if (savedScroll) {
+    const scrollPos = savedScroll ? parseInt(savedScroll, 10) : 0;
+    if (Number.isFinite(scrollPos) && scrollPos > 0) {
       shouldRestoreScroll.current = true;
-      setIsRestoringScroll(true);
     }
   }, []);
 
@@ -140,16 +153,12 @@ export default function MyTransactionPageClient() {
             if (scrollContainerRef.current) {
               scrollContainerRef.current.scrollTop = scrollPos;
               shouldRestoreScroll.current = false;
-              setTimeout(() => {
-                setIsRestoringScroll(false);
-              }, 50);
             }
           });
         }, 100);
       }
     } else if (!isLoading && shouldRestoreScroll.current) {
       shouldRestoreScroll.current = false;
-      setIsRestoringScroll(false);
     }
   }, [isLoading, response.transactions]);
 
@@ -251,7 +260,7 @@ export default function MyTransactionPageClient() {
 
   // 필터링된 거래 내역 가져오기
   const getFilteredTransactions = () => {
-    return response.transactions.filter((transaction) => {
+    const filtered = response.transactions.filter((transaction) => {
       if (
         currentCategoryFilter &&
         transaction.categoryName !== currentCategoryFilter
@@ -259,6 +268,28 @@ export default function MyTransactionPageClient() {
         return false;
       }
       return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (selectedSort === "오래된 순") {
+        return (
+          new Date(a.transactionDate).getTime() -
+          new Date(b.transactionDate).getTime()
+        );
+      }
+
+      if (selectedSort === "높은 금액 순") {
+        return b.amount - a.amount;
+      }
+
+      if (selectedSort === "낮은 금액 순") {
+        return a.amount - b.amount;
+      }
+
+      return (
+        new Date(b.transactionDate).getTime() -
+        new Date(a.transactionDate).getTime()
+      );
     });
   };
 
@@ -327,9 +358,39 @@ export default function MyTransactionPageClient() {
     addToast("info", "서비스 점검 중입니다.");
   };
 
-  // 카테고리 필터 핸들러
-  const handleCategoryFilterToggle = () => {
-    setShowCategoryFilter((prev) => !prev);
+  const handleOpenSortModal = () => {
+    setIsFloatingMenuOpen(false);
+
+    if (sortModalCloseTimerRef.current) {
+      clearTimeout(sortModalCloseTimerRef.current);
+      sortModalCloseTimerRef.current = null;
+    }
+
+    if (!isSortModalMounted) {
+      setIsSortModalMounted(true);
+      requestAnimationFrame(() => setShowSortModal(true));
+      return;
+    }
+
+    setShowSortModal(true);
+  };
+
+  const handleCloseSortModal = () => {
+    setShowSortModal(false);
+
+    if (sortModalCloseTimerRef.current) {
+      clearTimeout(sortModalCloseTimerRef.current);
+    }
+
+    sortModalCloseTimerRef.current = setTimeout(() => {
+      setIsSortModalMounted(false);
+      sortModalCloseTimerRef.current = null;
+    }, 220);
+  };
+
+  const handleSelectSort = (sort: SortOption) => {
+    setSelectedSort(sort);
+    handleCloseSortModal();
   };
 
   // 지출이 더 많은 날인지 확인
@@ -354,10 +415,6 @@ export default function MyTransactionPageClient() {
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto flex flex-col relative scrollbar-hide z-10 bg-gray-30"
-        style={{
-          opacity: isRestoringScroll ? 0 : 1,
-          transition: "opacity 0.15s",
-        }}
       >
         {isLoading ? (
           <TransactionPageSkeleton />
@@ -385,8 +442,8 @@ export default function MyTransactionPageClient() {
             <div className="bg-white flex-1">
               {/* 필터 버튼 영역 (Sticky) */}
               <TransactionFilter
-                showCategoryFilter={showCategoryFilter}
-                onCategoryToggle={handleCategoryFilterToggle}
+                selectedSort={selectedSort}
+                onSortToggle={handleOpenSortModal}
                 stickyTopClass={isSticky ? "top-[106px]" : "top-[102px]"}
               />
 
@@ -449,29 +506,38 @@ export default function MyTransactionPageClient() {
       </div>
 
       {/* 오버레이 (플로팅 메뉴) */}
-      {isFloatingMenuOpen && (
+      {!isSortModalMounted && isFloatingMenuOpen && (
         <div
           className="absolute inset-0 bg-black/20 z-40"
           onClick={() => setIsFloatingMenuOpen(false)}
         />
       )}
 
-      {/* 하단 개인/그룹 토글 및 플로팅 버튼 */}
-      <div className="absolute bottom-0 left-0 right-0 pb-6 px-4 flex items-end justify-between pointer-events-none">
-        {/* 개인/그룹 토글 */}
-        <TransactionTypeToggle
-          viewMode={viewMode}
-          onToggle={handleViewModeToggle}
-        />
+      <SortBottomSheet
+        isMounted={isSortModalMounted}
+        isOpen={showSortModal}
+        selectedSort={selectedSort}
+        onClose={handleCloseSortModal}
+        onSelect={handleSelectSort}
+      />
 
-        {/* 플로팅 + 버튼 */}
-        <TransactionFloatingButton
-          isOpen={isFloatingMenuOpen}
-          onToggle={handleFloatingButtonClick}
-          onWriteDirect={handleWritingTransaction}
-          onWriteReceipt={handleReceiptTransaction}
-        />
-      </div>
+      {!isSortModalMounted && (
+        <div className="absolute bottom-0 left-0 right-0 pb-6 px-4 flex items-end justify-between pointer-events-none">
+          {/* 개인/그룹 토글 */}
+          <TransactionTypeToggle
+            viewMode={viewMode}
+            onToggle={handleViewModeToggle}
+          />
+
+          {/* 플로팅 + 버튼 */}
+          <TransactionFloatingButton
+            isOpen={isFloatingMenuOpen}
+            onToggle={handleFloatingButtonClick}
+            onWriteDirect={handleWritingTransaction}
+            onWriteReceipt={handleReceiptTransaction}
+          />
+        </div>
+      )}
     </div>
   );
 }
