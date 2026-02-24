@@ -1,5 +1,7 @@
 // services/memberService.ts
-import { get, post, put, del, patch } from "@/utils/apiClient";
+import { get, post, del, patch } from "@/utils/apiClient";
+import { isDemoMode } from "@/utils/demoMode";
+import { getDemoSelfMember } from "@/services/demoData";
 
 // 🔥 중복 요청 방지를 위한 Promise 캐시
 let pendingMemberRequest: Promise<Member> | null = null;
@@ -107,6 +109,21 @@ export const linkSocial = async (data: {
 
 // 회원 조회
 export const getMember = async (): Promise<Member> => {
+  if (isDemoMode()) {
+    const demo = getDemoSelfMember();
+    return {
+      socialTypes: [SocialType.KAKAO],
+      currentLoginSocial: SocialType.KAKAO,
+      email: "demo@dalcoomi.local",
+      name: "체험 사용자",
+      nickname: demo.nickname,
+      birthday: "1998-01-01",
+      gender: "기타",
+      profileImageUrl: demo.profileImageUrl,
+      aiLearningAgreement: false,
+    };
+  }
+
   // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
   if (pendingMemberRequest) {
     return pendingMemberRequest;

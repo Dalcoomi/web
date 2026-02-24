@@ -6,7 +6,6 @@ export function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get("refreshToken")?.value;
   const path = request.nextUrl.pathname;
 
-  // 정적 자원 제외
   if (
     path.includes("/_next") ||
     path.includes("/api") ||
@@ -17,13 +16,12 @@ export function proxy(request: NextRequest) {
 
   const publicPaths = ["/"];
   const authOptionalPaths = ["/sign-up"];
-  const protectedPaths = ["/transaction", "/group", "/profile"];
+  const protectedPaths = ["/profile"];
 
   const isPublicPath = publicPaths.some((p) => path === p);
   const isAuthOptionalPath = authOptionalPaths.some((p) => path.startsWith(p));
   const isProtectedPath = protectedPaths.some((p) => path.startsWith(p));
 
-  // 🔥 보호된 경로 접근 시 리프레시 토큰만 확인
   if (isProtectedPath) {
     if (!refreshToken) {
       return NextResponse.redirect(new URL("/", request.url));
@@ -31,16 +29,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 🔥 회원가입 페이지: 액세스 토큰이 있을 때만 리다이렉트
   if (isAuthOptionalPath && accessToken) {
     return NextResponse.redirect(new URL("/transaction/my", request.url));
   }
 
-  // 🔥 메인 페이지(로그인 페이지): 로그인 상태면 거래 내역으로 리다이렉트
   if (isPublicPath) {
-    if (refreshToken && !request.nextUrl.search) {
-      return NextResponse.redirect(new URL("/transaction/my", request.url));
-    }
     return NextResponse.next();
   }
 

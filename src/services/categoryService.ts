@@ -1,6 +1,8 @@
 // services/categoryService.ts
-import { get, post, put, del } from "@/utils/apiClient";
+import { get } from "@/utils/apiClient";
 import { useToastStore } from "@/stores/useToastStore";
+import { isDemoMode } from "@/utils/demoMode";
+import { getDemoCategories } from "@/services/demoData";
 
 // 🔥 중복 요청 방지를 위한 Promise 캐시
 const pendingCategoryRequests = new Map<string, Promise<Category[]>>();
@@ -22,6 +24,15 @@ export interface GetCategoriesResponse {
 export const getMyCategories = async (
   transactionType: "INCOME" | "EXPENSE"
 ): Promise<Category[]> => {
+  if (isDemoMode()) {
+    return getDemoCategories(null, transactionType).map((category) => ({
+      id: category.id,
+      name: category.name,
+      iconUrl: category.iconUrl,
+      ownerType: category.ownerType,
+    }));
+  }
+
   const url = `/api/categories?transactionType=${transactionType}`;
 
   // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환
@@ -54,6 +65,15 @@ export const getTeamCategories = async (
   teamId: number,
   transactionType: "INCOME" | "EXPENSE"
 ): Promise<Category[]> => {
+  if (isDemoMode()) {
+    return getDemoCategories(teamId, transactionType).map((category) => ({
+      id: category.id,
+      name: category.name,
+      iconUrl: category.iconUrl,
+      ownerType: category.ownerType,
+    }));
+  }
+
   const url = `/api/categories?teamId=${teamId}&transactionType=${transactionType}`;
 
   // 🔥 이미 동일한 요청이 진행 중이면 기존 Promise 반환

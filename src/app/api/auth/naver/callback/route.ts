@@ -3,8 +3,18 @@ import { NextRequest } from "next/server";
 
 // 히스토리에 남지 않도록 location.replace를 사용하는 HTML 응답
 function redirectWithReplace(url: string) {
+  const safeUrl = JSON.stringify(url);
   return new Response(
-    `<html><head><script>window.location.replace("${url}");</script></head><body></body></html>`,
+    `<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>html,body{margin:0;height:100%;background:#ffffff;}</style>
+    <script>window.location.replace(${safeUrl});</script>
+  </head>
+  <body></body>
+</html>`,
     { headers: { "Content-Type": "text/html; charset=utf-8" } }
   );
 }

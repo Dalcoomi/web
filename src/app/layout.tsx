@@ -51,6 +51,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const currentYear = new Date().getFullYear();
   // 서버에서 쿠키 읽기
   const cookieStore = await cookies();
   const isLoggedIn = !!cookieStore.get("accessToken");
@@ -107,7 +108,10 @@ export default async function RootLayout({
         <meta name="classification" content="Finance, Productivity" />
         <meta name="reply-to" content="dalcoomi.team@google.com" />
         <meta name="date" content="2025-10-01" />
-        <meta name="copyright" content="© 2025 달쿠미. All rights reserved." />
+        <meta
+          name="copyright"
+          content={`© ${currentYear} 달쿠미. All rights reserved.`}
+        />
         <meta property="og:locale" content="ko_KR" />
 
         {/* PWA 메타 태그 */}

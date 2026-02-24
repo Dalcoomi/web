@@ -24,7 +24,7 @@ export default function TransactionHeader({
       <button onClick={onPrevMonth} className="cursor-pointer">
         <Image
           src="/images/transaction/v2/좌측_화살표_회색.svg"
-          alt="이전 달"
+          alt="이전 월"
           width={10}
           height={16}
         />
@@ -35,16 +35,13 @@ export default function TransactionHeader({
       <button onClick={onNextMonth} className="cursor-pointer">
         <Image
           src="/images/transaction/v2/우측_화살표_회색.svg"
-          alt="다음 달"
+          alt="다음 월"
           width={10}
           height={16}
         />
       </button>
 
-      <button
-        onClick={onMenuClick}
-        className="absolute right-6 cursor-pointer"
-      >
+      <button onClick={onMenuClick} className="absolute right-6 cursor-pointer">
         <Image
           src="/images/transaction/v2/햄버거_메뉴.svg"
           alt="메뉴"

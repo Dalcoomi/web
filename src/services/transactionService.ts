@@ -1,5 +1,13 @@
 // services/transactionService.ts
 import { get, post, put, del } from "@/utils/apiClient";
+import { isDemoMode } from "@/utils/demoMode";
+import {
+  addDemoTransaction,
+  deleteDemoTransaction,
+  getDemoTransactionById,
+  getDemoTransactionsByMonth,
+  updateDemoTransaction,
+} from "@/services/demoData";
 
 // 🔥 중복 요청 방지를 위한 Promise 캐시
 const pendingRequests = new Map<string, Promise<MonthlyTransactionsResponse>>();
@@ -56,6 +64,7 @@ export interface TransactionRequest {
   content: string | null;
   transactionDate: string;
   transactionType: "INCOME" | "EXPENSE";
+  synchronizeTransaction?: boolean;
 }
 
 export interface ReceiptsTransactionRequest {
@@ -64,7 +73,11 @@ export interface ReceiptsTransactionRequest {
 }
 
 // 거래 내역 추가 API
-export const addTransaction = async (transactionData: any) => {
+export const addTransaction = async (transactionData: TransactionRequest) => {
+  if (isDemoMode()) {
+    addDemoTransaction(transactionData);
+    return;
+  }
   return post("/api/transactions", transactionData);
 };
 
@@ -72,6 +85,12 @@ export const addTransaction = async (transactionData: any) => {
 export const addReceiptsTransactions = async (
   receiptsData: ReceiptsTransactionRequest
 ) => {
+  if (isDemoMode()) {
+    receiptsData.transactions.forEach((transaction) => {
+      addDemoTransaction(transaction);
+    });
+    return;
+  }
   return post("/api/transactions/receipts/save", receiptsData);
 };
 
@@ -80,6 +99,20 @@ export const uploadReceipt = async (
   file: File,
   teamId?: number | null
 ): Promise<UploadReceiptResponse> => {
+  if (isDemoMode()) {
+    return {
+      taskId: `demo-receipt-${Date.now()}`,
+      transactions: [
+        {
+          transactionDate: new Date().toISOString().slice(0, 19),
+          categoryName: "식비",
+          content: `${file.name.replace(/\.[^.]+$/, "")} 결제`,
+          amount: 12000,
+        },
+      ],
+    };
+  }
+
   try {
     // FormData 생성
     const formData = new FormData();
@@ -139,6 +172,10 @@ export const uploadReceipt = async (
 export const getTransactions = async (
   criteria: TransactionSearchCriteria
 ): Promise<MonthlyTransactionsResponse> => {
+  if (isDemoMode()) {
+    return getDemoTransactionsByMonth(criteria);
+  }
+
   const params = new URLSearchParams();
 
   // teamId 추가 (null이면 개인 거래)
@@ -197,6 +234,14 @@ export const getTransactionById = async (
   transactionId: string,
   teamId?: string
 ): Promise<Transaction> => {
+  if (isDemoMode()) {
+    const found = getDemoTransactionById(transactionId, teamId);
+    if (!found) {
+      throw new Error("거래 내역을 찾을 수 없습니다.");
+    }
+    return found;
+  }
+
   try {
     let url: string;
 
@@ -215,7 +260,14 @@ export const getTransactionById = async (
 };
 
 // 거래 내역 수정
-export const updateTransaction = async (transactionId: string, data: any) => {
+export const updateTransaction = async (
+  transactionId: string,
+  data: TransactionRequest
+) => {
+  if (isDemoMode()) {
+    updateDemoTransaction(transactionId, data);
+    return;
+  }
   return put(`/api/transactions/${transactionId}`, data);
 };
 
@@ -223,5 +275,9 @@ export const updateTransaction = async (transactionId: string, data: any) => {
 export const deleteTransaction = async (
   transactionId: string
 ): Promise<void> => {
+  if (isDemoMode()) {
+    deleteDemoTransaction(transactionId);
+    return;
+  }
   return del(`/api/transactions/${transactionId}`);
 };

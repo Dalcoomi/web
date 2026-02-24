@@ -12,6 +12,9 @@ import TransactionFilter from "@/components/transaction/v2/TransactionFilter";
 import SortBottomSheet, {
   SortOption,
 } from "@/components/transaction/v2/SortBottomSheet";
+import FilterBottomSheet, {
+  FilterDraftState,
+} from "@/components/transaction/v2/FilterBottomSheet";
 import TransactionTypeToggle, {
   ViewMode,
 } from "@/components/transaction/v2/TransactionTypeToggle";
@@ -34,6 +37,9 @@ import Skeleton from "@/components/skeletons/Skeleton";
 import Sidebar from "@/components/ui/Sidebar";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import { BRAND_COLORS } from "@/constants/brandColors";
+import { getTeamCategories } from "@/services/categoryService";
+import DemoModeTopBanner from "@/components/common/DemoModeTopBanner";
+import { isDemoMode } from "@/utils/demoMode";
 
 let cachedGroupModalList: Group[] = [];
 
@@ -79,18 +85,47 @@ export default function GroupTransactionPageClient() {
   const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
   const [isSortModalMounted, setIsSortModalMounted] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
+  const [isFilterModalMounted, setIsFilterModalMounted] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [appliedFilter, setAppliedFilter] = useState<FilterDraftState>({
+    type: "ALL",
+    categoryNames: [],
+    creatorNicknames: [],
+  });
+  const [draftFilter, setDraftFilter] = useState<FilterDraftState>({
+    type: "ALL",
+    categoryNames: [],
+    creatorNicknames: [],
+  });
+  const [categoriesByType, setCategoriesByType] = useState<{
+    ALL: string[];
+    EXPENSE: string[];
+    INCOME: string[];
+  }>({
+    ALL: [],
+    EXPENSE: [],
+    INCOME: [],
+  });
 
   // 날짜 관련 상태
   const getSavedDate = (): Date => {
     if (typeof window === "undefined") return new Date();
     const saved = sessionStorage.getItem(`group-transaction-date-${teamId}`);
+    const now = new Date();
     if (saved) {
       const parsed = new Date(saved);
       if (!isNaN(parsed.getTime())) {
+        if (
+          isDemoMode() &&
+          (parsed.getFullYear() !== now.getFullYear() ||
+            parsed.getMonth() !== now.getMonth())
+        ) {
+          return now;
+        }
         return parsed;
       }
     }
-    return new Date();
+    return now;
   };
 
   const [selectedDate, setSelectedDate] = useState<Date>(getSavedDate());
@@ -102,9 +137,6 @@ export default function GroupTransactionPageClient() {
     transactions: [],
   });
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
-
-  // 필터링 관련 상태
-  const [currentCategoryFilter] = useState<string | null>(null);
 
   // 중복 호출 방지를 위한 ref
   const lastRequestRef = useRef<string>("");
@@ -118,6 +150,9 @@ export default function GroupTransactionPageClient() {
 
   const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sortModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filterModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const hasFetchedMember = useRef(false);
   const hasOpenedFromQueryRef = useRef(false);
   const modalDragStartYRef = useRef<number | null>(null);
@@ -190,6 +225,9 @@ export default function GroupTransactionPageClient() {
       if (sortModalCloseTimerRef.current) {
         clearTimeout(sortModalCloseTimerRef.current);
       }
+      if (filterModalCloseTimerRef.current) {
+        clearTimeout(filterModalCloseTimerRef.current);
+      }
     };
   }, []);
 
@@ -222,6 +260,56 @@ export default function GroupTransactionPageClient() {
       isCancelled = true;
     };
   }, [isValidTeamId, teamId]);
+
+  useEffect(() => {
+    if (!teamId || !isValidTeamId) return;
+
+    const fetchCategories = async () => {
+      const numericTeamId = Number(teamId);
+      const [expenseCategories, incomeCategories] = await Promise.all([
+        getTeamCategories(numericTeamId, "EXPENSE"),
+        getTeamCategories(numericTeamId, "INCOME"),
+      ]);
+
+      const expenseNames = expenseCategories.map((category) => category.name);
+      const incomeNames = incomeCategories.map((category) => category.name);
+      const all = Array.from(new Set([...expenseNames, ...incomeNames]));
+
+      setCategoriesByType({
+        ALL: all,
+        EXPENSE: expenseNames,
+        INCOME: incomeNames,
+      });
+
+      const defaultFilter: FilterDraftState = {
+        type: "ALL",
+        categoryNames: all,
+        creatorNicknames: [],
+      };
+
+      setAppliedFilter(defaultFilter);
+      setDraftFilter(defaultFilter);
+    };
+
+    void fetchCategories();
+  }, [isValidTeamId, teamId]);
+
+  useEffect(() => {
+    const allCreatorNicknames = (groupInfo?.members ?? []).map(
+      (memberInfo) => memberInfo.nickname,
+    );
+
+    if (allCreatorNicknames.length === 0) return;
+
+    setAppliedFilter((prev) => ({
+      ...prev,
+      creatorNicknames: allCreatorNicknames,
+    }));
+    setDraftFilter((prev) => ({
+      ...prev,
+      creatorNicknames: allCreatorNicknames,
+    }));
+  }, [groupInfo?.members]);
 
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
@@ -303,9 +391,7 @@ export default function GroupTransactionPageClient() {
 
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
-    const requestKey = `${teamId}-${year}-${month}-${
-      currentCategoryFilter || ""
-    }`;
+    const requestKey = `${teamId}-${year}-${month}`;
 
     if (
       isRequestInProgressRef.current &&
@@ -333,7 +419,6 @@ export default function GroupTransactionPageClient() {
             teamId: parseInt(teamId),
             year,
             month,
-            categoryName: currentCategoryFilter,
           };
 
           const response = await getTransactions(criteria);
@@ -362,14 +447,28 @@ export default function GroupTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [isValidTeamId, selectedDate, currentCategoryFilter, teamId]);
+  }, [isValidTeamId, selectedDate, teamId]);
 
   // 필터링된 거래 내역 가져오기
   const getFilteredTransactions = () => {
     const filtered = response.transactions.filter((transaction) => {
       if (
-        currentCategoryFilter &&
-        transaction.categoryName !== currentCategoryFilter
+        appliedFilter.type !== "ALL" &&
+        transaction.transactionType !== appliedFilter.type
+      ) {
+        return false;
+      }
+
+      if (
+        appliedFilter.categoryNames.length > 0 &&
+        !appliedFilter.categoryNames.includes(transaction.categoryName)
+      ) {
+        return false;
+      }
+
+      if (
+        appliedFilter.creatorNicknames.length > 0 &&
+        !appliedFilter.creatorNicknames.includes(transaction.creatorNickname)
       ) {
         return false;
       }
@@ -496,6 +595,56 @@ export default function GroupTransactionPageClient() {
   const handleSelectSort = (sort: SortOption) => {
     setSelectedSort(sort);
     handleCloseSortModal();
+  };
+
+  const handleOpenFilterModal = () => {
+    setIsFloatingMenuOpen(false);
+
+    if (filterModalCloseTimerRef.current) {
+      clearTimeout(filterModalCloseTimerRef.current);
+      filterModalCloseTimerRef.current = null;
+    }
+
+    setDraftFilter(appliedFilter);
+
+    if (!isFilterModalMounted) {
+      setIsFilterModalMounted(true);
+      requestAnimationFrame(() => setShowFilterModal(true));
+      return;
+    }
+
+    setShowFilterModal(true);
+  };
+
+  const handleCloseFilterModal = () => {
+    setShowFilterModal(false);
+
+    if (filterModalCloseTimerRef.current) {
+      clearTimeout(filterModalCloseTimerRef.current);
+    }
+
+    filterModalCloseTimerRef.current = setTimeout(() => {
+      setIsFilterModalMounted(false);
+      filterModalCloseTimerRef.current = null;
+    }, 220);
+  };
+
+  const handleResetFilter = () => {
+    const allCategories = categoriesByType.ALL;
+    const allCreatorNicknames = (groupInfo?.members ?? []).map(
+      (memberInfo) => memberInfo.nickname,
+    );
+
+    setDraftFilter({
+      type: "ALL",
+      categoryNames: allCategories,
+      creatorNicknames: allCreatorNicknames,
+    });
+  };
+
+  const handleApplyFilter = () => {
+    setAppliedFilter(draftFilter);
+    handleCloseFilterModal();
   };
 
   const openGroupModalWithResolvedLabel = useCallback(async () => {
@@ -666,6 +815,8 @@ export default function GroupTransactionPageClient() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-30 relative font-landing overflow-hidden">
+      <DemoModeTopBanner />
+
       {/* 상단바 */}
       <TransactionHeader
         title={formatDateForDisplay(selectedDate)}
@@ -726,6 +877,7 @@ export default function GroupTransactionPageClient() {
               <TransactionFilter
                 selectedSort={selectedSort}
                 onSortToggle={handleOpenSortModal}
+                onAllToggle={handleOpenFilterModal}
                 stickyTopClass={isSticky ? "top-[106px]" : "top-[102px]"}
               />
 
@@ -797,6 +949,22 @@ export default function GroupTransactionPageClient() {
         selectedSort={selectedSort}
         onClose={handleCloseSortModal}
         onSelect={handleSelectSort}
+      />
+
+      <FilterBottomSheet
+        isMounted={isFilterModalMounted}
+        isOpen={showFilterModal}
+        isGroup
+        categoriesByType={categoriesByType}
+        creators={(groupInfo?.members ?? []).map((memberInfo) => ({
+          nickname: memberInfo.nickname,
+          profileImageUrl: memberInfo.profileImageUrl,
+        }))}
+        draft={draftFilter}
+        onChangeDraft={setDraftFilter}
+        onReset={handleResetFilter}
+        onApply={handleApplyFilter}
+        onClose={handleCloseFilterModal}
       />
 
       {isGroupModalMounted && (
@@ -902,7 +1070,7 @@ export default function GroupTransactionPageClient() {
         </>
       )}
 
-      {!isGroupModalMounted && !isSortModalMounted && (
+      {!isGroupModalMounted && !isSortModalMounted && !isFilterModalMounted && (
         <>
           {isFloatingMenuOpen && (
             <div

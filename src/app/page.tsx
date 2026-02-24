@@ -1,6 +1,3 @@
-// app/page.tsx (루트 페이지 - 랜딩 + 로그인)
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import RootPageClient from "@/components/auth/RootPageClient";
 import PWAInstallPrompt from "@/components/common/PWAInstallPrompt";
 
@@ -64,21 +61,10 @@ export const metadata = {
   },
 };
 
-export default async function RootPage() {
-  // 서버에서 인증 확인
-  const cookieStore = await cookies();
-  const refreshToken = cookieStore.get("refreshToken");
-
-  // 🔥 리프레시 토큰이 있으면 로그인된 상태로 간주 (액세스 토큰은 클라이언트에서 재발급)
-  if (refreshToken) {
-    redirect("/transaction/my");
-  }
-
-  // 로그인되지 않은 경우 랜딩 + 로그인 페이지 표시
+export default function RootPage() {
   return (
     <>
       <RootPageClient />
-      {/* PWA 설치 프롬프트 */}
       <PWAInstallPrompt />
     </>
   );
