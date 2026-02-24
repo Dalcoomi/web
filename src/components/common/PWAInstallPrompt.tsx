@@ -91,7 +91,7 @@ export default function PWAInstallPrompt() {
   // iOS용 안내 UI
   if (isIOS) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up">
+      <div className="fixed bottom-0 left-0 right-0 z-[120] animate-slide-up">
         <div className="bg-white rounded-t-2xl shadow-2xl p-6 border-t-4 border-blue-500 mx-auto max-w-[390px]">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center space-x-3">
@@ -166,7 +166,7 @@ export default function PWAInstallPrompt() {
 
   // Android Chrome/Edge용 커스텀 프롬프트
   return (
-    <div className="fixed bottom-14 left-1/2 transform -translate-x-1/2 z-50 w-[90%] max-w-md animate-slide-up">
+    <div className="fixed bottom-14 left-1/2 transform -translate-x-1/2 z-[120] w-[90%] max-w-md animate-slide-up">
       <div className="bg-white rounded-xl shadow-2xl p-5 border border-gray-200">
         <div className="flex items-start space-x-4 mb-4">
           <img

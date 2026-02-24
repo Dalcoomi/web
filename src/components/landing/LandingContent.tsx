@@ -7,6 +7,7 @@ import { useToastStore } from "@/stores/useToastStore";
 export default function LandingContent() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const addToast = useToastStore((state) => state.addToast);
+  const currentYear = new Date().getFullYear();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -433,7 +434,7 @@ export default function LandingContent() {
                   개인정보처리방침
                 </a>
                 <p className="text-[10px] text-gray-500">
-                  Copyright © 2025 달쿠미. All rights reserved.
+                  {`Copyright © ${currentYear} 달쿠미. All rights reserved.`}
                 </p>
               </div>
             </div>

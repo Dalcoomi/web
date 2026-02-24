@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToastStore } from "@/stores/useToastStore";
+import { isDemoMode } from "@/utils/demoMode";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,8 +14,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
   const addToast = useToastStore((state) => state.addToast);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const isGuest = isDemoMode();
 
-  // 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -34,8 +35,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     };
   }, [isOpen, onClose]);
 
-  // 메뉴 항목 클릭 핸들러들
   const handleMyPage = () => {
+    if (isGuest) {
+      onClose();
+      router.push("/?panel=login");
+      return;
+    }
+
     onClose();
     router.push("/profile");
   };
@@ -55,13 +61,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* 반투명 오버레이 */}
       <div
         className="absolute inset-0 bg-[#d9d9d9] opacity-50 z-60"
         onClick={onClose}
       />
 
-      {/* 사이드바 본문 */}
       <div
         ref={sidebarRef}
         className="absolute top-0 right-0 h-full w-48 bg-white shadow-lg border-l border-[#E0E0E0] transform transition-transform duration-300 ease-in-out z-70"
@@ -73,7 +77,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               onClick={handleMyPage}
               className="w-full text-left p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
             >
-              <span className="text-subtitle text-gray-900">마이페이지</span>
+              <span className="text-subtitle text-gray-900">
+                {isGuest ? "로그인" : "마이페이지"}
+              </span>
             </button>
             <button
               onClick={handleNotice}

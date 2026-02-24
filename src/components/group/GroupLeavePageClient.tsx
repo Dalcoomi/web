@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import BottomButton from "@/components/ui/BottomButton";
 import {
   getGroupInfo,
   getGroups,
@@ -181,12 +180,26 @@ export default function GroupLeavePageClient() {
         </div>
       </div>
 
-      <BottomButton
-        text={isSubmitting ? "처리 중..." : "떠나기"}
-        onClick={handleFirstLeaveConfirm}
-        disabled={isSubmitting}
-        className="pb-4"
-      />
+      <div className="pb-4 px-5">
+        <div className="mx-auto flex w-full max-w-[390px] items-center gap-2">
+          <button
+            type="button"
+            onClick={handleFirstLeaveConfirm}
+            disabled={isSubmitting}
+            className="h-12 flex-1 cursor-pointer rounded-xl border border-gray-800 bg-white text-body1-semibold text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? "처리 중..." : "떠나기"}
+          </button>
+          <button
+            type="button"
+            onClick={handleBackToGroupInfo}
+            disabled={isSubmitting}
+            className="h-12 flex-[1.85] cursor-pointer rounded-xl bg-gray-900 text-body1-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            취소하기
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

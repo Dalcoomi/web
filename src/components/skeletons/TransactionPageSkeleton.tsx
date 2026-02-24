@@ -75,10 +75,7 @@ export default function TransactionPageSkeleton() {
 
       {/* 거래 내역 목록 영역 */}
       <div className="bg-white flex-1">
-        <TransactionFilter
-          showCategoryFilter={false}
-          onCategoryToggle={() => {}}
-        />
+        <TransactionFilter />
         {Array.from({ length: 3 }).map((_, index) => (
           <TransactionItemSkeleton key={index} />
         ))}

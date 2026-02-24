@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { getMember } from "@/services/memberService";
+import { isAuthenticated } from "@/utils/tokenManager";
 
 // 소셜 타입 enum 정의
 export enum SocialType {
@@ -42,8 +43,12 @@ export const useMemberStore = create<MemberStore>()(
       error: null,
 
       fetchMember: async (force = false) => {
-        // force가 true이면 강제로 다시 조회, 그렇지 않으면 이미 회원 정보가 있으면 API 호출하지 않음
-        if (!force && get().member) {
+        const cachedMember = get().member;
+        const hasRealSession = isAuthenticated();
+        const isDemoProfile = cachedMember?.email === "demo@dalcoomi.local";
+
+        // 실제 로그인 상태에서만 기존 캐시를 재사용한다.
+        if (!force && hasRealSession && cachedMember && !isDemoProfile) {
           return;
         }
 
