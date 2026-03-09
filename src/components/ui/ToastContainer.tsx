@@ -50,7 +50,7 @@ function ToastItem({
 
   return (
     <div
-      className="col-start-1 row-start-1 flex items-center min-h-12 bg-white rounded-full pl-3 pr-5 py-3 shadow-lg transition-all duration-300 ease-out whitespace-nowrap pointer-events-auto"
+      className="col-start-1 row-start-1 flex max-w-[calc(100vw-40px)] md:max-w-[420px] items-center min-h-12 bg-white rounded-full pl-3 pr-5 py-3 shadow-lg transition-all duration-300 ease-out pointer-events-auto"
       style={{
         zIndex: total - reverseIndex,
         transform:
@@ -67,7 +67,7 @@ function ToastItem({
         height={24}
         className="shrink-0"
       />
-      <span className="text-body1-semibold text-gray-900 ml-2">
+      <span className="ml-2 min-w-0 break-words whitespace-normal md:whitespace-nowrap text-body1-semibold text-gray-900">
         {toast.message}
       </span>
     </div>

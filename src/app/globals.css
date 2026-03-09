@@ -5,24 +5,90 @@
 
 /* 폰트 정의 */
 @font-face {
-  font-family: "Title_Light";
-  src: url("/fonts/Title_Light.woff") format("woff");
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-Thin.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-Thin.woff") format("woff");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-ExtraLight.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-ExtraLight.woff") format("woff");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-Light.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-Light.woff") format("woff");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Title_Medium";
-  src: url("/fonts/Title_Medium.woff") format("woff");
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-Regular.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-Medium.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-Medium.woff") format("woff");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Title_Bold";
-  src: url("/fonts/Title_Bold.woff") format("woff");
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-SemiBold.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-SemiBold.woff") format("woff");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-Bold.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-ExtraBold.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-ExtraBold.woff") format("woff");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/pretendard/Pretendard-Black.woff2") format("woff2"),
+    url("/fonts/pretendard/Pretendard-Black.woff") format("woff");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "StunningSans";
+  src: url("/fonts/stunning/STUNNING.woff2") format("woff2"),
+    url("/fonts/stunning/STUNNING.woff") format("woff");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -31,9 +97,6 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-title-light: "Title_Light", sans-serif;
-  --font-title-medium: "Title_Medium", sans-serif;
-  --font-title-bold: "Title_Bold", sans-serif;
   --vh: 1vh; /* 동적 뷰포트 높이를 위한 변수 */
 }
 
@@ -54,7 +117,7 @@
 body {
   background: var(--background);
   color: #000000;
-  font-family: "Pretendard", var(--font-title-medium), "Apple Color Emoji", "Segoe UI Emoji",
+  font-family: "Pretendard", "Apple Color Emoji", "Segoe UI Emoji",
     Arial, Helvetica, sans-serif;
 }
 
@@ -152,18 +215,6 @@ body {
   .pb-safe-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 2rem);
   }
-}
-
-.font-title-light {
-  font-family: var(--font-title-light);
-}
-
-.font-title-medium {
-  font-family: var(--font-title-medium);
-}
-
-.font-title-bold {
-  font-family: var(--font-title-bold);
 }
 
 .emoji {
@@ -319,4 +370,17 @@ textarea {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
+}
+
+/* 바텀모달 내부 스크롤바는 표시하지 않는다. (스크롤 동작은 유지) */
+.bottom-modal-scroll-hide,
+.bottom-modal-scroll-hide * {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.bottom-modal-scroll-hide::-webkit-scrollbar,
+.bottom-modal-scroll-hide *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }

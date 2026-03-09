@@ -8,6 +8,18 @@ const config: Config = {
   ],
   theme: {
     fontSize: {
+      "brand-heading": [
+        "40px",
+        { lineHeight: "150%", letterSpacing: "-1%", fontWeight: 700 },
+      ],
+      "brand-title": [
+        "28px",
+        { lineHeight: "140%", letterSpacing: "-1%", fontWeight: 700 },
+      ],
+      "brand-subtitle1": [
+        "17px",
+        { lineHeight: "140%", letterSpacing: "-1%", fontWeight: 700 },
+      ],
       header: [
         "26px",
         { lineHeight: "140%", letterSpacing: "0%", fontWeight: 600 },
@@ -23,6 +35,10 @@ const config: Config = {
       subtitle: [
         "17px",
         { lineHeight: "140%", letterSpacing: "0%", fontWeight: 600 },
+      ],
+      label: [
+        "14px",
+        { lineHeight: "100%", letterSpacing: "0%", fontWeight: 400 },
       ],
       "body1-semibold": [
         "15px",
@@ -125,9 +141,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        "title-light": ["Title_Light", "sans-serif"],
-        "title-medium": ["Title_Medium", "sans-serif"],
-        "title-bold": ["Title_Bold", "sans-serif"],
+        stunning: ["StunningSans", "Pretendard", "sans-serif"],
         landing: [
           "Pretendard",
           "-apple-system",

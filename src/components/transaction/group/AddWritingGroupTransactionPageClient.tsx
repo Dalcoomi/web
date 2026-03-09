@@ -1,445 +1,651 @@
-// components/transaction/group/AddWritingGroupTransactionPageClient.tsx
-"use client";
+﻿"use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { addTransaction } from "@/services/transactionService";
-import { getTeamCategories, Category } from "@/services/categoryService";
-import { getGroupInfo, GroupInfo } from "@/services/groupService";
-import { useToastStore } from "@/stores/useToastStore";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import TopBar from "@/components/ui/TopBar";
-import BottomBar from "@/components/ui/BottomBar";
+import BottomModal from "@/components/ui/BottomModal";
+import PageBackHeader from "@/components/ui/PageBackHeader";
+import CategorySelectionModalContent from "@/components/transaction/common/CategorySelectionModalContent";
+import { addTransaction } from "@/services/transactionService";
+import { Category, getTeamCategories } from "@/services/categoryService";
+import { Group, getGroups } from "@/services/groupService";
+import { useToastStore } from "@/stores/useToastStore";
+import { BRAND_COLORS } from "@/constants/brandColors";
+
+type TransactionType = "EXPENSE" | "INCOME";
+
+const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+const CATEGORY_HELPER_TEXT = "미선택 시 '기타'로 분류돼요.";
+
+const getTodayInSeoul = (): string => {
+  const today = new Date();
+  const seoulDate = new Date(
+    today.toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
+  );
+
+  const year = seoulDate.getFullYear();
+  const month = String(seoulDate.getMonth() + 1).padStart(2, "0");
+  const day = String(seoulDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatDateForDisplay = (isoDate: string): string => {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const weekday = DAY_LABELS[date.getDay()];
+  return `${year}. ${String(month).padStart(2, "0")}. ${String(day).padStart(2, "0")} (${weekday})`;
+};
+
+const buildTransactionDateTime = (isoDate: string): string => {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const now = new Date();
+  const seoulNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
+  );
+  const hours = String(seoulNow.getHours()).padStart(2, "0");
+  const minutes = String(seoulNow.getMinutes()).padStart(2, "0");
+  const seconds = String(seoulNow.getSeconds()).padStart(2, "0");
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${hours}:${minutes}:${seconds}`;
+};
+
+const findDefaultCategory = (
+  categoryList: Category[],
+  transactionType: TransactionType,
+): Category | null => {
+  if (categoryList.length === 0) {
+    return null;
+  }
+
+  const defaultNames =
+    transactionType === "EXPENSE"
+      ? ["기타지출", "기타", "기타 소비"]
+      : ["기타수입", "기타", "기타 수입"];
+
+  return (
+    categoryList.find((category) => defaultNames.includes(category.name)) ??
+    categoryList[0]
+  );
+};
+
+const isHexColor = (value: string): boolean =>
+  /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(value);
+
+const getLabelColor = (label?: string): string => {
+  if (!label) {
+    return BRAND_COLORS.gray;
+  }
+
+  if (label in BRAND_COLORS) {
+    return BRAND_COLORS[label as keyof typeof BRAND_COLORS];
+  }
+
+  if (isHexColor(label)) {
+    return label;
+  }
+
+  return BRAND_COLORS.gray;
+};
 
 export default function AddWritingGroupTransactionPageClient() {
-  const getTodayInSeoul = (): string => {
-    const today = new Date();
-    const seoulDate = new Date(
-      today.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
-    );
-
-    const year = seoulDate.getFullYear();
-    const month = String(seoulDate.getMonth() + 1).padStart(2, "0");
-    const day = String(seoulDate.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  };
-
   const router = useRouter();
-  const params = useParams();
-  const teamId = params.teamId as string; // URL에서 teamId 추출
+  const params = useParams<{ teamId: string }>();
+  const routeTeamId = Array.isArray(params.teamId)
+    ? params.teamId[0]
+    : params.teamId;
   const addToast = useToastStore((state) => state.addToast);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFormValid, setIsFormValid] = useState(false);
-  const [transactionType, setTransactionType] = useState<"EXPENSE" | "INCOME">(
-    "EXPENSE"
-  );
-  const [amount, setAmount] = useState<string>("");
-  const [content, setContent] = useState<string>("");
-  const [date, setDate] = useState<string>(getTodayInSeoul());
+  const [transactionType, setTransactionType] =
+    useState<TransactionType>("EXPENSE");
+  const [amount, setAmount] = useState("");
+  const [content, setContent] = useState("");
+  const [date, setDate] = useState(getTodayInSeoul());
   const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
-  const [amountError, setAmountError] = useState(false);
-  const [amountTouched, setAmountTouched] = useState(false);
-  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
-
-  // 개인 거래 내역 동기화 상태 추가
-  const [synchronizeTransaction, setSynchronizeTransaction] =
-    useState<boolean>(false);
-
-  // 카테고리 관련 상태
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [isCategoryModalMounted, setIsCategoryModalMounted] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
+  const [isGroupModalMounted, setIsGroupModalMounted] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
 
-  // teamId 유효성 검사 및 그룹 정보 로드
+  const categoryModalCloseTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const groupModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
+
+  const isValidRouteTeamId = useMemo(
+    () => !!routeTeamId && /^\d+$/.test(routeTeamId),
+    [routeTeamId],
+  );
+  const selectedGroup = useMemo(
+    () => groups.find((group) => String(group.teamId) === String(routeTeamId)),
+    [groups, routeTeamId],
+  );
+
   useEffect(() => {
-    if (!teamId) {
-      router.replace("/group");
+    return () => {
+      if (categoryModalCloseTimerRef.current) {
+        clearTimeout(categoryModalCloseTimerRef.current);
+      }
+      if (groupModalCloseTimerRef.current) {
+        clearTimeout(groupModalCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isValidRouteTeamId) {
+      router.replace("/transaction/group");
       return;
     }
 
-    const fetchGroupInfo = async () => {
+    let isCancelled = false;
+
+    const loadGroups = async () => {
+      setIsLoadingGroups(true);
       try {
-        const response = await getGroupInfo(teamId);
-        setGroupInfo(response);
+        const response = await getGroups();
+        if (isCancelled) {
+          return;
+        }
+
+        const groupList = response.groups ?? [];
+        setGroups(groupList);
+
+        if (groupList.length === 0) {
+          addToast("error", "참여 중인 그룹이 없어요.");
+          router.replace("/transaction/group");
+          return;
+        }
+
+        const isMemberOfCurrentTeam = groupList.some(
+          (group) => String(group.teamId) === String(routeTeamId),
+        );
+
+        if (!isMemberOfCurrentTeam) {
+          router.replace(
+            `/transaction/group/${groupList[0].teamId}/add/writing`,
+          );
+        }
       } catch (error) {
-        addToast("error", String(error) || "그룹 정보를 불러올 수 없습니다.");
-        router.replace("/group");
+        if (!isCancelled) {
+          addToast("error", String(error));
+          router.replace("/transaction/group");
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingGroups(false);
+        }
       }
     };
 
-    fetchGroupInfo();
-  }, [teamId, router]); // teamId와 router를 의존성에 포함
+    void loadGroups();
 
-  // transactionType 변경 시 카테고리 로드
+    return () => {
+      isCancelled = true;
+    };
+  }, [addToast, isValidRouteTeamId, routeTeamId, router]);
+
   useEffect(() => {
-    if (!teamId) return;
+    if (!isValidRouteTeamId || !routeTeamId) {
+      return;
+    }
 
     const loadCategories = async () => {
       setIsLoadingCategories(true);
-
       try {
-        const categoryList = await getTeamCategories(parseInt(teamId), transactionType);
+        const categoryList = await getTeamCategories(
+          Number(routeTeamId),
+          transactionType,
+        );
         setCategories(categoryList);
-
-        // 기본 카테고리 설정 (첫 번째 카테고리 또는 "기타" 찾기)
-        if (categoryList.length > 0) {
-          const defaultCategory =
-            categoryList.find((cat) => cat.name === "기타") || categoryList[0];
-          setCategoryId(defaultCategory.id);
-        }
+        setCategoryId((prev) => {
+          if (prev && categoryList.some((category) => category.id === prev)) {
+            return prev;
+          }
+          const defaultCategory = findDefaultCategory(
+            categoryList,
+            transactionType,
+          );
+          return defaultCategory?.id ?? null;
+        });
       } catch (error) {
         addToast("error", String(error));
         setCategories([]);
+        setCategoryId(null);
       } finally {
         setIsLoadingCategories(false);
       }
     };
 
-    loadCategories();
-  }, [transactionType, teamId]); // teamId도 의존성에 포함
+    void loadCategories();
+  }, [addToast, isValidRouteTeamId, routeTeamId, transactionType]);
 
-  // 폼 유효성 검사
-  useEffect(() => {
-    // 금액이 입력되었는지 확인
-    setIsFormValid(amount.trim().length > 0);
-  }, [amount]);
+  const isFormValid = useMemo(() => Number(amount) > 0, [amount]);
+  const selectedCategory =
+    categories.find((category) => category.id === categoryId) ?? null;
+  const selectedCategoryName =
+    selectedCategory?.name ?? categories[0]?.name ?? "카테고리";
+  const formattedAmount = amount ? Number(amount).toLocaleString("ko-KR") : "";
+  const selectedGroupName = selectedGroup?.title ?? "그룹 선택";
+  const selectedGroupColor = getLabelColor(selectedGroup?.label);
 
-  // 금액 입력 핸들러
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // 숫자만 허용
-    const value = e.target.value.replace(/[^\d]/g, "");
-    setAmount(value);
+  const openGroupModal = () => {
+    if (isLoadingGroups || groups.length === 0) {
+      return;
+    }
+    if (groupModalCloseTimerRef.current) {
+      clearTimeout(groupModalCloseTimerRef.current);
+      groupModalCloseTimerRef.current = null;
+    }
+    setIsGroupModalMounted(true);
+    requestAnimationFrame(() => setShowGroupModal(true));
   };
 
-  // 내용 입력 핸들러
+  const closeGroupModal = () => {
+    setShowGroupModal(false);
+    if (groupModalCloseTimerRef.current) {
+      clearTimeout(groupModalCloseTimerRef.current);
+    }
+    groupModalCloseTimerRef.current = setTimeout(() => {
+      setIsGroupModalMounted(false);
+    }, 200);
+  };
+
+  const openCategoryModal = () => {
+    if (categoryModalCloseTimerRef.current) {
+      clearTimeout(categoryModalCloseTimerRef.current);
+      categoryModalCloseTimerRef.current = null;
+    }
+    setIsCategoryModalMounted(true);
+    requestAnimationFrame(() => setShowCategoryModal(true));
+  };
+
+  const closeCategoryModal = () => {
+    setShowCategoryModal(false);
+    if (categoryModalCloseTimerRef.current) {
+      clearTimeout(categoryModalCloseTimerRef.current);
+    }
+    categoryModalCloseTimerRef.current = setTimeout(() => {
+      setIsCategoryModalMounted(false);
+    }, 200);
+  };
+
+  const handleCategoryChange = (selectedCategoryId: number) => {
+    setCategoryId(selectedCategoryId);
+    closeCategoryModal();
+  };
+
+  const handleAddCategory = () => {
+    addToast("info", "카테고리 추가 기능은 준비 중이에요.");
+  };
+
+  const handleGroupSelect = (selectedTeamId: string) => {
+    closeGroupModal();
+    if (String(selectedTeamId) === String(routeTeamId)) {
+      return;
+    }
+    router.push(`/transaction/group/${selectedTeamId}/add/writing`);
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const numericValue = e.target.value.replace(/[^\d]/g, "");
+    setAmount(numericValue);
+  };
+
   const handleContentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // 최대 50자 제한
-    if (value.length <= 50) {
-      setContent(value);
+    const next = e.target.value;
+    if (next.length <= 50) {
+      setContent(next);
     }
   };
 
-  // 날짜 입력 핸들러
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDate(e.target.value);
-  };
-
-  // 카테고리 선택 핸들러
-  const handleCategoryChange = (selectedCategoryId: number) => {
-    setCategoryId(selectedCategoryId);
-    setShowCategoryModal(false);
-  };
-
-  // 거래 유형 변경 핸들러
-  const handleTransactionTypeChange = (type: "EXPENSE" | "INCOME") => {
-    setTransactionType(type); // transactionType 변경 시 useEffect가 자동으로 카테고리 로드
-  };
-
-  // 동기화 체크박스 핸들러
-  const handleSynchronizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSynchronizeTransaction(e.target.checked);
-  };
-
-  // 저장 핸들러
-  const handleSubmit = async () => {
-    // 이미 제출 중이면 무시
-    if (isSubmitting) {
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back();
       return;
     }
 
-    if (!isFormValid || !teamId || !categoryId) return;
+    if (routeTeamId && /^\d+$/.test(routeTeamId)) {
+      router.push(`/transaction/group/${routeTeamId}`);
+      return;
+    }
 
-    // 제출 시작
-    setIsSubmitting(true);
+    router.push("/transaction/group");
+  };
 
-    try {
-      const [year, month, day] = date.split("-").map(Number);
+  const handleDateFieldClick = () => {
+    const dateInput = dateInputRef.current;
+    if (!dateInput) {
+      return;
+    }
 
-      // Asia/Seoul 시간대로 현재 시간 생성
-      const now = new Date();
-      const seoulNow = new Date(
-        now.toLocaleString("en-US", { timeZone: "Asia/Seoul" })
+    if (typeof dateInput.showPicker === "function") {
+      try {
+        dateInput.showPicker();
+        return;
+      } catch {
+        // showPicker 미지원 환경에서는 기본 click/focus로 대체한다.
+      }
+    }
+
+    dateInput.focus();
+    dateInput.click();
+  };
+
+  const handleSubmit = async () => {
+    if (
+      isSubmitting ||
+      !isFormValid ||
+      !date ||
+      !routeTeamId ||
+      !isValidRouteTeamId
+    ) {
+      return;
+    }
+
+    const resolvedCategoryId =
+      categoryId ??
+      findDefaultCategory(categories, transactionType)?.id ??
+      categories[0]?.id ??
+      null;
+
+    if (!resolvedCategoryId) {
+      addToast(
+        "error",
+        "카테고리를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
       );
+      return;
+    }
 
-      // 선택한 날짜에 Seoul 시간대의 현재 시간 적용
-      const transactionDateTime = new Date(year, month - 1, day);
-      transactionDateTime.setHours(seoulNow.getHours());
-      transactionDateTime.setMinutes(seoulNow.getMinutes());
-      transactionDateTime.setSeconds(seoulNow.getSeconds());
+    setIsSubmitting(true);
+    try {
+      const transactionDate = buildTransactionDateTime(date);
+      await addTransaction({
+        categoryId: resolvedCategoryId,
+        teamId: Number(routeTeamId),
+        amount: Number(amount),
+        content: content.trim() || null,
+        transactionDate,
+        transactionType,
+      });
 
-      // API 요청을 위한, 데이터 구조화
-      const transactionData = {
-        categoryId: categoryId, // API에서 가져온 카테고리 ID 사용
-        teamId: parseInt(teamId), // teamId를 숫자로 변환하여 포함
-        amount: Number(amount), // 문자열을 숫자로 변환
-        content: content || null, // 내용이 없으면 null
-        transactionDate:
-          transactionDateTime.toLocaleDateString("sv-SE") +
-          "T" +
-          transactionDateTime.toLocaleTimeString("sv-SE"),
-        transactionType: transactionType, // "EXPENSE" 또는 "INCOME"
-        synchronizeTransaction: synchronizeTransaction, // 동기화 여부 추가
-      };
-
-      // API 서비스로 그룹 거래 내역 저장 요청
-      await addTransaction(transactionData);
-
-      // 등록된 거래의 날짜로 저장 (스크롤은 맨 위로)
-      sessionStorage.setItem(`group-transaction-date-${teamId}`, new Date(year, month - 1, day).toISOString());
-      sessionStorage.setItem(`group-transaction-scroll-${teamId}`, "0");
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // 성공 시 그룹 거래 내역 조회 페이지로 이동
-      router.push(`/transaction/group/${teamId}`);
+      const [year, month, day] = date.split("-").map(Number);
+      sessionStorage.setItem(
+        `group-transaction-date-${routeTeamId}`,
+        new Date(year, month - 1, day).toISOString(),
+      );
+      sessionStorage.setItem(`group-transaction-scroll-${routeTeamId}`, "0");
+      router.push(`/transaction/group/${routeTeamId}`);
     } catch (error) {
-      addToast("error", String(error) || "그룹 거래 내역 저장 중 오류가 발생했습니다.");
-
-      // 에러 발생 시에만 다시 활성화
+      addToast("error", String(error));
       setIsSubmitting(false);
     }
   };
 
-  // 포맷된 금액 표시
-  const formattedAmount = () => {
-    if (!amount) return "";
-    return Number(amount).toLocaleString("ko-KR");
-  };
-
-  // 선택된 카테고리 정보 가져오기
-  const selectedCategory = categories.find((cat) => cat.id === categoryId);
-
   return (
-    <div className="flex flex-col h-screen bg-white">
-      <TopBar />
+    <div className="relative h-full bg-white flex flex-col">
+      <PageBackHeader title="그룹 거래 내역 작성" onBack={handleBack} />
 
-      {/* 거래 내역 작성 제목 블록 */}
-      <div className="bg-[#11ABFF] text-white px-4 py-2 items-center">
-        <h1 className="text-xl font-light">
-          [{groupInfo?.title}] 거래 내역 작성
-        </h1>
-      </div>
-
-      {/* 거래 유형 선택 */}
-      <div className="flex px-6 pt-3">
-        <button
-          className={`flex-1 cursor-pointer py-2 rounded-[10px] mr-7 ${
-            transactionType === "EXPENSE"
-              ? "bg-[#FF005E] text-white"
-              : "bg-[#D4D4D4] text-white"
-          }`}
-          onClick={() => handleTransactionTypeChange("EXPENSE")}
-        >
-          지출
-        </button>
-        <button
-          className={`flex-1 cursor-pointer py-2 rounded-[10px] ${
-            transactionType === "INCOME"
-              ? "bg-[#0E5EFF] text-white"
-              : "bg-[#D4D4D4] text-white"
-          }`}
-          onClick={() => handleTransactionTypeChange("INCOME")}
-        >
-          수입
-        </button>
-      </div>
-
-      {/* 금액 입력 */}
-      <div className="px-4 py-4">
-        <label className="block font-medium text-md mb-1">
-          금액<span className="text-[#FF472F]">*</span>
-        </label>
-        <div className="relative">
-          <input
-            type="text"
-            className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-            placeholder="금액을 입력해 주세요"
-            value={formattedAmount()}
-            onChange={handleAmountChange}
-            onBlur={(e) => {
-              if (e.target.value.trim() === "") {
-                setAmountError(true);
-              } else {
-                setAmountError(false);
-              }
-            }}
-            onFocus={() => setAmountTouched(true)}
-            inputMode="numeric"
-            autoComplete="off"
-            enterKeyHint="done"
-          />
-        </div>
-        {amountError && amountTouched && (
-          <p className="text-red-500 text-xs mt-1">금액을 입력해 주세요</p>
-        )}
-      </div>
-
-      {/* 내용 입력 */}
-      <div className="px-4">
-        <label className="block font-medium text-md mb-1">
-          내용
-          <span className="text-xs text-gray-500 ml-2">({content.length}/50)</span>
-        </label>
-        <input
-          type="text"
-          className="w-full p-2 border-b border-gray-300 focus:border-blue-500 text-sm outline-none"
-          placeholder="내용을 입력해 주세요 (최대 50자)"
-          value={content}
-          onChange={handleContentChange}
-          inputMode="text"
-          autoComplete="off"
-          enterKeyHint="done"
-          maxLength={50}
-        />
-      </div>
-
-      {/* 날짜 입력*/}
-      <div className="px-4 py-3">
-        <label className="block font-medium text-md mb-1">날짜</label>
-        <div className="date-input-wrapper">
-          <input
-            type="date"
-            className="px-2 py-1 border rounded-[10px] border-gray-300 text-sm hover:border-blue-500 focus:border-blue-500 outline-none transition-colors"
-            value={date.replace(/\//g, "-")}
-            onChange={handleDateChange}
-          />
-        </div>
-      </div>
-
-      {/* 카테고리 선택 */}
-      <div className="px-4 py-1">
-        <label className="block font-medium text-md">카테고리</label>
-      </div>
-
-      {/* 선택된 카테고리 아이콘 */}
-      {selectedCategory && (
-        <div className="flex justify-left px-4">
+      <main className="flex-1 px-5 pb-4 flex flex-col">
+        <section className="mb-8">
           <button
-            className="flex flex-col items-center cursor-pointer bg-transparent border-none p-0"
-            onClick={() => setShowCategoryModal(true)}
-            disabled={isLoadingCategories}
+            type="button"
+            onClick={openGroupModal}
+            disabled={isLoadingGroups || groups.length === 0}
+            className="w-full h-[52px] rounded-[14px] border border-gray-100 bg-gray-30 pl-5 pr-4 flex items-center justify-between gap-3 cursor-pointer disabled:cursor-not-allowed"
+          >
+            <span className="flex items-center gap-3 min-w-0">
+              <span
+                className="w-[10px] h-[10px] rounded-full flex-shrink-0"
+                style={{ backgroundColor: selectedGroupColor }}
+              />
+              <span className="text-body1-semibold text-gray-900 truncate">
+                {isLoadingGroups ? "그룹 불러오는 중.." : selectedGroupName}
+              </span>
+            </span>
+            <Image
+              src="/images/transaction/v2/오른쪽_기본_화살표_회색.svg"
+              alt=""
+              width={24}
+              height={24}
+            />
+          </button>
+        </section>
+
+        <div className="grid grid-cols-2 gap-2 mb-8">
+          <button
+            type="button"
+            onClick={() => setTransactionType("EXPENSE")}
+            className={`h-12 rounded-[12px] border-[1.2px] flex items-center justify-center gap-[6px] cursor-pointer ${
+              transactionType === "EXPENSE"
+                ? "border-gray-800 bg-white text-gray-900"
+                : "border-gray-100 bg-white text-gray-800"
+            }`}
           >
             <Image
-              src={selectedCategory.iconUrl}
-              alt={selectedCategory.name}
-              width={48}
-              height={48}
-              className="rounded-lg"
-              quality={100}
-              unoptimized={true}
+              src={
+                transactionType === "EXPENSE"
+                  ? "/images/transaction/v2/지출_활성.svg"
+                  : "/images/transaction/v2/지출_비활성.svg"
+              }
+              alt=""
+              width={24}
+              height={24}
             />
-            <span className="text-sm">{selectedCategory.name}</span>
+            <span className="text-label">지출</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTransactionType("INCOME")}
+            className={`h-12 rounded-[12px] border-[1.2px] flex items-center justify-center gap-[6px] cursor-pointer ${
+              transactionType === "INCOME"
+                ? "border-gray-800 bg-white text-gray-900"
+                : "border-gray-100 bg-white text-gray-800"
+            }`}
+          >
+            <Image
+              src={
+                transactionType === "INCOME"
+                  ? "/images/transaction/v2/수입_활성.svg"
+                  : "/images/transaction/v2/수입_비활성.svg"
+              }
+              alt=""
+              width={24}
+              height={24}
+            />
+            <span className="text-label">수입</span>
           </button>
         </div>
-      )}
 
-      {/* 개인 거래 내역 동기화 체크박스 */}
-      <div className="px-4 py-5">
-        <label className="flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={synchronizeTransaction}
-            onChange={handleSynchronizeChange}
-            className="mr-2 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-          />
-          <span className="text-sm text-gray-700">개인 가계부 동기화</span>
-        </label>
-        <p className="text-xs text-gray-500 mt-1 ml-6">
-          체크 시 해당 내역은 개인 가계부에도 기록됩니다.
-        </p>
-      </div>
-
-      {/* 저장 버튼 */}
-      <div className="px-10 pb-7 mt-auto">
-        <button
-          className={`w-full py-3 rounded-md font-medium transition-colors ${
-            isFormValid && !isSubmitting && categoryId
-              ? "bg-[#0EABFF] hover:bg-blue-500 cursor-pointer text-white"
-              : isSubmitting
-              ? "bg-[#0EABFF] opacity-50 cursor-not-allowed text-white"
-              : "bg-gray-300 text-white cursor-not-allowed"
-          }`}
-          onClick={handleSubmit}
-          disabled={!isFormValid || isSubmitting || !categoryId}
-          style={{ pointerEvents: isSubmitting ? "none" : "auto" }}
-        >
-          {isSubmitting ? (
-            <span className="flex items-center justify-center cursor-not-allowed">
-              <svg
-                className="animate-spin h-5 w-5 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              처리 중...
+        <section className="mb-8">
+          <label className="mb-2 flex items-start gap-1 h-[21px]">
+            <span className="text-body2-semibold text-gray-600 leading-[21px]">
+              금액
             </span>
-          ) : (
-            "완료"
-          )}
-        </button>
-      </div>
-
-      {/* 카테고리 선택 모달 */}
-      {showCategoryModal && (
-        <>
-          {/* 반투명 오버레이 */}
-          <div
-            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
-            onClick={() => setShowCategoryModal(false)}
-          ></div>
-
-          {/* 카테고리 선택 모달 (완전 불투명) */}
-          <div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-[10px] p-4 w-[90%] shadow-lg z-50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {isLoadingCategories ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="text-gray-500">카테고리 로딩 중...</div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-5 gap-5">
-                {categories.map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex flex-col items-center cursor-pointer"
-                    onClick={() => handleCategoryChange(category.id)}
-                  >
-                    <Image
-                      src={category.iconUrl}
-                      alt={category.name}
-                      width={40}
-                      height={40}
-                      quality={100}
-                      unoptimized={true}
-                    />
-                    <span className="text-xs text-center">{category.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="w-1 h-1 rounded-full bg-red-500 mt-1" />
+          </label>
+          <div className="h-[44px] rounded-[12px] border border-gray-100 bg-white px-4 flex items-center gap-3">
+            <input
+              type="text"
+              value={formattedAmount}
+              onChange={handleAmountChange}
+              placeholder="0"
+              inputMode="numeric"
+              autoComplete="off"
+              enterKeyHint="done"
+              className="w-full bg-transparent outline-none text-body1-regular text-gray-900 placeholder:text-gray-300"
+            />
+            <span className="text-body1-regular text-gray-900">원</span>
           </div>
-        </>
-      )}
+        </section>
 
-      <BottomBar />
+        <section className="mb-8">
+          <label className="mb-2 flex items-start gap-1 h-[21px]">
+            <span className="text-body2-semibold text-gray-600 leading-[21px]">
+              내용
+            </span>
+          </label>
+          <input
+            type="text"
+            value={content}
+            onChange={handleContentChange}
+            placeholder="ex. 간식 구매"
+            maxLength={50}
+            autoComplete="off"
+            enterKeyHint="done"
+            className="h-[44px] w-full rounded-[12px] border border-gray-100 bg-white px-4 outline-none text-body1-regular text-gray-900 placeholder:text-gray-300"
+          />
+        </section>
+
+        <section className="mb-8">
+          <label className="mb-2 flex items-start gap-1 h-[21px]">
+            <span className="text-body2-semibold text-gray-600 leading-[21px]">
+              날짜
+            </span>
+          </label>
+          <div className="relative h-[44px] rounded-[12px] border border-gray-100 bg-white px-4 flex items-center">
+            <button
+              type="button"
+              onClick={handleDateFieldClick}
+              className="absolute inset-0 z-10 rounded-[12px] cursor-pointer bg-transparent"
+              aria-label="거래 날짜 선택"
+            />
+            <span className="pointer-events-none whitespace-nowrap text-body1-regular text-gray-900">
+              {formatDateForDisplay(date)}
+            </span>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="absolute inset-0 h-full w-full opacity-0 pointer-events-none"
+              tabIndex={-1}
+              aria-label="거래 날짜 선택"
+            />
+          </div>
+        </section>
+
+        <section className="">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <label className="flex items-start gap-1 h-[21px]">
+                <span className="text-body2-semibold text-gray-600 leading-[21px]">
+                  카테고리
+                </span>
+              </label>
+              <p className="mt-1 text-caption1-medium text-gray-400">
+                {CATEGORY_HELPER_TEXT}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openCategoryModal}
+              disabled={isLoadingCategories}
+              className="h-[44px] px-4 rounded-full border border-gray-100 bg-white flex items-center gap-0 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <span className="text-label text-gray-800">
+                {isLoadingCategories ? "불러오는 중.." : selectedCategoryName}
+              </span>
+              <Image
+                src="/images/transaction/v2/오른쪽_기본_화살표_회색.svg"
+                alt=""
+                width={24}
+                height={24}
+              />
+            </button>
+          </div>
+        </section>
+
+        {!showGroupModal && !showCategoryModal && (
+          <div className="mt-auto pt-6 pb-2">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!isFormValid || isSubmitting}
+              className={`w-full h-[52px] rounded-[12px] text-subtitle ${
+                isFormValid && !isSubmitting
+                  ? "bg-gray-900 text-white cursor-pointer"
+                  : "bg-gray-200 text-white cursor-not-allowed"
+              }`}
+            >
+              {isSubmitting ? "작성 중.." : "작성 완료"}
+            </button>
+          </div>
+        )}
+      </main>
+
+      <BottomModal
+        isMounted={isGroupModalMounted}
+        isOpen={showGroupModal}
+        onClose={closeGroupModal}
+        sheetClassName="bg-white rounded-t-[20px] rounded-b-none pt-3"
+      >
+        <p className="px-5 text-subtitle text-gray-900">
+          어떤 그룹의 거래 내역을 작성할까요?
+        </p>
+        <div className="max-h-[58vh] overflow-y-auto py-5">
+          {groups.length === 0 ? (
+            <p className="px-5 py-10 text-body2-regular text-gray-500 text-center">
+              선택 가능한 그룹이 없어요.
+            </p>
+          ) : (
+            groups.map((group) => {
+              const isSelected =
+                String(group.teamId) === String(routeTeamId ?? "");
+
+              return (
+                <button
+                  key={group.teamId}
+                  type="button"
+                  onClick={() => handleGroupSelect(group.teamId)}
+                  className="w-full px-5 py-3 flex items-center justify-between cursor-pointer bg-white"
+                >
+                  <span className="flex items-center gap-4 min-w-0">
+                    <span
+                      className="w-[10px] h-[10px] rounded-full flex-shrink-0"
+                      style={{ backgroundColor: getLabelColor(group.label) }}
+                    />
+                    <span className="text-body1-regular text-gray-900 truncate">
+                      {group.title}
+                    </span>
+                  </span>
+                  {isSelected && (
+                    <Image
+                      src="/images/transaction/v2/체크_블랙.svg"
+                      alt="선택됨"
+                      width={24}
+                      height={24}
+                    />
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </BottomModal>
+
+      <BottomModal
+        isMounted={isCategoryModalMounted}
+        isOpen={showCategoryModal}
+        onClose={closeCategoryModal}
+        sheetClassName="bg-white rounded-t-[20px] rounded-b-none pt-3 pb-0"
+      >
+        <CategorySelectionModalContent
+          categories={categories}
+          selectedCategoryId={categoryId}
+          isLoading={isLoadingCategories}
+          onSelect={handleCategoryChange}
+          onAddCategory={handleAddCategory}
+        />
+      </BottomModal>
     </div>
   );
 }
+
+

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   if (!code) {
     const errorMessage = "인증 코드가 없습니다.";
     return redirectWithReplace(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(errorMessage)}`
+      `${process.env.NEXT_PUBLIC_BASE_URL}/login?error=${encodeURIComponent(errorMessage)}`
     );
   }
 
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     // 3. 리다이렉트 응답 (location.replace로 히스토리에 남지 않음)
     const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
     const redirectPath =
-      state === "profile_integration" ? "/profile/update" : "/";
+      state === "profile_integration" ? "/profile/update" : "/login";
 
     return redirectWithReplace(
       `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?kakao_login=success&user_data=${userInfoEncoded}`
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
   } catch {
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
     return redirectWithReplace(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/?error=${encodeURIComponent(errorMessage)}`
+      `${process.env.NEXT_PUBLIC_BASE_URL}/login?error=${encodeURIComponent(errorMessage)}`
     );
   }
 }

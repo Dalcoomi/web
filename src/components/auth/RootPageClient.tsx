@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import LoginPageClient from "@/components/auth/LoginPageClient";
 import LandingContent from "@/components/landing/LandingContent";
 import MyTransactionPageClient from "@/components/transaction/my/MyTransactionPageClient";
 import ToastContainer from "@/components/ui/ToastContainer";
 
-export default function RootPageClient() {
-  const searchParams = useSearchParams();
+interface RootPageClientProps {
+  isLoggedIn: boolean;
+}
+
+export default function RootPageClient({ isLoggedIn }: RootPageClientProps) {
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
@@ -24,13 +26,8 @@ export default function RootPageClient() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  const isLoginPanelRequested = searchParams.get("panel") === "login";
-  const hasAuthCallbackParams =
-    searchParams.get("kakao_login") === "success" ||
-    searchParams.get("naver_login") === "success" ||
-    !!searchParams.get("user_data") ||
-    !!searchParams.get("error");
-  const isLoginPanel = isLoginPanelRequested || hasAuthCallbackParams;
+  const desktopContent = isLoggedIn ? <MyTransactionPageClient /> : <LoginPageClient />;
+  const mobileContent = isLoggedIn ? <MyTransactionPageClient /> : <LoginPageClient />;
 
   return (
     <div className="w-full h-screen bg-gray-100">
@@ -60,7 +57,7 @@ export default function RootPageClient() {
             }}
           >
             <ToastContainer />
-            {isLoginPanel ? <LoginPageClient /> : <MyTransactionPageClient />}
+            {isDesktop ? desktopContent : mobileContent}
           </div>
         </div>
       </div>

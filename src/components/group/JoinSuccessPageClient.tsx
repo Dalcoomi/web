@@ -27,7 +27,7 @@ export default function JoinSuccessPageClient() {
         {/* Icon */}
         <div className="mb-16">
           <Image
-            src="/images/transaction/v2/그룹_초대_아이콘.svg"
+            src="/images/transaction/v2/달쿠미_캐릭터2.svg"
             alt="참여 완료"
             width={180}
             height={180}
