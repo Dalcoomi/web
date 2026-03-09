@@ -17,16 +17,15 @@ interface CategorySelectionModalContentProps {
 }
 
 const TEXT = {
-  title: "\uCE74\uD14C\uACE0\uB9AC",
-  searchAlt: "\uAC80\uC0C9",
-  searchPlaceholder: "\uCE74\uD14C\uACE0\uB9AC \uAC80\uC0C9",
-  loading: "\uCE74\uD14C\uACE0\uB9AC \uBD88\uB7EC\uC624\uB294 \uC911...",
-  empty: "\uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC5B4\uC694.",
-  add: "\uCD94\uAC00",
+  title: "카테고리",
+  searchAlt: "검색",
+  searchPlaceholder: "카테고리 검색",
+  loading: "카테고리 불러오는 중...",
+  empty: "검색 결과가 없어요.",
+  add: "추가",
 } as const;
 
-const SEARCH_ICON_SRC =
-  "/images/transaction/v2/\uB3CB\uBCF4\uAE30_\uD68C\uC0C9.svg";
+const SEARCH_ICON_SRC = "/images/transaction/v2/돋보기_회색.svg";
 
 export default function CategorySelectionModalContent({
   categories,

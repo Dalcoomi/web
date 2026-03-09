@@ -39,7 +39,7 @@ export default function RootPageClient({ isLoggedIn }: RootPageClientProps) {
           className="h-full bg-white flex"
           style={{
             width: "100%",
-            maxWidth: isDesktop ? "1000px" : "390px",
+            maxWidth: isDesktop ? "1000px" : "430px",
             boxShadow: isDesktop ? "0 25px 50px -12px rgb(0 0 0 / 0.25)" : "none",
           }}
         >

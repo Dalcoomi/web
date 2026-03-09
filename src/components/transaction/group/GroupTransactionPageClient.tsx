@@ -42,6 +42,9 @@ import DemoModeTopBanner from "@/components/common/DemoModeTopBanner";
 import { isDemoMode } from "@/utils/demoMode";
 
 let cachedGroupModalList: Group[] = [];
+const MAX_GROUPS_PER_MEMBER = 3;
+const MAX_GROUPS_REACHED_MESSAGE =
+  "이미 최대 3개 그룹에 참여 중이어서 새 그룹을 만들 수 없어요.";
 
 export default function GroupTransactionPageClient() {
   const router = useRouter();
@@ -201,6 +204,10 @@ export default function GroupTransactionPageClient() {
 
       const groupsResponse = await getGroups();
       const myGroups = groupsResponse.groups ?? [];
+      if (!isCancelled) {
+        cachedGroupModalList = myGroups;
+        setGroups(myGroups);
+      }
       const isMemberOfTeam = myGroups.some(
         (group) => String(group.teamId) === String(teamId),
       );
@@ -721,8 +728,18 @@ export default function GroupTransactionPageClient() {
     router.push("/group/join");
   };
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async (): Promise<boolean> => {
+    const knownGroups =
+      groups.length > 0 ? groups : cachedGroupModalList;
+    const groupCount = knownGroups.length;
+
+    if (groupCount >= MAX_GROUPS_PER_MEMBER) {
+      addToast("info", MAX_GROUPS_REACHED_MESSAGE);
+      return false;
+    }
+
     router.push("/group/create");
+    return true;
   };
 
   const handleCloseGroupModal = () => {
@@ -815,8 +832,12 @@ export default function GroupTransactionPageClient() {
         const nextGroups = response.groups || [];
         cachedGroupModalList = nextGroups;
         setGroups(nextGroups);
-      } catch {
-        addToast("error", "그룹 목록을 불러오지 못했습니다.");
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "그룹 목록을 불러오지 못했습니다.";
+        addToast("error", message);
       }
     };
 
@@ -1042,9 +1063,11 @@ export default function GroupTransactionPageClient() {
             </div>
 
             <button
-              onClick={() => {
-                setShowGroupModal(false);
-                handleCreateGroup();
+              onClick={async () => {
+                const canNavigate = await handleCreateGroup();
+                if (canNavigate) {
+                  setShowGroupModal(false);
+                }
               }}
               className="w-full h-12 px-5 py-3 rounded-[100px] bg-gray-50 border border-gray-100 cursor-pointer mb-2 flex items-center justify-center gap-2"
             >
