@@ -100,7 +100,11 @@ export const getGroups = async (): Promise<GetMyTeamsResponse> => {
       const response = await get("/api/teams");
       return response;
     } catch (error) {
-      useToastStore.getState().addToast("error", String(error));
+      const message =
+        error instanceof Error
+          ? error.message
+          : "그룹 목록을 불러오지 못했습니다.";
+      useToastStore.getState().addToast("error", message);
       return {
         groups: [],
       };

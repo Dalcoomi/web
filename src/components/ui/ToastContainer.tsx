@@ -50,9 +50,10 @@ function ToastItem({
 
   return (
     <div
-      className="col-start-1 row-start-1 flex max-w-[calc(100vw-40px)] md:max-w-[420px] items-center min-h-12 bg-white rounded-full pl-3 pr-5 py-3 shadow-lg transition-all duration-300 ease-out pointer-events-auto"
+      className="col-start-1 row-start-1 flex w-fit items-center min-h-12 bg-white rounded-full pl-3 pr-5 py-3 shadow-lg transition-all duration-300 ease-out pointer-events-auto"
       style={{
         zIndex: total - reverseIndex,
+        maxWidth: "min(420px, calc(100vw - 16px))",
         transform:
           isVisible && !isLeaving
             ? `translateY(${offset}px) scale(${scale})`
@@ -67,7 +68,7 @@ function ToastItem({
         height={24}
         className="shrink-0"
       />
-      <span className="ml-2 min-w-0 break-words whitespace-normal md:whitespace-nowrap text-body1-semibold text-gray-900">
+      <span className="ml-2 flex-1 min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] text-body1-semibold text-gray-900">
         {toast.message}
       </span>
     </div>
@@ -80,7 +81,7 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="absolute top-12 left-1/2 -translate-x-1/2 z-9999 grid place-items-center pointer-events-none">
+    <div className="absolute top-12 inset-x-0 z-9999 grid place-items-center px-2 pointer-events-none">
       {toasts.map((toast, index) => (
         <ToastItem
           key={toast.id}
