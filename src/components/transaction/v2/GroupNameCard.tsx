@@ -7,6 +7,7 @@ interface GroupNameCardProps {
   label?: string;
   profileImageUrl?: string | null;
   onInfoClick: () => void;
+  onNameClick?: () => void;
 }
 
 export default function GroupNameCard({
@@ -14,6 +15,7 @@ export default function GroupNameCard({
   label,
   profileImageUrl,
   onInfoClick,
+  onNameClick,
 }: GroupNameCardProps) {
   // 라벨에 해당하는 색상 가져오기 (기본값: gray)
   const labelColor =
@@ -23,7 +25,12 @@ export default function GroupNameCard({
 
   return (
     <div className="bg-white rounded-[18px] pl-5 pr-4 h-[56px] flex items-center justify-between shadow-xs gap-2">
-      <div className="flex items-center gap-3 overflow-hidden">
+      <button
+        type="button"
+        onClick={onNameClick}
+        disabled={!onNameClick}
+        className="flex items-center gap-3 overflow-hidden min-w-0 cursor-pointer disabled:cursor-default"
+      >
         {profileImageUrl ? (
           <div className="relative w-9 h-9 flex-shrink-0">
             <Image
@@ -43,8 +50,9 @@ export default function GroupNameCard({
         <h2 className="text-body1-semibold text-gray-900 truncate">
           {groupName || "그룹"}
         </h2>
-      </div>
+      </button>
       <button
+        type="button"
         onClick={onInfoClick}
         className="p-1 cursor-pointer rounded hover:bg-gray-50 transition-colors text-gray-300 flex-shrink-0"
       >

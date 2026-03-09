@@ -557,8 +557,12 @@ export default function GroupTransactionPageClient() {
   };
 
   const handleReceiptTransaction = () => {
-    // setIsFloatingMenuOpen(false);
-    // router.push(`/transaction/group/${teamId}/add/receipt`);
+    if (isDemoMode()) {
+      setIsFloatingMenuOpen(false);
+      addToast("info", "로그인 시 이용 가능합니다.");
+      return;
+    }
+
     addToast("info", "서비스 점검 중입니다.");
   };
 
@@ -708,6 +712,12 @@ export default function GroupTransactionPageClient() {
   };
 
   const handleEnterInviteCode = () => {
+    if (isDemoMode()) {
+      setIsFloatingMenuOpen(false);
+      addToast("info", "로그인 시 이용 가능합니다.");
+      return;
+    }
+
     router.push("/group/join");
   };
 
@@ -839,6 +849,7 @@ export default function GroupTransactionPageClient() {
             groupName={groupInfo?.title}
             label={groupInfo?.label}
             onInfoClick={handleGroupInfo}
+            onNameClick={handleGroupInfo}
           />
         )}
       </div>

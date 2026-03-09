@@ -1,37 +1,23 @@
 # public/robots.txt
 
-# 모든 검색엔진 크롤러
+# All crawlers
 User-agent: *
 Allow: /
+Disallow: /api/
 Disallow: /transaction/
 Disallow: /group/
+Disallow: /profile/
 Disallow: /sign-up/
-Disallow: /api/
-Disallow: /*.json$
 
-# 네이버 검색봇 (Yeti)
+# Naver crawler
 User-agent: Yeti
 Allow: /
+Disallow: /api/
 Disallow: /transaction/
 Disallow: /group/
+Disallow: /profile/
 Disallow: /sign-up/
-Disallow: /api/
 Crawl-delay: 1
 
-# 구글 검색봇
-User-agent: Googlebot
-Allow: /
-Disallow: /transaction/
-Disallow: /group/
-Disallow: /sign-up/
-Disallow: /api/
-
-# 다음/카카오 검색봇
-User-agent: Daumoa
-Allow: /
-Disallow: /transaction/
-Disallow: /group/
-Disallow: /sign-up/
-Disallow: /api/
-
+Host: https://dalcoomi.com
 Sitemap: https://dalcoomi.com/sitemap.xml

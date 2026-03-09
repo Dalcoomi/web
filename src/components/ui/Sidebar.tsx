@@ -38,7 +38,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const handleMyPage = () => {
     if (isGuest) {
       onClose();
-      router.push("/?panel=login");
+      router.push("/login");
       return;
     }
 

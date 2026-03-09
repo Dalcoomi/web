@@ -1,34 +1,193 @@
 // components/auth/LoginPageClient.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { socialLogin } from "@/services/authService";
 import { connectSocial } from "@/services/memberService";
-import { getDeviceType } from "@/utils/deviceDetector";
+import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
+import { getDeviceType } from "@/utils/deviceDetector";
+import { clearTokens } from "@/utils/tokenManager";
+
+type SocialProvider = "KAKAO" | "NAVER";
+
+interface OAuthCallbackUserData {
+  email: string;
+  kakaoId?: string | number;
+  naverId?: string | number;
+  accessToken: string;
+  refreshToken?: string;
+}
+
+interface PendingSocialData {
+  socialEmail: string;
+  socialId: string;
+  socialType: SocialProvider;
+  socialAccessToken: string;
+  socialRefreshToken?: string;
+  existingSocialType?: string;
+}
+
+interface SocialLoginResponse {
+  accessToken: string;
+  refreshToken?: string;
+  sameSocial?: boolean;
+  existingSocialType?: string;
+}
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "알 수 없는 오류가 발생했습니다.";
+};
 
 export default function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
   const addToast = useToastStore((state) => state.addToast);
-  const [isLoading, setIsLoading] = useState(false);
+  const clearMember = useMemberStore((state) => state.clearMember);
 
-  // 소셜 연동 모달 상태
+  const [isLoading, setIsLoading] = useState(false);
   const [showIntegrateModal, setShowIntegrateModal] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
-  const [pendingSocialData, setPendingSocialData] = useState<{
-    socialEmail: string;
-    socialId: string;
-    socialType: string;
-    socialAccessToken: string;
-    socialRefreshToken?: string; // 네이버 연결 해제용
-    existingSocialType?: string; // 연동 확인 모달에서만 사용
-  } | null>(null);
+  const logoRef = useRef<HTMLHeadingElement | null>(null);
+  const subtitleRef = useRef<HTMLParagraphElement | null>(null);
+  const [logoGradientOffsetPx, setLogoGradientOffsetPx] = useState(0);
+  const [pendingSocialData, setPendingSocialData] =
+    useState<PendingSocialData | null>(null);
 
-  // 페이지 로드 시 쿼리 파라미터 확인 (소셜 로그인 콜백 처리)
+  useEffect(() => {
+    const updateGradientFrame = () => {
+      const logoWidth = logoRef.current?.getBoundingClientRect().width ?? 0;
+      const subtitleWidth =
+        subtitleRef.current?.getBoundingClientRect().width ?? 0;
+
+      if (logoWidth <= 0 || subtitleWidth <= 0) {
+        return;
+      }
+
+      // Figma 기준처럼 소제목 시작 x축에 맞춰 로고 그라디언트 시작점을 보정한다.
+      setLogoGradientOffsetPx((subtitleWidth - logoWidth) / 2);
+    };
+
+    updateGradientFrame();
+    window.addEventListener("resize", updateGradientFrame);
+    return () => window.removeEventListener("resize", updateGradientFrame);
+  }, []);
+
+  const logoGradientStyle = {
+    backgroundImage:
+      "linear-gradient(81deg, #FF4B6C 0%, #4D83FF 54%, #121315 100%), linear-gradient(#121315, #121315)",
+    backgroundSize: "100% 100%, 100% 100%",
+    backgroundPosition: `-${Math.max(0, logoGradientOffsetPx)}px 0, 0 0`,
+    backgroundRepeat: "no-repeat, no-repeat",
+    backgroundClip: "text",
+    WebkitBackgroundClip: "text",
+    color: "transparent",
+    WebkitTextFillColor: "transparent",
+  } as const;
+
+  const handleKakaoLogin = () => {
+    const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_API_KEY;
+    const REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI;
+
+    const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+    window.location.assign(kakaoAuthUrl);
+  };
+
+  const handleNaverLogin = () => {
+    const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
+    const REDIRECT_URI = process.env.NEXT_PUBLIC_NAVER_REDIRECT_URI;
+    const state = Math.random().toString(36).substring(2, 15);
+
+    const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${state}`;
+
+    try {
+      localStorage.setItem("naverLoginState", state);
+    } catch {
+      sessionStorage.setItem("naverLoginState", state);
+    }
+
+    window.location.assign(naverAuthUrl);
+  };
+
+  const sendToBackend = useCallback(
+    async (userData: OAuthCallbackUserData, socialType: SocialProvider) => {
+      const socialIdSource =
+        socialType === "KAKAO" ? userData.kakaoId : userData.naverId;
+
+      if (!socialIdSource) {
+        addToast("error", "소셜 로그인 정보가 올바르지 않습니다.");
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+
+        const requestData = {
+          socialEmail: userData.email,
+          socialId: String(socialIdSource),
+          socialType,
+          socialRefreshToken: userData.refreshToken,
+          deviceType: getDeviceType(),
+        };
+
+        try {
+          const response = (await socialLogin(
+            requestData,
+          )) as SocialLoginResponse;
+
+          if (response.sameSocial === false) {
+            setPendingSocialData({
+              socialEmail: requestData.socialEmail,
+              socialId: requestData.socialId,
+              socialType: requestData.socialType,
+              socialAccessToken: userData.accessToken,
+              socialRefreshToken: userData.refreshToken,
+              existingSocialType: response.existingSocialType,
+            });
+            setShowIntegrateModal(true);
+            return;
+          }
+
+          login(response.accessToken, response.refreshToken);
+          localStorage.setItem("currentLoginSocial", socialType);
+          window.location.replace("/transaction/my");
+        } catch (error: unknown) {
+          const message = getErrorMessage(error);
+
+          if (
+            message === "존재하지 않는 회원입니다." ||
+            message.includes("404")
+          ) {
+            setPendingSocialData({
+              socialEmail: requestData.socialEmail,
+              socialId: requestData.socialId,
+              socialType: requestData.socialType,
+              socialAccessToken: userData.accessToken,
+              socialRefreshToken: userData.refreshToken,
+            });
+            setShowSignUpModal(true);
+          } else {
+            addToast("error", `로그인 실패: ${message}`);
+          }
+        }
+      } catch {
+        addToast(
+          "error",
+          "로그인 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해 주세요.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [addToast, login],
+  );
+
   useEffect(() => {
     const kakaoLogin = searchParams.get("kakao_login");
     const naverLogin = searchParams.get("naver_login");
@@ -37,129 +196,73 @@ export default function LoginPageClient() {
 
     if (error) {
       addToast("error", `로그인 실패: ${decodeURIComponent(error)}`);
-      // URL 정리
       window.history.replaceState({}, "", window.location.pathname);
       return;
     }
 
-    if (kakaoLogin === "success" && userData) {
-      const userInfo = JSON.parse(decodeURIComponent(userData));
-      sendToBackend(userInfo, "KAKAO");
-      // URL 정리
-      window.history.replaceState({}, "", window.location.pathname);
+    const isSocialSuccess =
+      kakaoLogin === "success" || naverLogin === "success";
+    if (!isSocialSuccess || !userData) {
+      return;
     }
-
-    if (naverLogin === "success" && userData) {
-      const userInfo = JSON.parse(decodeURIComponent(userData));
-      sendToBackend(userInfo, "NAVER");
-      // URL 정리
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, [searchParams]);
-
-  // 카카오 로그인 처리 함수
-  const handleKakaoLogin = () => {
-    const KAKAO_REST_API_KEY = process.env.NEXT_PUBLIC_KAKAO_API_KEY;
-    const REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI;
-
-    const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${REDIRECT_URI}&response_type=code`;
-
-    window.location.replace(kakaoAuthUrl);
-  };
-
-  // 네이버 로그인 처리 함수
-  const handleNaverLogin = () => {
-    const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_CLIENT_ID;
-    const REDIRECT_URI = process.env.NEXT_PUBLIC_NAVER_REDIRECT_URI;
-    const STATE = Math.random().toString(36).substring(2, 15);
-
-    const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
 
     try {
-      localStorage.setItem("naverLoginState", STATE);
-    } catch (error) {
-      sessionStorage.setItem("naverLoginState", STATE);
-    }
-    window.location.replace(naverAuthUrl);
-  };
-
-  // 백엔드로 데이터 전송 (공통 함수)
-  const sendToBackend = async (userData, socialType) => {
-    try {
-      setIsLoading(true);
-
-      const requestData = {
-        socialEmail: userData.email,
-        socialId:
-          socialType === "KAKAO"
-            ? userData.kakaoId.toString()
-            : userData.naverId.toString(),
-        socialType: socialType,
-        socialRefreshToken: userData.refreshToken, // 소셜 리프레시 토큰 추가
-        deviceType: getDeviceType(), // 디바이스 타입 추가
-      };
-
-      try {
-        const response = await socialLogin(requestData);
-
-        // sameSocial이 false면 다른 소셜로 가입된 계정이 있음 → 연동 확인 모달
-        if (response.sameSocial === false) {
-          setPendingSocialData({
-            socialEmail: requestData.socialEmail,
-            socialId: requestData.socialId,
-            socialType: requestData.socialType,
-            socialAccessToken: userData.accessToken,
-            socialRefreshToken: userData.refreshToken, // 네이버 리프레시 토큰 추가
-            existingSocialType: response.existingSocialType,
-          });
-
-          setShowIntegrateModal(true);
-          return;
-        }
-
-        // 로그인 성공 시 토큰 저장
-        login(response.accessToken, response.refreshToken);
-
-        // 현재 로그인 소셜 타입을 임시 저장 (회원 정보 로드 후 적용하기 위해)
-        localStorage.setItem("currentLoginSocial", socialType);
-
-        // 이미지 깨짐 방지를 위해 hard navigation 사용, replace로 히스토리에 로그인 페이지 남기지 않음
-        window.location.replace("/transaction/my");
-      } catch (error: any) {
-        if (
-          error.message === "존재하지 않는 회원입니다." ||
-          error.message.includes("404")
-        ) {
-          // 가입된 계정이 없음 → 회원가입 안내 모달
-          setPendingSocialData({
-            socialEmail: requestData.socialEmail,
-            socialId: requestData.socialId,
-            socialType: requestData.socialType,
-            socialAccessToken: userData.accessToken,
-            socialRefreshToken: userData.refreshToken, // 네이버 리프레시 토큰 추가
-          });
-
-          setShowSignUpModal(true);
-        } else {
-          addToast("error", `로그인 실패: ${error.message}`);
-        }
-      }
-    } catch (error) {
-      addToast(
-        "error",
-        "로그인 처리 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.",
-      );
+      const parsedData = JSON.parse(
+        decodeURIComponent(userData),
+      ) as OAuthCallbackUserData;
+      const socialType: SocialProvider =
+        kakaoLogin === "success" ? "KAKAO" : "NAVER";
+      void sendToBackend(parsedData, socialType);
+    } catch {
+      addToast("error", "로그인 정보 파싱에 실패했습니다.");
     } finally {
-      setIsLoading(false);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [addToast, searchParams, sendToBackend]);
+
+  const disconnectKakao = async () => {
+    if (!pendingSocialData?.socialAccessToken) return;
+
+    try {
+      await fetch("/api/auth/kakao/revoke", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          accessToken: pendingSocialData.socialAccessToken,
+        }),
+      });
+    } catch (error) {
+      console.error("카카오 연동 해제 실패:", error);
     }
   };
 
-  // 소셜 연동 확인 처리
+  const disconnectNaver = async () => {
+    if (!pendingSocialData?.socialAccessToken) return;
+
+    try {
+      await fetch("/api/auth/naver/revoke", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          accessToken: pendingSocialData.socialAccessToken,
+          refreshToken: pendingSocialData.socialRefreshToken,
+        }),
+      });
+    } catch (error) {
+      console.error("네이버 연동 해제 실패:", error);
+    }
+  };
+
   const handleIntegrateConfirm = async () => {
     if (!pendingSocialData) return;
 
     try {
       setIsLoading(true);
+
       await connectSocial({
         socialEmail: pendingSocialData.socialEmail,
         socialId: pendingSocialData.socialId,
@@ -167,40 +270,33 @@ export default function LoginPageClient() {
         socialRefreshToken: pendingSocialData.socialRefreshToken,
       });
 
-      // 연동 성공 후 다시 로그인 시도
-      const response = await socialLogin({
+      const response = (await socialLogin({
         socialEmail: pendingSocialData.socialEmail,
         socialId: pendingSocialData.socialId,
         socialType: pendingSocialData.socialType,
-        socialRefreshToken: pendingSocialData.socialRefreshToken, // 소셜 리프레시 토큰 추가
-        deviceType: getDeviceType(), // 디바이스 타입 추가
-      });
+        socialRefreshToken: pendingSocialData.socialRefreshToken,
+        deviceType: getDeviceType(),
+      })) as SocialLoginResponse;
 
       login(response.accessToken, response.refreshToken);
-
-      // 현재 로그인 소셜 타입을 임시 저장 (회원 정보 로드 후 적용하기 위해)
       localStorage.setItem("currentLoginSocial", pendingSocialData.socialType);
 
       setShowIntegrateModal(false);
       setPendingSocialData(null);
-
-      // 이미지 깨짐 방지를 위해 hard navigation 사용
-      window.location.href = "/transaction/my";
-    } catch (error: any) {
-      addToast("error", `소셜 연동 실패: ${error.message}`);
+      window.location.replace("/transaction/my");
+    } catch (error: unknown) {
+      addToast("error", `소셜 연동 실패: ${getErrorMessage(error)}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 소셜 연동 취소 처리 (소셜 플랫폼에서 연결 끊기)
   const handleIntegrateCancel = async () => {
     if (!pendingSocialData) return;
 
-    // 카카오 또는 네이버 연결 해제
     if (pendingSocialData.socialType === "KAKAO") {
       await disconnectKakao();
-    } else if (pendingSocialData.socialType === "NAVER") {
+    } else {
       await disconnectNaver();
     }
 
@@ -208,14 +304,13 @@ export default function LoginPageClient() {
     setPendingSocialData(null);
   };
 
-  // 회원가입 처리
   const handleSignUp = () => {
     if (!pendingSocialData) return;
 
     const socialLoginData = {
       socialId: pendingSocialData.socialId,
       socialType: pendingSocialData.socialType,
-      socialEmail: pendingSocialData.socialEmail || null,
+      socialEmail: pendingSocialData.socialEmail,
       socialRefreshToken: pendingSocialData.socialRefreshToken,
       nickname: null,
       profileImage: null,
@@ -227,14 +322,12 @@ export default function LoginPageClient() {
     router.push("/sign-up/step1");
   };
 
-  // 회원가입 취소 처리 (소셜 플랫폼에서 연결 끊기)
   const handleSignUpCancel = async () => {
     if (!pendingSocialData) return;
 
-    // 카카오 또는 네이버 연결 해제
     if (pendingSocialData.socialType === "KAKAO") {
       await disconnectKakao();
-    } else if (pendingSocialData.socialType === "NAVER") {
+    } else {
       await disconnectNaver();
     }
 
@@ -242,168 +335,115 @@ export default function LoginPageClient() {
     setPendingSocialData(null);
   };
 
-  // 카카오 연결 해제
-  const disconnectKakao = async () => {
-    if (!pendingSocialData?.socialAccessToken) return;
-
-    try {
-      // 🔥 서버 API를 통해 카카오 토큰 해제 처리
-      const response = await fetch("/api/auth/kakao/revoke", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          accessToken: pendingSocialData.socialAccessToken,
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-      } else {
-      }
-    } catch (error) {
-      console.error("카카오 연결 해제 실패:", error);
-    }
-  };
-
-  // 네이버 연결 해제
-  const disconnectNaver = async () => {
-    if (!pendingSocialData?.socialAccessToken) return;
-
-    try {
-      // 🔥 서버 API를 통해 네이버 토큰 해제 처리
-      const response = await fetch("/api/auth/naver/revoke", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          accessToken: pendingSocialData.socialAccessToken,
-          refreshToken: pendingSocialData.socialRefreshToken,
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-      } else {
-      }
-    } catch (error) {
-      console.error("네이버 연결 해제 실패:", error);
-    }
+  const handleEnterDemoMode = () => {
+    clearTokens();
+    clearMember();
+    localStorage.removeItem("currentLoginSocial");
+    window.location.replace("/transaction/my");
   };
 
   return (
-    <div className="relative w-full h-full">
-      {/* SEO용 숨김 텍스트 */}
+    <div className="relative h-full w-full overflow-hidden bg-white">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 242.5px 199px at 50% calc(100% - (98px + env(safe-area-inset-bottom))), #FFEDF0 0%, #EDF3FF 56%, #FFFFFF 100%)",
+        }}
+      />
+
       <div className="sr-only">
         <p>달쿠미 - 개인과 그룹을 위한 가계부</p>
         <p>
-          개인과 그룹을 위한 가계부 서비스 달쿠미. 간편한 가계부 작성과 AI
-          영수증 분석, 그룹 가계부로 스마트한 지출 관리를 시작해 보세요!
+          가볍게 기록하고, 함께 절약하는 달콤한 시작. 개인 거래와 그룹 거래를 한
+          번에 관리해 보세요.
         </p>
-        <p>
-          AI가 도와주는 스마트한 가계부 앱입니다. 개인 가계부부터 그룹
-          가계부까지 모든 기능을 한 번에 관리할 수 있습니다.
-        </p>
-        <nav>
-          <ul>
-            <li>개인 가계부 작성 및 관리</li>
-            <li>그룹 가계부 공유 기능</li>
-            <li>AI 영수증 자동 분석</li>
-            <li>지출 패턴 분석 리포트</li>
-            <li>예산 관리 및 알림</li>
-          </ul>
-        </nav>
       </div>
 
-      {/* 배경 이미지 */}
-      <div
-        className="absolute inset-0 w-full h-full z-0"
-        style={{ backgroundColor: "#ffffff" }}
-      >
+      <div className="absolute inset-x-5 top-[56px] z-10 flex flex-col items-center">
+        <h1
+          ref={logoRef}
+          className="font-stunning text-[40px] leading-[150%] tracking-[-0.01em]"
+          style={logoGradientStyle}
+        >
+          Dalcoomi
+        </h1>
+
+        <p ref={subtitleRef} className="mt-1 text-body2-regular text-gray-600">
+          가볍게 기록하고, 함께 절약하는 달콤한 시작
+        </p>
+
         <img
-          src="/images/auth/로그인 페이지 이미지.png"
-          alt="로그인 배경"
-          className="w-full h-full object-contain object-center"
+          src="/images/transaction/v2/달쿠미_캐릭터2.svg"
+          alt="달쿠미 캐릭터"
+          width={202}
+          height={202}
+          className="mt-[75px] h-[202px] w-[202px]"
           loading="eager"
           style={{ display: "block" }}
         />
       </div>
 
-      {/* 로그인 버튼 */}
-      <div
-        className="absolute w-full max-w-[390px] flex flex-col items-center z-10 bg-gradient-to-t from-white via-white to-transparent pt-4"
-        style={{
-          bottom: "40px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          paddingBottom: "max(24px, env(safe-area-inset-bottom))",
-        }}
-      >
-        {/* 간편 로그인 제목과 구분선 */}
-        <div className="flex items-center w-[320px] mb-6">
-          <div className="flex-1 h-px bg-gray-300"></div>
-          <span className="px-4 text-sm text-gray-400">간편 로그인</span>
-          <div className="flex-1 h-px bg-gray-300"></div>
-        </div>
+      <div className="absolute inset-x-5 bottom-[calc(40px+env(safe-area-inset-bottom))] z-10 flex flex-col gap-3">
+        <button
+          type="button"
+          className="h-[52px] w-full cursor-pointer overflow-hidden rounded-[12px] border border-[#EBEDED] bg-white p-0 disabled:opacity-50"
+          onClick={handleNaverLogin}
+          disabled={isLoading}
+        >
+          <img
+            src="/images/transaction/v2/네이버_로그인.svg"
+            alt="네이버로 시작하기"
+            width={335}
+            height={52}
+            className="h-full w-full object-cover"
+            loading="eager"
+            style={{ display: "block" }}
+          />
+        </button>
 
-        {/* 소셜 로그인 버튼들 (가로 배치) */}
-        <div className="flex items-center space-x-4">
-          {/* 네이버 로그인 버튼 */}
-          <button
-            className="w-[50px] cursor-pointer"
-            onClick={handleNaverLogin}
-            disabled={isLoading}
-          >
-            <img
-              src="/images/auth/네이버_로그인.png?v=1"
-              alt="네이버 로그인"
-              width={150}
-              height={33}
-              className="w-full"
-              loading="eager"
-              style={{ display: "block" }}
-            />
-          </button>
+        <button
+          type="button"
+          className="h-[52px] w-full cursor-pointer overflow-hidden rounded-[12px] border border-[#EBEDED] bg-white p-0 disabled:opacity-50"
+          onClick={handleKakaoLogin}
+          disabled={isLoading}
+        >
+          <img
+            src="/images/transaction/v2/카카오_로그인.svg"
+            alt="카카오로 시작하기"
+            width={335}
+            height={52}
+            className="h-full w-full object-cover"
+            loading="eager"
+            style={{ display: "block" }}
+          />
+        </button>
 
-          {/* 카카오 로그인 버튼 */}
-          <button
-            className="w-[50px] cursor-pointer"
-            onClick={handleKakaoLogin}
-            disabled={isLoading}
-          >
-            <img
-              src="/images/auth/카카오_로그인.png?v=1"
-              alt="카카오 로그인"
-              width={150}
-              height={34}
-              className="w-full"
-              loading="eager"
-              style={{ display: "block" }}
-            />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="h-[52px] w-full cursor-pointer rounded-[12px] bg-gray-900 text-body1-semibold text-white disabled:opacity-50"
+          onClick={handleEnterDemoMode}
+          disabled={isLoading}
+        >
+          로그인 없이 체험하기
+        </button>
       </div>
 
-      {/* 소셜 연동 확인 모달 */}
       {showIntegrateModal && (
         <>
-          {/* 배경 오버레이 */}
           <div
-            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
+            className="absolute inset-0 z-50 flex h-screen items-center justify-center bg-[#d9d9d9] opacity-50"
             onClick={handleIntegrateCancel}
-          ></div>
+          />
 
-          {/* 모달 컨텐츠 */}
           <div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] p-6 w-[80%] max-w-sm z-50"
-            onClick={(e) => e.stopPropagation()}
+            className="absolute left-1/2 top-1/2 z-50 w-[80%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-[10px] border-2 border-[#C7C3C3] bg-white p-6"
+            onClick={(event) => event.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-center mb-4">
+            <h3 className="mb-4 text-center text-lg font-semibold">
               SNS 간편 로그인 안내
             </h3>
-            <p className="text-gray-600 text-center mb-6 text-sm leading-relaxed">
+            <p className="mb-6 text-center text-sm leading-relaxed text-gray-600">
               <span className="font-medium text-blue-500">
                 {pendingSocialData?.socialEmail}
               </span>
@@ -420,21 +460,22 @@ export default function LoginPageClient() {
               <span className="font-medium text-gray-800">
                 {pendingSocialData?.socialType}
               </span>{" "}
-              계정과 연동하시겠습니까?
-              <br />
+              계정과 연동하시겠어요?
             </p>
 
             <div className="flex space-x-3">
               <button
+                type="button"
                 onClick={handleIntegrateCancel}
-                className="flex-1 py-3 px-4 text-[#0EABFF] font-light border-2 border-[#0EABFF] rounded-[10px] hover:bg-blue-50 transition-colors cursor-pointer"
+                className="flex-1 cursor-pointer rounded-[10px] border-2 border-[#0EABFF] px-4 py-3 font-light text-[#0EABFF] transition-colors hover:bg-blue-50"
               >
                 취소
               </button>
               <button
+                type="button"
                 onClick={handleIntegrateConfirm}
                 disabled={isLoading}
-                className="flex-1 py-3 px-4 bg-[#0EABFF] text-white font-light rounded-[10px] hover:bg-blue-600 disabled:opacity-50 transition-colors cursor-pointer"
+                className="flex-1 cursor-pointer rounded-[10px] bg-[#0EABFF] px-4 py-3 font-light text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
               >
                 {isLoading ? "연동 중..." : "확인"}
               </button>
@@ -443,24 +484,21 @@ export default function LoginPageClient() {
         </>
       )}
 
-      {/* 회원가입 안내 모달 */}
       {showSignUpModal && (
         <>
-          {/* 배경 오버레이 */}
           <div
-            className="absolute top-0 left-0 right-0 bottom-0 bg-[#d9d9d9] opacity-50 flex h-screen items-center justify-center z-50"
+            className="absolute inset-0 z-50 flex h-screen items-center justify-center bg-[#d9d9d9] opacity-50"
             onClick={handleSignUpCancel}
-          ></div>
+          />
 
-          {/* 모달 컨텐츠 */}
           <div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-[#C7C3C3] rounded-[10px] p-6 w-[80%] max-w-sm z-50"
-            onClick={(e) => e.stopPropagation()}
+            className="absolute left-1/2 top-1/2 z-50 w-[80%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-[10px] border-2 border-[#C7C3C3] bg-white p-6"
+            onClick={(event) => event.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-center mb-4">
+            <h3 className="mb-4 text-center text-lg font-semibold">
               SNS 간편 로그인 안내
             </h3>
-            <p className="text-gray-600 text-center mb-6 text-md leading-relaxed">
+            <p className="mb-6 text-center text-md leading-relaxed text-gray-600">
               <span className="font-medium text-gray-800">
                 {pendingSocialData?.socialType}
               </span>{" "}
@@ -472,33 +510,35 @@ export default function LoginPageClient() {
               <span className="font-medium text-gray-800">
                 {pendingSocialData?.socialType}
               </span>{" "}
-              계정 회원가입을 원하시는 경우
+              계정 회원가입을 원하시면
               <br />
               회원가입 버튼을 눌러주세요.
               <br />
               <br />
               <span className="text-xs text-gray-500">
-                이미 다른 소셜로 가입한 회원이시라면
+                이미 다른 SNS로 가입하셨다면
                 <br />
                 로그인 후{" "}
                 <span className="text-red-400">
-                  {`"마이페이지 > 프로필 수정"`}
+                  &quot;마이페이지 &gt; 프로필 수정&quot;
                 </span>
                 <br />
-                메뉴에서 소셜 연동 설정을 진행해 주세요.
+                메뉴에서 SNS 연동을 진행해 주세요.
               </span>
             </p>
 
             <div className="flex space-x-3">
               <button
+                type="button"
                 onClick={handleSignUpCancel}
-                className="flex-1 py-3 px-4 text-[#0EABFF] font-light border-2 border-[#0EABFF] rounded-[10px] hover:bg-blue-50 transition-colors cursor-pointer"
+                className="flex-1 cursor-pointer rounded-[10px] border-2 border-[#0EABFF] px-4 py-3 font-light text-[#0EABFF] transition-colors hover:bg-blue-50"
               >
                 취소
               </button>
               <button
+                type="button"
                 onClick={handleSignUp}
-                className="flex-1 py-3 px-4 bg-[#0EABFF] text-white font-light rounded-[10px] hover:bg-blue-600 transition-colors cursor-pointer"
+                className="flex-1 cursor-pointer rounded-[10px] bg-[#0EABFF] px-4 py-3 font-light text-white transition-colors hover:bg-blue-600"
               >
                 회원가입
               </button>

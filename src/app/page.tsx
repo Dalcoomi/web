@@ -1,5 +1,6 @@
 import RootPageClient from "@/components/auth/RootPageClient";
 import PWAInstallPrompt from "@/components/common/PWAInstallPrompt";
+import { cookies } from "next/headers";
 
 export const metadata = {
   title: "달쿠미 | 개인&그룹 가계부",
@@ -51,7 +52,6 @@ export const metadata = {
       index: true,
       follow: true,
     },
-    "naver-site-verification": "39c4d20da5440f7822f33fabd7022c0c98622c82",
   },
   alternates: {
     canonical: "https://dalcoomi.com",
@@ -61,10 +61,13 @@ export const metadata = {
   },
 };
 
-export default function RootPage() {
+export default async function RootPage() {
+  const cookieStore = await cookies();
+  const isLoggedIn = !!cookieStore.get("accessToken");
+
   return (
     <>
-      <RootPageClient />
+      <RootPageClient isLoggedIn={isLoggedIn} />
       <PWAInstallPrompt />
     </>
   );
