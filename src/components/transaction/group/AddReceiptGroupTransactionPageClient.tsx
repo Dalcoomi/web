@@ -392,6 +392,7 @@ export default function AddReceiptMyTransactionPageClient() {
             "T" +
             transactionDateTime.toLocaleTimeString("sv-SE"),
           transactionType: "EXPENSE" as const,
+          synchronizeTransaction: false,
         };
       });
 

@@ -32,6 +32,63 @@ import Sidebar from "@/components/ui/Sidebar";
 import DemoModeTopBanner from "@/components/common/DemoModeTopBanner";
 import { isDemoMode } from "@/utils/demoMode";
 
+const MY_FILTER_STORAGE_KEY = "my-transaction-filter-v1";
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === "string");
+
+const isTransactionTypeFilter = (
+  value: unknown,
+): value is FilterDraftState["type"] =>
+  value === "ALL" || value === "EXPENSE" || value === "INCOME";
+
+const isSameStringSet = (selected: string[], all: string[]) =>
+  selected.length === all.length && all.every((item) => selected.includes(item));
+
+const isSameFilterState = (a: FilterDraftState, b: FilterDraftState) =>
+  a.type === b.type &&
+  a.categoryNames.length === b.categoryNames.length &&
+  a.creatorNicknames.length === b.creatorNicknames.length &&
+  a.categoryNames.every((item) => b.categoryNames.includes(item)) &&
+  a.creatorNicknames.every((item) => b.creatorNicknames.includes(item));
+
+const readStoredFilter = (): FilterDraftState | null => {
+  if (typeof window === "undefined") return null;
+
+  const raw = sessionStorage.getItem(MY_FILTER_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    const candidate = parsed as Partial<FilterDraftState>;
+    if (
+      !isTransactionTypeFilter(candidate.type) ||
+      !isStringArray(candidate.categoryNames) ||
+      !isStringArray(candidate.creatorNicknames)
+    ) {
+      return null;
+    }
+
+    return {
+      type: candidate.type,
+      categoryNames: candidate.categoryNames,
+      creatorNicknames: candidate.creatorNicknames,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const normalizeFilterState = (
+  filter: FilterDraftState,
+  allCategories: string[],
+): FilterDraftState => ({
+  ...filter,
+  categoryNames: filter.categoryNames.filter((name) => allCategories.includes(name)),
+});
+
 export default function MyTransactionPageClient() {
   const router = useRouter();
   const { fetchMember } = useMemberStore();
@@ -138,6 +195,7 @@ export default function MyTransactionPageClient() {
   const filterModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const hasHydratedFilterRef = useRef(false);
 
   useEffect(() => {
     if (!hasFetchedMember.current) {
@@ -173,19 +231,45 @@ export default function MyTransactionPageClient() {
         EXPENSE: expenseNames,
         INCOME: incomeNames,
       });
-
-      const defaultFilter: FilterDraftState = {
-        type: "ALL",
-        categoryNames: all,
-        creatorNicknames: [],
-      };
-
-      setAppliedFilter(defaultFilter);
-      setDraftFilter(defaultFilter);
     };
 
     void fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const allCategories = categoriesByType.ALL;
+    if (allCategories.length === 0) return;
+
+    const defaultFilter: FilterDraftState = {
+      type: "ALL",
+      categoryNames: allCategories,
+      creatorNicknames: [],
+    };
+
+    if (!hasHydratedFilterRef.current) {
+      const stored = readStoredFilter();
+      const next = normalizeFilterState(stored ?? defaultFilter, allCategories);
+      setAppliedFilter(next);
+      setDraftFilter(next);
+      hasHydratedFilterRef.current = true;
+      return;
+    }
+
+    setAppliedFilter((prev) => {
+      const next = normalizeFilterState(prev, allCategories);
+      return isSameFilterState(prev, next) ? prev : next;
+    });
+    setDraftFilter((prev) => {
+      const next = normalizeFilterState(prev, allCategories);
+      return isSameFilterState(prev, next) ? prev : next;
+    });
+  }, [categoriesByType.ALL]);
+
+  useEffect(() => {
+    if (!hasHydratedFilterRef.current) return;
+    if (typeof window === "undefined") return;
+    sessionStorage.setItem(MY_FILTER_STORAGE_KEY, JSON.stringify(appliedFilter));
+  }, [appliedFilter]);
 
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
@@ -355,6 +439,14 @@ export default function MyTransactionPageClient() {
       );
     });
   };
+
+  const isCategoryFilterApplied =
+    categoriesByType.ALL.length > 0 &&
+    appliedFilter.categoryNames.length > 0 &&
+    !isSameStringSet(appliedFilter.categoryNames, categoriesByType.ALL);
+  const isFilterApplied =
+    appliedFilter.type !== "ALL" || isCategoryFilterApplied;
+  const filterButtonLabel = isFilterApplied ? "필터 적용 중" : "필터";
 
   // 날짜 변경 핸들러
   const handleDateChange = (date: Date) => {
@@ -549,6 +641,7 @@ export default function MyTransactionPageClient() {
               {/* 필터 버튼 영역 (Sticky) */}
               <TransactionFilter
                 selectedSort={selectedSort}
+                selectedAll={filterButtonLabel}
                 onSortToggle={handleOpenSortModal}
                 onAllToggle={handleOpenFilterModal}
                 stickyTopClass={isSticky ? "top-[106px]" : "top-[102px]"}

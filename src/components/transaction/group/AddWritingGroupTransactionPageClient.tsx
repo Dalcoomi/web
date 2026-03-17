@@ -105,6 +105,7 @@ export default function AddWritingGroupTransactionPageClient() {
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isCategoryModalMounted, setIsCategoryModalMounted] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [synchronizeTransaction, setSynchronizeTransaction] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(true);
   const [isGroupModalMounted, setIsGroupModalMounted] = useState(false);
@@ -373,6 +374,7 @@ export default function AddWritingGroupTransactionPageClient() {
         content: content.trim() || null,
         transactionDate,
         transactionType,
+        synchronizeTransaction,
       });
 
       const [year, month, day] = date.split("-").map(Number);
@@ -564,6 +566,41 @@ export default function AddWritingGroupTransactionPageClient() {
 
         {!showGroupModal && !showCategoryModal && (
           <div className="mt-auto pt-6 pb-2">
+            <label className="mb-5 flex items-center justify-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={synchronizeTransaction}
+                onChange={(e) => setSynchronizeTransaction(e.target.checked)}
+                className="sr-only"
+                aria-label="개인 가계부에도 추가하기"
+              />
+              <span
+                className={`flex h-5 w-5 items-center justify-center rounded-[6px] border transition-colors ${
+                  synchronizeTransaction
+                    ? "border-gray-900 bg-gray-900"
+                    : "border-[#D8DCE0] bg-white"
+                }`}
+              >
+                {synchronizeTransaction && (
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    className="h-3.5 w-3.5 text-white"
+                  >
+                    <path
+                      d="M4.5 10.5L8.3 14.1L15.5 6.9"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </span>
+              <span className="text-label text-gray-900">
+                개인 가계부에도 추가하기
+              </span>
+            </label>
             <button
               type="button"
               onClick={handleSubmit}
