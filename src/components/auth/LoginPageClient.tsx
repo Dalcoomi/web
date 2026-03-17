@@ -8,7 +8,7 @@ import { socialLogin } from "@/services/authService";
 import { connectSocial } from "@/services/memberService";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
-import { getDeviceType } from "@/utils/deviceDetector";
+import { AUTH_DEVICE_TYPE } from "@/constants/auth";
 import { clearTokens } from "@/utils/tokenManager";
 
 type SocialProvider = "KAKAO" | "NAVER";
@@ -133,7 +133,7 @@ export default function LoginPageClient() {
           socialId: String(socialIdSource),
           socialType,
           socialRefreshToken: userData.refreshToken,
-          deviceType: getDeviceType(),
+          deviceType: AUTH_DEVICE_TYPE,
         };
 
         try {
@@ -275,7 +275,7 @@ export default function LoginPageClient() {
         socialId: pendingSocialData.socialId,
         socialType: pendingSocialData.socialType,
         socialRefreshToken: pendingSocialData.socialRefreshToken,
-        deviceType: getDeviceType(),
+        deviceType: AUTH_DEVICE_TYPE,
       })) as SocialLoginResponse;
 
       login(response.accessToken, response.refreshToken);

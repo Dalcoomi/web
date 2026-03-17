@@ -1,6 +1,6 @@
 // utils/refreshTokenManager.ts
 import { getRefreshToken, saveTokens, clearTokens } from "./tokenManager";
-import { getDeviceType } from "./deviceDetector";
+import { AUTH_DEVICE_TYPE } from "../constants/auth";
 
 // 토큰 리프레시 중복 방지를 위한 전역 상태
 let isRefreshing = false;
@@ -27,14 +27,13 @@ export const refreshAccessToken = async (): Promise<string | null> => {
       isRefreshing = true;
 
       const API_URL = process.env.NEXT_PUBLIC_API_URL;
-      const deviceType = getDeviceType();
 
       const response = await fetch(`${API_URL}/api/auth/reissue`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Refresh-Token": refreshToken,
-          "Device-Type": deviceType,
+          "Device-Type": AUTH_DEVICE_TYPE,
         },
       });
 
@@ -64,7 +63,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
       }
 
       return data.accessToken;
-    } catch (error) {
+    } catch {
       // 네트워크 에러 등 예외 상황 → 토큰 유지 (일시적 에러 가능성)
       return null;
     } finally {

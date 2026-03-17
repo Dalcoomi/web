@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { signUp } from "@/services/memberService";
-import { getDeviceType } from "@/utils/deviceDetector";
+import { AUTH_DEVICE_TYPE } from "@/constants/auth";
 import { useToastStore } from "@/stores/useToastStore";
 
 export default function SignUpInfoClient() {
@@ -51,7 +51,7 @@ export default function SignUpInfoClient() {
 
       // 모든 초기화가 완료된 후에 로딩 상태 해제
       setIsLoading(false);
-    } catch (error) {
+    } catch {
       router.replace("/");
     }
   }, [router]);
@@ -242,7 +242,7 @@ export default function SignUpInfoClient() {
         serviceAgreement,
         collectionAgreement,
         aiLearningAgreement,
-        deviceType: getDeviceType(), // 디바이스 타입 추가
+        deviceType: AUTH_DEVICE_TYPE,
       };
 
       // API 서비스로 회원가입 요청

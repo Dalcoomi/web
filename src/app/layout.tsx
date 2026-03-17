@@ -54,7 +54,7 @@ export default async function RootLayout({
   const currentYear = new Date().getFullYear();
   // 서버에서 쿠키 읽기
   const cookieStore = await cookies();
-  const isLoggedIn = !!cookieStore.get("accessToken");
+  const isLoggedIn = !!cookieStore.get("refreshToken");
 
   return (
     <html lang="ko">

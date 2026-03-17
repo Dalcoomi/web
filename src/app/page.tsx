@@ -63,7 +63,7 @@ export const metadata = {
 
 export default async function RootPage() {
   const cookieStore = await cookies();
-  const isLoggedIn = !!cookieStore.get("accessToken");
+  const isLoggedIn = !!cookieStore.get("refreshToken");
 
   return (
     <>
