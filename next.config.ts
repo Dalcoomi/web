@@ -1,21 +1,16 @@
-// next.config.ts
-
 import type { NextConfig } from "next";
 import path from "path";
 import dotenv from "dotenv";
+import withPWAInit from "@ducanh2912/next-pwa";
 
-// 환경 설정 로드 함수
 function loadEnvironmentConfig() {
   const appEnv = process.env.APP_ENV || "local";
 
-  // 기본 공용 설정 로드
   dotenv.config({
     path: path.resolve("./env-config/.env"),
   });
 
-  // 환경별 설정 로드 (기본값 덮어쓰기)
-  let envFile = ".env.local"; // 기본값
-
+  let envFile = ".env.local";
   if (appEnv === "prod") {
     envFile = ".env.prod";
   } else if (appEnv === "dev") {
@@ -27,11 +22,7 @@ function loadEnvironmentConfig() {
   });
 }
 
-// 환경 설정 로드 실행
 loadEnvironmentConfig();
-
-// next-pwa를 ES6 방식으로 import
-import withPWA from "next-pwa";
 
 const nextConfig: NextConfig = {
   turbopack: {},
@@ -48,23 +39,27 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA({
+const withPWA = withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
   disable: process.env.APP_ENV !== "prod",
-  buildExcludes: [/middleware-manifest\.json$/, /proxy-manifest\.json$/],
-  runtimeCaching: [
-    {
-      urlPattern: /^https?.*\.(png|jpg|jpeg|svg|gif|webp)$/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "image-cache",
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 60 * 60 * 24, // 24 hours
+  workboxOptions: {
+    exclude: [/middleware-manifest\.json$/, /proxy-manifest\.json$/],
+    runtimeCaching: [
+      {
+        urlPattern: /^https?.*\.(png|jpg|jpeg|svg|gif|webp)$/,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "image-cache",
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 60 * 60 * 24,
+          },
         },
       },
-    },
-  ],
-})(nextConfig);
+    ],
+  },
+});
+
+export default withPWA(nextConfig);

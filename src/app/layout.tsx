@@ -6,6 +6,7 @@ import ClientProviders from "./providers";
 import type { Metadata, Viewport } from "next";
 import ViewportFixer from "@/components/common/ViewportFixer";
 import AppContainer from "@/components/common/AppContainer";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: {
@@ -203,6 +204,7 @@ export default async function RootLayout({
         <AppContainer>
           <ClientProviders isLoggedIn={isLoggedIn}>{children}</ClientProviders>
         </AppContainer>
+        <Analytics />
       </body>
     </html>
   );
