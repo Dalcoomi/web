@@ -19,6 +19,10 @@ function redirectWithReplace(url: string) {
   );
 }
 
+function buildSameOriginUrl(request: NextRequest, pathWithQuery: string) {
+  return new URL(pathWithQuery, request.nextUrl.origin).toString();
+}
+
 export async function GET(request: NextRequest) {
   // URL에서 파라미터 추출
   const searchParams = request.nextUrl.searchParams;
@@ -32,9 +36,13 @@ export async function GET(request: NextRequest) {
       error === "access_denied"
         ? "사용자가 로그인을 취소했습니다."
         : "인증 코드가 없습니다.";
+    const loginUrl = buildSameOriginUrl(
+      request,
+      `/login?error=${encodeURIComponent(errorMessage)}`,
+    );
 
     return redirectWithReplace(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/login?error=${encodeURIComponent(errorMessage)}`
+      loginUrl,
     );
   }
 
@@ -87,14 +95,20 @@ export async function GET(request: NextRequest) {
     const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
     const isProfileIntegration = state?.startsWith("profile_integration");
     const redirectPath = isProfileIntegration ? "/profile/update" : "/login";
-
-    return redirectWithReplace(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`
+    const successUrl = buildSameOriginUrl(
+      request,
+      `${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`,
     );
+
+    return redirectWithReplace(successUrl);
   } catch {
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
+    const loginUrl = buildSameOriginUrl(
+      request,
+      `/login?error=${encodeURIComponent(errorMessage)}`,
+    );
     return redirectWithReplace(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/login?error=${encodeURIComponent(errorMessage)}`
+      loginUrl,
     );
   }
 }

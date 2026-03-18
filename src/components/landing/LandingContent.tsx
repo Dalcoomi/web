@@ -3,6 +3,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { useToastStore } from "@/stores/useToastStore";
+import LandingFeaturePreview from "@/components/landing/LandingFeaturePreviews";
 
 export default function LandingContent() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -42,7 +43,7 @@ export default function LandingContent() {
     }
 
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    await deferredPrompt.userChoice;
 
     setDeferredPrompt(null);
     setIsInstallable(false);
@@ -88,7 +89,7 @@ export default function LandingContent() {
             alt="달쿠미"
             className="w-6 h-6 rounded"
           />
-          <span className="text-md font-semibold text-sky-500">달쿠미</span>
+          <span className="text-md font-semibold text-[#11ABFF]">달쿠미</span>
         </button>
 
         {/* 오른쪽 영역 (향후 확장용) */}
@@ -103,7 +104,7 @@ export default function LandingContent() {
             className="relative h-[600px] px-6 flex items-start justify-center pt-40"
             style={{
               background:
-                "linear-gradient(to bottom, #11ABFF, #8DD5FF, #C7E9FF, #E8F6FF, #FFFFFF)",
+                "linear-gradient(to bottom, #FCE7F3 0%, #FDF2F8 56%, #FFFFFF 100%)",
             }}
           >
             <div className="flex items-center gap-7">
@@ -117,10 +118,10 @@ export default function LandingContent() {
               </div>
               {/* 오른쪽 - 타이틀 */}
               <div>
-                <p className="text-title1 text-sky-600">
+                <p className="text-title1 text-[#11ABFF]">
                   개인과 그룹을 위한 가계부 서비스
                 </p>
-                <p className="text-header text-sky-600">달쿠미</p>
+                <p className="text-header text-[#11ABFF]">달쿠미</p>
               </div>
             </div>
 
@@ -137,7 +138,7 @@ export default function LandingContent() {
               }}
             >
               <svg
-                className="w-8 h-8 text-sky-600"
+                className="w-8 h-8 text-[#11ABFF]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -150,7 +151,7 @@ export default function LandingContent() {
                 />
               </svg>
               <svg
-                className="w-8 h-8 text-sky-600 -mt-6"
+                className="w-8 h-8 text-[#11ABFF] -mt-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -211,11 +212,7 @@ export default function LandingContent() {
                     </div>
                     {/* 오른쪽 - 이미지 */}
                     <div className="flex-shrink-0">
-                      <img
-                        src="/images/landing/가계부작성예시.jpg"
-                        alt="가계부 작성 예시"
-                        className="w-40 h-auto rounded-2xl object-contain"
-                      />
+                      <LandingFeaturePreview type="my-writing" />
                     </div>
                   </div>
                 </div>
@@ -225,11 +222,7 @@ export default function LandingContent() {
                   <div className="p-5 rounded-2xl flex gap-7">
                     {/* 왼쪽 - 이미지 */}
                     <div className="flex-shrink-0">
-                      <img
-                        src="/images/landing/그룹가계부예시.jpg"
-                        alt="그룹 가계부 예시"
-                        className="w-40 h-auto rounded-2xl object-contain"
-                      />
+                      <LandingFeaturePreview type="group-writing" />
                     </div>
                     {/* 오른쪽 - 텍스트 */}
                     <div className="flex-1 flex flex-col items-end">
@@ -270,11 +263,7 @@ export default function LandingContent() {
                     </div>
                     {/* 오른쪽 - 이미지 */}
                     <div className="flex-shrink-0">
-                      <img
-                        src="/images/landing/영수증작성예시.jpg"
-                        alt="영수증 작성 예시"
-                        className="w-40 h-auto rounded-2xl object-contain"
-                      />
+                      <LandingFeaturePreview type="receipt" />
                     </div>
                   </div>
                 </div>
@@ -382,7 +371,7 @@ export default function LandingContent() {
                 <div className="flex font-semibold items-center gap-3">
                   <a
                     href="mailto:dalcoomi.team@gmail.com"
-                    className="text-[11px] text-gray-500 hover:text-blue-600 transition-colors"
+                    className="text-[11px] text-gray-500 hover:text-blue-600 hover:underline transition-colors"
                   >
                     dalcoomi.team@gmail.com
                   </a>
@@ -391,7 +380,7 @@ export default function LandingContent() {
                     href="https://forms.gle/ucj6CNNx25wzB9a88"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[11px] font-semibold text-gray-500 hover:text-blue-600 transition-colors"
+                    className="text-[11px] font-semibold text-gray-500 hover:text-blue-600 hover:underline transition-colors"
                   >
                     문의하기
                   </a>
@@ -408,7 +397,7 @@ export default function LandingContent() {
                     href="https://github.com/Dalcoomi"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[11px]  text-gray-500 hover:text-blue-600 transition-colors"
+                    className="text-[11px]  text-gray-500 hover:text-blue-600 hover:underline transition-colors"
                   >
                     GitHub
                   </a>
@@ -421,7 +410,7 @@ export default function LandingContent() {
                   href="https://dalcoomi.notion.site/2326ea725ec880d69db1ecccb049bcf9"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-gray-500 hover:text-blue-600 transition-colors"
+                  className="text-[10px] text-gray-500 hover:text-blue-600 hover:underline transition-colors"
                 >
                   이용약관
                 </a>
@@ -429,7 +418,7 @@ export default function LandingContent() {
                   href="https://dalcoomi.notion.site/2326ea725ec881628880db9f9f487680"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-gray-500 hover:text-blue-600 transition-colors"
+                  className="text-[10px] text-gray-500 hover:text-blue-600 hover:underline transition-colors"
                 >
                   개인정보처리방침
                 </a>
