@@ -1,7 +1,6 @@
-// app/api/auth/kakao/callback/route.ts
+﻿// app/api/auth/kakao/callback/route.ts
 import { NextRequest } from "next/server";
 
-// 히스토리에 남지 않도록 location.replace를 사용하는 HTML 응답
 function redirectWithReplace(url: string) {
   const safeUrl = JSON.stringify(url);
   return new Response(
@@ -24,33 +23,27 @@ function buildSameOriginUrl(request: NextRequest, pathWithQuery: string) {
 }
 
 export async function GET(request: NextRequest) {
-  // URL에서 코드 파라미터 추출
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
 
-  // 코드가 없으면 에러 반환
   if (!code) {
     const errorMessage = "인증 코드가 없습니다.";
     const loginUrl = buildSameOriginUrl(
       request,
-      `/login?error=${encodeURIComponent(errorMessage)}`,
+      `/?error=${encodeURIComponent(errorMessage)}`
     );
-    return redirectWithReplace(
-      loginUrl,
-    );
+    return redirectWithReplace(loginUrl);
   }
 
   try {
-    // 환경 변수에서 API 키 불러오기
     const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
     const KAKAO_REDIRECT_URI = process.env.KAKAO_REDIRECT_URI;
 
     if (!KAKAO_REST_API_KEY || !KAKAO_REDIRECT_URI) {
-      throw new Error("API 키 or 리다이렉트 URI가 설정되지 않았습니다.");
+      throw new Error("API 키 또는 리다이렉트 URI가 설정되지 않았습니다.");
     }
 
-    // 1. 받은 code로 카카오 토큰 요청
     const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -58,14 +51,13 @@ export async function GET(request: NextRequest) {
         grant_type: "authorization_code",
         client_id: KAKAO_REST_API_KEY,
         redirect_uri: KAKAO_REDIRECT_URI,
-        code: code,
+        code,
       }),
     });
 
     const tokenData = await tokenResponse.json();
     if (!tokenResponse.ok) throw new Error("토큰 요청 실패");
 
-    // 2. 토큰으로 사용자 정보 요청
     const userResponse = await fetch("https://kapi.kakao.com/v2/user/me", {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
@@ -76,7 +68,6 @@ export async function GET(request: NextRequest) {
     const userData = await userResponse.json();
     if (!userResponse.ok) throw new Error("사용자 정보 요청 실패");
 
-    // 사용자 데이터 정제
     const userInfo = {
       kakaoId: userData.id,
       email: userData.kakao_account?.email,
@@ -86,13 +77,12 @@ export async function GET(request: NextRequest) {
       refreshToken: tokenData.refresh_token,
     };
 
-    // 3. 리다이렉트 응답 (location.replace로 히스토리에 남지 않음)
     const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
     const redirectPath =
-      state === "profile_integration" ? "/profile/update" : "/login";
+      state === "profile_integration" ? "/profile/update" : "/";
     const successUrl = buildSameOriginUrl(
       request,
-      `${redirectPath}?kakao_login=success&user_data=${userInfoEncoded}`,
+      `${redirectPath}?kakao_login=success&user_data=${userInfoEncoded}`
     );
 
     return redirectWithReplace(successUrl);
@@ -100,10 +90,8 @@ export async function GET(request: NextRequest) {
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
     const loginUrl = buildSameOriginUrl(
       request,
-      `/login?error=${encodeURIComponent(errorMessage)}`,
+      `/?error=${encodeURIComponent(errorMessage)}`
     );
-    return redirectWithReplace(
-      loginUrl,
-    );
+    return redirectWithReplace(loginUrl);
   }
 }

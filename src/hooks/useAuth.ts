@@ -130,7 +130,7 @@ export function useAuth() {
   useEffect(() => {
     if (!mounted) return;
 
-    const handleAuthError = async (event: Event) => {
+    const handleAuthError = async () => {
       const refreshToken = getRefreshToken();
       if (refreshToken) {
         const newToken = await refreshAccessToken();
@@ -156,7 +156,7 @@ export function useAuth() {
       }
     };
 
-    const handleTokenRefresh = (event: Event) => {
+    const handleTokenRefresh = () => {
       setIsLoggedIn(true);
     };
 

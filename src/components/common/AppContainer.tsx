@@ -12,7 +12,7 @@ interface AppContainerProps {
 
 export default function AppContainer({ children }: AppContainerProps) {
   const pathname = usePathname();
-  const isRootPage = pathname === "/" || pathname === "/login";
+  const isRootPage = pathname === "/";
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {

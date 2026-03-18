@@ -36,7 +36,7 @@ export default function DemoModeTopBanner() {
             </div>
 
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => router.push("/")}
               className="shrink-0 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold leading-4 text-white transition-colors hover:bg-slate-800 cursor-pointer"
             >
               로그인하고 이용하기

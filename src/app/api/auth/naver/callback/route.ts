@@ -1,7 +1,6 @@
-// app/api/auth/naver/callback/route.ts
+﻿// app/api/auth/naver/callback/route.ts
 import { NextRequest } from "next/server";
 
-// 히스토리에 남지 않도록 location.replace를 사용하는 HTML 응답
 function redirectWithReplace(url: string) {
   const safeUrl = JSON.stringify(url);
   return new Response(
@@ -24,13 +23,11 @@ function buildSameOriginUrl(request: NextRequest, pathWithQuery: string) {
 }
 
 export async function GET(request: NextRequest) {
-  // URL에서 파라미터 추출
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  // 에러가 있거나 코드가 없으면 에러 반환
   if (error || !code || !state) {
     const errorMessage =
       error === "access_denied"
@@ -38,16 +35,13 @@ export async function GET(request: NextRequest) {
         : "인증 코드가 없습니다.";
     const loginUrl = buildSameOriginUrl(
       request,
-      `/login?error=${encodeURIComponent(errorMessage)}`,
+      `/?error=${encodeURIComponent(errorMessage)}`
     );
 
-    return redirectWithReplace(
-      loginUrl,
-    );
+    return redirectWithReplace(loginUrl);
   }
 
   try {
-    // 환경 변수에서 API 키 불러오기
     const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID;
     const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET;
 
@@ -55,7 +49,6 @@ export async function GET(request: NextRequest) {
       throw new Error("API 키가 설정되지 않았습니다.");
     }
 
-    // 1. 받은 code로 네이버 토큰 요청
     const tokenResponse = await fetch("https://nid.naver.com/oauth2.0/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -63,15 +56,14 @@ export async function GET(request: NextRequest) {
         grant_type: "authorization_code",
         client_id: NAVER_CLIENT_ID,
         client_secret: NAVER_CLIENT_SECRET,
-        code: code,
-        state: state,
+        code,
+        state,
       }),
     });
 
     const tokenData = await tokenResponse.json();
     if (!tokenResponse.ok) throw new Error("토큰 요청 실패");
 
-    // 2. 토큰으로 사용자 정보 요청
     const userResponse = await fetch("https://openapi.naver.com/v1/nid/me", {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
@@ -81,7 +73,6 @@ export async function GET(request: NextRequest) {
     const userData = await userResponse.json();
     if (!userResponse.ok) throw new Error("사용자 정보 요청 실패");
 
-    // 사용자 데이터 정제
     const userInfo = {
       naverId: userData.response.id,
       email: userData.response.email,
@@ -91,13 +82,12 @@ export async function GET(request: NextRequest) {
       refreshToken: tokenData.refresh_token,
     };
 
-    // 3. 리다이렉트 응답 (location.replace로 히스토리에 남지 않음)
     const userInfoEncoded = encodeURIComponent(JSON.stringify(userInfo));
     const isProfileIntegration = state?.startsWith("profile_integration");
-    const redirectPath = isProfileIntegration ? "/profile/update" : "/login";
+    const redirectPath = isProfileIntegration ? "/profile/update" : "/";
     const successUrl = buildSameOriginUrl(
       request,
-      `${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`,
+      `${redirectPath}?naver_login=success&user_data=${userInfoEncoded}`
     );
 
     return redirectWithReplace(successUrl);
@@ -105,10 +95,8 @@ export async function GET(request: NextRequest) {
     const errorMessage = "로그인 처리 중 오류가 발생했습니다.";
     const loginUrl = buildSameOriginUrl(
       request,
-      `/login?error=${encodeURIComponent(errorMessage)}`,
+      `/?error=${encodeURIComponent(errorMessage)}`
     );
-    return redirectWithReplace(
-      loginUrl,
-    );
+    return redirectWithReplace(loginUrl);
   }
 }
