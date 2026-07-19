@@ -1,5 +1,6 @@
 // utils/tokenManager.ts
 import { setCookie, getCookie, eraseCookie } from "./cookieManager";
+import { exitDemoMode } from "./demoMode";
 
 const ACCESS_TOKEN_COOKIE_DAYS = 1 / 24;
 const REFRESH_TOKEN_COOKIE_DAYS = 14;
@@ -8,6 +9,7 @@ const REFRESH_TOKEN_COOKIE_DAYS = 14;
 export const saveTokens = (accessToken: string, refreshToken?: string) => {
   if (typeof window === "undefined") return;
 
+  exitDemoMode();
   setCookie("accessToken", accessToken, ACCESS_TOKEN_COOKIE_DAYS);
   if (refreshToken) {
     setCookie("refreshToken", refreshToken, REFRESH_TOKEN_COOKIE_DAYS);

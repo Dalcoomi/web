@@ -5,6 +5,18 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 
+const clearSignUpSessionData = () => {
+  sessionStorage.removeItem("socialLoginData");
+  sessionStorage.removeItem("agreementData");
+  sessionStorage.removeItem("signupStep1Completed");
+};
+
+const clearAllSignUpSessionData = () => {
+  clearSignUpSessionData();
+  sessionStorage.removeItem("signupResponse");
+  sessionStorage.removeItem("signupStep2Completed");
+};
+
 export default function SignUpSuccessClient() {
   const router = useRouter();
   const { login } = useAuth();
@@ -13,21 +25,6 @@ export default function SignUpSuccessClient() {
   const [loginProcessed, setLoginProcessed] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // 세션 데이터 정리 함수
-  const clearSessionData = () => {
-    // 회원가입 과정에서 사용된 모든 데이터 삭제
-    sessionStorage.removeItem("socialLoginData");
-    sessionStorage.removeItem("agreementData");
-    sessionStorage.removeItem("signupStep1Completed");
-  };
-
-  // 완전 정리 함수 (모든 세션 데이터 제거)
-  const clearAllSessionData = () => {
-    clearSessionData();
-    sessionStorage.removeItem("signupResponse");
-    sessionStorage.removeItem("signupStep2Completed");
-  };
 
   // 페이지 접근 및 초기화
   useEffect(() => {
@@ -55,10 +52,10 @@ export default function SignUpSuccessClient() {
           login(response.accessToken, response.refreshToken);
           setLoginProcessed(true);
         }
-      } catch (error) {}
+      } catch {}
 
       // 나머지 세션 데이터 정리
-      clearSessionData();
+      clearSignUpSessionData();
 
       // 로딩 상태 해제
       setIsLoading(false);
@@ -87,7 +84,7 @@ export default function SignUpSuccessClient() {
     // 3초 후 페이지 이동
     timeoutRef.current = setTimeout(() => {
       // 모든 세션 데이터 제거
-      clearAllSessionData();
+      clearAllSignUpSessionData();
 
       // 개인 거래 페이지로 이동
       router.push("/transaction/my");

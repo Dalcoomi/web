@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToastStore } from "@/stores/useToastStore";
-import { isDemoMode } from "@/utils/demoMode";
+import { exitDemoMode, isDemoMode } from "@/utils/demoMode";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -37,6 +37,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const handleMyPage = () => {
     if (isGuest) {
+      exitDemoMode();
       onClose();
       router.push("/");
       return;

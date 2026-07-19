@@ -26,9 +26,6 @@ loadEnvironmentConfig();
 
 const nextConfig: NextConfig = {
   turbopack: {},
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   async redirects() {
     return [
       {
@@ -51,9 +48,9 @@ const nextConfig: NextConfig = {
 const withPWA = withPWAInit({
   dest: "public",
   register: true,
-  skipWaiting: true,
   disable: process.env.APP_ENV !== "prod",
   workboxOptions: {
+    skipWaiting: true,
     exclude: [/middleware-manifest\.json$/, /proxy-manifest\.json$/],
     runtimeCaching: [
       {

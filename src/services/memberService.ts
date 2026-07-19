@@ -29,8 +29,8 @@ export interface Member {
 export interface UpdateProfileRequest {
   name: string;
   nickname: string;
-  birthday?: string; // LocalDate 형식 (YYYY-MM-DD)
-  gender?: string;
+  birthday?: string | null; // LocalDate 형식 (YYYY-MM-DD)
+  gender?: string | null;
 }
 
 // 프로필 정보 업데이트 응답 타입
@@ -74,8 +74,8 @@ export interface SignUpRequest {
   socialEmail: string;
   socialRefreshToken?: string;
   name: string;
-  birthday?: string;
-  gender?: string;
+  birthday?: string | null;
+  gender?: string | null;
   serviceAgreement: boolean;
   collectionAgreement: boolean;
   aiLearningAgreement: boolean;
@@ -132,7 +132,7 @@ export const getMember = async (): Promise<Member> => {
   // 🔥 새로운 요청 시작
   pendingMemberRequest = (async () => {
     try {
-      const response = await get("/api/members");
+      const response = await get<Member>("/api/members");
       return response;
     } catch (error) {
       throw error;
@@ -152,7 +152,7 @@ export const checkNicknameAvailability = async (
   nickname: string
 ): Promise<boolean> => {
   try {
-    const response = await get(
+    const response = await get<boolean>(
       `/api/members/nickname/availability?nickname=${encodeURIComponent(
         nickname
       )}`
@@ -176,7 +176,7 @@ export const updateAvatar = async (
       formData.append("profileImage", profileImage);
     }
 
-    const response = await patch("/api/members/avatar", formData);
+    const response = await patch<string>("/api/members/avatar", formData);
 
     return response;
   } catch (error) {
@@ -199,7 +199,10 @@ export const updateProfile = async (
   profileData: UpdateProfileRequest
 ): Promise<UpdateProfileResponse> => {
   try {
-    const response = await patch("/api/members/profile", profileData);
+    const response = await patch<UpdateProfileResponse>(
+      "/api/members/profile",
+      profileData
+    );
     return response;
   } catch (error) {
     throw error;
@@ -222,7 +225,9 @@ export const getSocialRefreshToken = async (
   socialType: SocialType
 ): Promise<string | null> => {
   try {
-    const response = await get(`/api/members/refresh-token/${socialType}`);
+    const response = await get<string | null>(
+      `/api/members/refresh-token/${socialType}`
+    );
     return response;
   } catch (error) {
     throw error;

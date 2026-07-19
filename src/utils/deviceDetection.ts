@@ -1,10 +1,14 @@
 // utils/deviceDetection.ts
 
+interface IOSNavigator extends Navigator {
+  standalone?: boolean;
+}
+
 export const isPWA = (): boolean => {
   // 여러 방법으로 PWA 감지
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as any).standalone === true ||
+    (window.navigator as IOSNavigator).standalone === true ||
     document.referrer.includes("android-app://") ||
     /wv/.test(navigator.userAgent) // WebView 감지
   );

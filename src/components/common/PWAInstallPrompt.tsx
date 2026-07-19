@@ -8,6 +8,10 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+interface IOSNavigator extends Navigator {
+  standalone?: boolean;
+}
+
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -24,7 +28,7 @@ export default function PWAInstallPrompt() {
     // 이미 설치된 상태인지 확인
     const isInStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+      (window.navigator as IOSNavigator).standalone === true;
     setIsStandalone(isInStandalone);
 
     // 이전에 닫은 시간 확인 (3일 동안 다시 표시 안 함)
@@ -130,13 +134,13 @@ export default function PWAInstallPrompt() {
             <div className="flex items-start space-x-3">
               <span className="text-2xl">2️⃣</span>
               <p className="text-sm text-gray-700 flex-1">
-                <strong>"홈 화면에 추가"</strong>를 선택하세요
+                <strong>‘홈 화면에 추가’</strong>를 선택하세요
               </p>
             </div>
             <div className="flex items-start space-x-3">
               <span className="text-2xl">3️⃣</span>
               <p className="text-sm text-gray-700 flex-1">
-                오른쪽 상단의 <strong>"추가"</strong>를 눌러 완료하세요
+                오른쪽 상단의 <strong>‘추가’</strong>를 눌러 완료하세요
               </p>
             </div>
           </div>
@@ -144,7 +148,7 @@ export default function PWAInstallPrompt() {
           <div className="flex space-x-2">
             <button
               onClick={handleClose}
-              className="flex-1 py-2.5 px-3 cursor-ponter text-gray-700 text-sm font-medium border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 py-2.5 px-3 cursor-pointer text-gray-700 text-sm font-medium border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               취소
             </button>

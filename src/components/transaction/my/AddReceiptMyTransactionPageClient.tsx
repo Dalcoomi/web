@@ -78,7 +78,7 @@ export default function AddReceiptMyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, []); // 빈 배열로 마운트 시 한 번만 실행
+  }, [addToast]);
 
   // 총 금액 계산
   const totalAmount = receiptItems.reduce((sum, item) => {

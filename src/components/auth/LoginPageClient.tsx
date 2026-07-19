@@ -10,6 +10,7 @@ import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
 import { AUTH_DEVICE_TYPE } from "@/constants/auth";
 import { clearTokens } from "@/utils/tokenManager";
+import { enterDemoMode } from "@/utils/demoMode";
 
 type SocialProvider = "KAKAO" | "NAVER";
 
@@ -339,6 +340,7 @@ export default function LoginPageClient() {
     clearTokens();
     clearMember();
     localStorage.removeItem("currentLoginSocial");
+    enterDemoMode();
     window.location.replace("/transaction/my");
   };
 

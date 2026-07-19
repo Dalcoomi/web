@@ -6,18 +6,19 @@ import {
 } from "./refreshTokenManager";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+type ApiClientOptions = RequestInit & { skipAuthRefresh?: boolean };
 
 // 🔥 중복 요청 방지를 위한 Promise 캐시
-const pendingRequests = new Map<string, Promise<any>>();
+const pendingRequests = new Map<string, Promise<unknown>>();
 
 // 대기 중인 요청들을 위한 큐
 let failedQueue: Array<{
-  resolve: (value: any) => void;
-  reject: (reason: any) => void;
+  resolve: (value: string | null) => void;
+  reject: (reason: unknown) => void;
 }> = [];
 
 // 대기 중인 요청들을 처리하는 함수
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error);
@@ -30,10 +31,10 @@ const processQueue = (error: any, token: string | null = null) => {
 };
 
 // API 요청 함수
-export const apiClient = async (
+export const apiClient = async <T = unknown>(
   endpoint: string,
-  options: RequestInit & { skipAuthRefresh?: boolean } = {}
-): Promise<any> => {
+  options: ApiClientOptions = {}
+): Promise<T> => {
   const url = `${API_URL}${endpoint}`;
 
   // skipAuthRefresh 플래그 추출 (RequestInit에는 없는 커스텀 속성)
@@ -49,7 +50,7 @@ export const apiClient = async (
   const requestKey = `${method}:${url}:${bodyKey}`;
 
   if (pendingRequests.has(requestKey)) {
-    return pendingRequests.get(requestKey)!;
+    return pendingRequests.get(requestKey)! as Promise<T>;
   }
 
   // 기본 헤더 설정
@@ -83,7 +84,7 @@ export const apiClient = async (
     if (response.status === 401 && !skipAuthRefresh) {
       // 이미 리프레시 중이면 대기열에 추가
       if (isTokenRefreshing()) {
-        return new Promise((resolve, reject) => {
+        return new Promise<string | null>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((newAccessToken) => {
@@ -95,8 +96,8 @@ export const apiClient = async (
             return null;
           })
           .then((response) => {
-            if (!response) return null;
-            return handleResponse(response);
+            if (!response) return null as T;
+            return handleResponse<T>(response);
           });
       }
 
@@ -109,23 +110,23 @@ export const apiClient = async (
           // 원래 요청 재시도
           headers["Authorization"] = `Bearer ${newAccessToken}`;
           const retryResponse = await fetch(url, { ...config, headers });
-          return handleResponse(retryResponse);
+          return handleResponse<T>(retryResponse);
         } else {
           // 리프레시 실패 시에만 로그아웃 처리
           processQueue(new Error("AUTH_ERROR"), null);
           handleLogout();
-          return null;
+          return null as T;
         }
       } catch (error) {
         processQueue(error, null);
         if (error instanceof Error && error.message === "AUTH_ERROR") {
-          return null;
+          return null as T;
         }
         throw error;
       }
     }
 
-      return handleResponse(response);
+      return handleResponse<T>(response);
     } catch (error) {
       // 네트워크 에러 등의 경우
       if (error instanceof TypeError && error.message.includes("fetch")) {
@@ -146,21 +147,28 @@ export const apiClient = async (
 };
 
 // 응답 처리 함수
-const handleResponse = async (response: Response) => {
+const handleResponse = async <T>(response: Response): Promise<T> => {
   const contentType = response.headers.get("content-type");
 
   // JSON 응답 처리
   if (contentType?.includes("application/json")) {
-    const data = await response.json();
+    const data: unknown = await response.json();
 
     if (!response.ok) {
+      const message =
+        typeof data === "object" &&
+        data !== null &&
+        "message" in data &&
+        typeof data.message === "string"
+          ? data.message
+          : null;
       throw new Error(
-        data.message ||
+        message ||
           `HTTP ${response.status}: 요청 처리 중 오류가 발생했습니다.`
       );
     }
 
-    return data;
+    return data as T;
   }
 
   // 텍스트 응답 처리
@@ -172,7 +180,7 @@ const handleResponse = async (response: Response) => {
     );
   }
 
-  return text;
+  return text as T;
 };
 
 // 로그아웃 처리
@@ -186,44 +194,58 @@ const handleLogout = () => {
 };
 
 // API 메서드 헬퍼 함수
-type ApiClientOptions = RequestInit & { skipAuthRefresh?: boolean };
+export const get = <T = unknown>(endpoint: string, options?: ApiClientOptions) =>
+  apiClient<T>(endpoint, { ...options, method: "GET" });
 
-export const get = (endpoint: string, options?: ApiClientOptions) =>
-  apiClient(endpoint, { ...options, method: "GET" });
-
-export const post = (endpoint: string, data?: any, options?: ApiClientOptions) =>
-  apiClient(endpoint, {
+export const post = <T = unknown>(
+  endpoint: string,
+  data?: unknown,
+  options?: ApiClientOptions
+) =>
+  apiClient<T>(endpoint, {
     ...options,
     method: "POST",
     body: data ? JSON.stringify(data) : undefined,
   });
 
-export const put = (endpoint: string, data?: any, options?: ApiClientOptions) =>
-  apiClient(endpoint, {
+export const put = <T = unknown>(
+  endpoint: string,
+  data?: unknown,
+  options?: ApiClientOptions
+) =>
+  apiClient<T>(endpoint, {
     ...options,
     method: "PUT",
     body: data ? JSON.stringify(data) : undefined,
   });
 
-export const patch = (endpoint: string, data?: any, options?: ApiClientOptions) => {
+export const patch = <T = unknown>(
+  endpoint: string,
+  data?: unknown,
+  options?: ApiClientOptions
+) => {
   // FormData인 경우, JSON.stringify를 하지 않고 바로 반환
   if (data instanceof FormData) {
-    return apiClient(endpoint, {
+    return apiClient<T>(endpoint, {
       ...options,
       method: "PATCH",
       body: data,
     });
   }
 
-  return apiClient(endpoint, {
+  return apiClient<T>(endpoint, {
     ...options,
     method: "PATCH",
     body: data ? JSON.stringify(data) : undefined,
   });
 };
 
-export const del = (endpoint: string, data?: any, options?: ApiClientOptions) =>
-  apiClient(endpoint, {
+export const del = <T = unknown>(
+  endpoint: string,
+  data?: unknown,
+  options?: ApiClientOptions
+) =>
+  apiClient<T>(endpoint, {
     ...options,
     method: "DELETE",
     body: data ? JSON.stringify(data) : undefined,

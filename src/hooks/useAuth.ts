@@ -167,7 +167,7 @@ export function useAuth() {
       window.removeEventListener("auth-error", handleAuthError);
       window.removeEventListener("token-refreshed", handleTokenRefresh);
     };
-  }, [router, mounted, refreshAccessToken, clearMember]);
+  }, [router, mounted, clearMember]);
 
   // 기타 함수들
   const checkTokenValidity = useCallback(() => {
@@ -204,7 +204,7 @@ export function useAuth() {
 
     setIsLoggedIn(true);
     return true;
-  }, [refreshAccessToken, clearMember]);
+  }, [clearMember]);
 
   return {
     isLoggedIn,

@@ -77,7 +77,7 @@ export default function SignUpAgreementClient() {
         sessionStorage.setItem("signupStep1Completed", "true");
 
         router.push("/sign-up/step2");
-      } catch (error) {
+      } catch {
         setIsNavigating(false);
       }
     }

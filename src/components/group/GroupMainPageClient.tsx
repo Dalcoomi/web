@@ -16,6 +16,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  type Modifier,
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
@@ -77,7 +78,7 @@ export default function GroupPageClient() {
     return () => {
       clearTimeout(loadGroups);
     };
-  }, []);
+  }, [addToast]);
 
   // 그룹 생성 버튼 클릭 핸들러
   const handleCreateGroup = () => {
@@ -131,7 +132,7 @@ export default function GroupPageClient() {
   };
 
   // 커스텀 modifier: 그룹 리스트 영역으로만 드래그 제한
-  const restrictToGroupList = ({ transform, draggingNodeRect }: any) => {
+  const restrictToGroupList: Modifier = ({ transform, draggingNodeRect }) => {
     if (!groupListRef.current || !draggingNodeRect) {
       return transform;
     }
