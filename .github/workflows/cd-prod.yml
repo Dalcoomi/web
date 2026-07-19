@@ -1,15 +1,15 @@
-name: Dalcoomi Frontend CD Prod
+name: Dalcoomi Web CD Prod
 
 on:
   workflow_run:
-    workflows: ["Dalcoomi Frontend CI Prod"]
+    workflows: ["Dalcoomi Web CI"]
     types: [completed]
     branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
 
     steps:
       - name: Checkout code

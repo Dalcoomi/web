@@ -1,8 +1,8 @@
-name: Dalcoomi Frontend CD Dev
+name: Dalcoomi Web CD Dev
 
 on:
   workflow_run:
-    workflows: ["Dalcoomi Frontend CI Dev"]
+    workflows: ["Dalcoomi Web CI"]
     types: [completed]
     branches: [develop]
 

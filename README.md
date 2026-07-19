@@ -1,4 +1,4 @@
-# Dalcoomi Frontend
+# Dalcoomi Web
 
 개인·그룹 가계부와 AI 영수증 분석을 제공하는 달쿠미의 웹/PWA 프론트엔드입니다.
 
