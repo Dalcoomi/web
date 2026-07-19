@@ -130,7 +130,7 @@ export default function UpdateGroupTransactionPageClient() {
       clearTimeout(timeoutId1);
       clearTimeout(timeoutId2);
     };
-  }, [transactionId, router, teamId]);
+  }, [transactionId, router, teamId, addToast]);
 
   // 폼 유효성 검사
   useEffect(() => {

@@ -74,7 +74,7 @@ export const isValidDisplayDate = (value: string): boolean => {
 
   if (!match) return false;
 
-  const [, yy, mm, dd] = match;
+  const [, , mm, dd] = match;
   const month = parseInt(mm, 10);
   const day = parseInt(dd, 10);
 

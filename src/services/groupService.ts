@@ -97,7 +97,7 @@ export const getGroups = async (): Promise<GetMyTeamsResponse> => {
 
   pendingGroupsRequest = (async () => {
     try {
-      const response = await get("/api/teams");
+      const response = await get<GetMyTeamsResponse>("/api/teams");
       return response;
     } catch (error) {
       const message =
@@ -149,7 +149,7 @@ export const getGroupInfo = async (teamId: string): Promise<GroupInfo> => {
 
   const requestPromise = (async () => {
     try {
-      const response = await get(url);
+      const response = await get<GroupInfo>(url);
       return response;
     } finally {
       setTimeout(() => {

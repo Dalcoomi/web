@@ -17,6 +17,7 @@ import {
 } from "@/services/memberService";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
+import { getErrorMessage } from "@/utils/errorMessage";
 import { validateNickname, validateName } from "@/utils/validation";
 
 export default function ProfileUpdatePageClient() {
@@ -83,65 +84,6 @@ export default function ProfileUpdatePageClient() {
     }
   }, [member]);
 
-  // 🔥 프로필 연동 콜백 처리 - 한 번만 실행
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const kakaoLogin = urlParams.get("kakao_login");
-    const naverLogin = urlParams.get("naver_login");
-    const userData = urlParams.get("user_data");
-    const error = urlParams.get("error");
-
-    // URL에 연동 관련 파라미터가 없으면 early return
-    if (!kakaoLogin && !naverLogin && !error) {
-      return;
-    }
-
-    if (error) {
-      addToast("error", `연동 실패: ${decodeURIComponent(error)}`);
-      // URL 정리
-      window.history.replaceState({}, "", window.location.pathname);
-      return;
-    }
-
-    if (kakaoLogin === "success" && userData) {
-      try {
-        const userInfo = JSON.parse(decodeURIComponent(userData));
-        const socialData = {
-          socialEmail: userInfo.email,
-          socialId: userInfo.kakaoId.toString(),
-          socialType: "KAKAO",
-          socialAccessToken: userInfo.accessToken || "",
-          socialRefreshToken: userInfo.refreshToken || "",
-        };
-        setPendingSocialData(socialData);
-        handleSocialIntegration(socialData);
-      } catch (error) {
-        addToast("error", "연동 처리 중 오류가 발생했습니다.");
-      }
-      // URL 정리
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-
-    if (naverLogin === "success" && userData) {
-      try {
-        const userInfo = JSON.parse(decodeURIComponent(userData));
-        const socialData = {
-          socialEmail: userInfo.email,
-          socialId: userInfo.naverId.toString(),
-          socialType: "NAVER",
-          socialAccessToken: userInfo.accessToken || "",
-          socialRefreshToken: userInfo.refreshToken || "",
-        };
-        setPendingSocialData(socialData);
-        handleSocialIntegration(socialData);
-      } catch (error) {
-        addToast("error", "연동 처리 중 오류가 발생했습니다.");
-      }
-      // URL 정리
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, []); // 🔥 빈 의존성 배열로 한 번만 실행
-
   // 프로필 사진 변경
   const handleImageClick = () => {
     setShowAvatarModal(true);
@@ -194,9 +136,9 @@ export default function ProfileUpdatePageClient() {
 
       setProfileImage(newAvatarUrl);
       addToast("success", "프로필 사진이 변경되었습니다.");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Profile image update failed:", err);
-      addToast("error", err?.message || "프로필 사진 변경에 실패했습니다.");
+      addToast("error", getErrorMessage(err, "프로필 사진 변경에 실패했습니다."));
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -217,9 +159,9 @@ export default function ProfileUpdatePageClient() {
 
       setProfileImage(newAvatarUrl);
       addToast("success", "프로필 사진이 변경되었습니다.");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Profile image change failed:", err);
-      addToast("error", err?.message || "프로필 사진 변경에 실패했습니다.");
+      addToast("error", getErrorMessage(err, "프로필 사진 변경에 실패했습니다."));
     }
   };
 
@@ -244,7 +186,7 @@ export default function ProfileUpdatePageClient() {
       setNicknameError("");
     } catch (error) {
       console.error("Nickname check failed:", error);
-      addToast("error", error.message || "닉네임 확인에 실패했습니다.");
+      addToast("error", getErrorMessage(error, "닉네임 확인에 실패했습니다."));
       setNicknameCheckResult("none");
     }
   };
@@ -324,7 +266,7 @@ export default function ProfileUpdatePageClient() {
       router.push("/profile");
     } catch (err) {
       console.error("Profile update failed:", err);
-      addToast("error", err.message || "프로필 수정에 실패했습니다.");
+      addToast("error", getErrorMessage(err, "프로필 수정에 실패했습니다."));
     } finally {
       setIsSubmitting(false);
     }
@@ -385,7 +327,7 @@ export default function ProfileUpdatePageClient() {
 
     try {
       localStorage.setItem("naverIntegrationState", STATE);
-    } catch (error) {
+    } catch {
       sessionStorage.setItem("naverIntegrationState", STATE);
     }
     window.location.href = naverAuthUrl;
@@ -411,23 +353,7 @@ export default function ProfileUpdatePageClient() {
         return;
       }
 
-      // pendingSocialData가 없으면 기존 방식 (카카오 SDK 사용)
-      if ((window as any).Kakao && (window as any).Kakao.Auth) {
-        // 현재 카카오 로그인 상태 확인
-        (window as any).Kakao.Auth.getStatusInfo()
-          .then((statusInfo: any) => {
-            if (statusInfo.status === "connected") {
-              // 카카오 앱과의 연결 해제
-              (window as any).Kakao.API.request({
-                url: "/v1/user/unlink",
-                success: (response: any) => {},
-                fail: (error: any) => {},
-              });
-            }
-          })
-          .catch((error: any) => {});
-      }
-    } catch (error) {}
+    } catch {}
   };
 
   // 네이버 연결 해제 (프로필 수정용)
@@ -450,7 +376,7 @@ export default function ProfileUpdatePageClient() {
         });
         return;
       }
-    } catch (error) {}
+    } catch {}
   };
 
   // 🔥 소셜 연동 처리 - useCallback으로 메모이제이션
@@ -496,8 +422,10 @@ export default function ProfileUpdatePageClient() {
         setPendingSocialData(null);
       } catch (error) {
         // 🔥 409 에러(이미 연동된 계정)인 경우 회원 정보 갱신하여 토글 상태 동기화
-        const errorMessage =
-          error?.message || error?.toString() || String(error);
+        const errorMessage = getErrorMessage(
+          error,
+          "소셜 계정 연동 중 오류가 발생했습니다."
+        );
         const isDuplicateError =
           errorMessage.includes("409") ||
           errorMessage.includes("이미 연동된") ||
@@ -538,8 +466,44 @@ export default function ProfileUpdatePageClient() {
         setIsUpdatingSocial(false);
       }
     },
-    [fetchMember, updateMember, addToast]
+    [fetchMember, updateMember, addToast, member]
   );
+
+  // 프로필 연동 콜백 처리
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const kakaoLogin = urlParams.get("kakao_login");
+    const naverLogin = urlParams.get("naver_login");
+    const userData = urlParams.get("user_data");
+    const error = urlParams.get("error");
+
+    if (!kakaoLogin && !naverLogin && !error) return;
+
+    if (error) {
+      addToast("error", `연동 실패: ${decodeURIComponent(error)}`);
+      window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+
+    if (userData && (kakaoLogin === "success" || naverLogin === "success")) {
+      try {
+        const userInfo = JSON.parse(decodeURIComponent(userData));
+        const isKakao = kakaoLogin === "success";
+        const socialData = {
+          socialEmail: userInfo.email,
+          socialId: String(isKakao ? userInfo.kakaoId : userInfo.naverId),
+          socialType: isKakao ? "KAKAO" : "NAVER",
+          socialAccessToken: userInfo.accessToken || "",
+          socialRefreshToken: userInfo.refreshToken || "",
+        };
+        setPendingSocialData(socialData);
+        void handleSocialIntegration(socialData);
+      } catch {
+        addToast("error", "연동 처리 중 오류가 발생했습니다.");
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [addToast, handleSocialIntegration]);
 
   // 소셜 연동 토글 핸들러
   const handleSocialToggle = async (
@@ -582,7 +546,7 @@ export default function ProfileUpdatePageClient() {
         let refreshToken = null;
         try {
           refreshToken = await getSocialRefreshToken(socialType);
-        } catch (tokenError) {}
+        } catch {}
 
         // 2. 백엔드에서 연동 해제
         await disconnectSocial(socialType);
@@ -656,10 +620,10 @@ export default function ProfileUpdatePageClient() {
     } catch (error) {
       addToast(
         "error",
-        error ||
-          `${getSocialDisplayName(
-            socialType
-          )} 연동 설정 중 오류가 발생했습니다.`
+        getErrorMessage(
+          error,
+          `${getSocialDisplayName(socialType)} 연동 설정 중 오류가 발생했습니다.`
+        )
       );
       setIsUpdatingSocial(false);
     }

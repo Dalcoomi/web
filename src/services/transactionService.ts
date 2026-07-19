@@ -206,7 +206,7 @@ export const getTransactions = async (
   // 🔥 새로운 요청 시작
   const requestPromise = (async () => {
     try {
-      const response = await get(url);
+      const response = await get<MonthlyTransactionsResponse>(url);
       return response;
     } catch (error) {
       console.error("거래 내역 조회 실패:", error);
@@ -251,7 +251,7 @@ export const getTransactionById = async (
       url = `/api/transactions/${transactionId}?teamId=${teamId}`;
     }
 
-    const response = await get(url);
+    const response = await get<Transaction>(url);
 
     return response;
   } catch (error) {

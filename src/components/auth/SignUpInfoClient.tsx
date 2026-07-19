@@ -4,8 +4,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { signUp } from "@/services/memberService";
-import { getDeviceType } from "@/utils/deviceDetector";
+import { AUTH_DEVICE_TYPE } from "@/constants/auth";
 import { useToastStore } from "@/stores/useToastStore";
+import { getErrorMessage } from "@/utils/errorMessage";
 
 export default function SignUpInfoClient() {
   const router = useRouter();
@@ -46,12 +47,31 @@ export default function SignUpInfoClient() {
     }
 
     try {
-      const parsedSocialData = JSON.parse(socialDataJson);
-      setSocialData(parsedSocialData);
+      const parsedSocialData = JSON.parse(socialDataJson) as Record<
+        string,
+        unknown
+      >;
+      if (
+        typeof parsedSocialData.socialId !== "string" ||
+        typeof parsedSocialData.socialType !== "string" ||
+        typeof parsedSocialData.socialEmail !== "string"
+      ) {
+        throw new Error("소셜 로그인 정보가 올바르지 않습니다.");
+      }
+
+      setSocialData({
+        socialId: parsedSocialData.socialId,
+        socialType: parsedSocialData.socialType,
+        socialEmail: parsedSocialData.socialEmail,
+        socialRefreshToken:
+          typeof parsedSocialData.socialRefreshToken === "string"
+            ? parsedSocialData.socialRefreshToken
+            : undefined,
+      });
 
       // 모든 초기화가 완료된 후에 로딩 상태 해제
       setIsLoading(false);
-    } catch (error) {
+    } catch {
       router.replace("/");
     }
   }, [router]);
@@ -212,6 +232,12 @@ export default function SignUpInfoClient() {
     setIsSubmitting(true);
 
     try {
+      const { socialId, socialType, socialEmail, socialRefreshToken } =
+        socialData;
+      if (!socialId || !socialType || !socialEmail) {
+        throw new Error("소셜 로그인 정보가 없습니다.");
+      }
+
       // 약관 동의 정보 가져오기
       const agreementDataJson = sessionStorage.getItem("agreementData");
       if (!agreementDataJson) {
@@ -232,17 +258,17 @@ export default function SignUpInfoClient() {
 
       // API 요청 데이터 준비
       const signUpData = {
-        socialId: socialData.socialId,
-        socialType: socialData.socialType,
-        socialEmail: socialData.socialEmail,
-        socialRefreshToken: socialData.socialRefreshToken,
+        socialId,
+        socialType,
+        socialEmail,
+        socialRefreshToken,
         name: userInfo.name.trim(),
         birthday: formattedBirthday,
         gender: userInfo.gender || null,
         serviceAgreement,
         collectionAgreement,
         aiLearningAgreement,
-        deviceType: getDeviceType(), // 디바이스 타입 추가
+        deviceType: AUTH_DEVICE_TYPE,
       };
 
       // API 서비스로 회원가입 요청
@@ -257,9 +283,13 @@ export default function SignUpInfoClient() {
       // 성공 페이지로 이동
       router.push("/sign-up/success");
     } catch (error) {
-      addToast("error", error.message || "회원가입 처리 중 오류가 발생했습니다.");
+      const errorMessage = getErrorMessage(
+        error,
+        "회원가입 처리 중 오류가 발생했습니다."
+      );
+      addToast("error", errorMessage);
 
-      if (error.message.includes("약관 동의")) {
+      if (errorMessage.includes("약관 동의")) {
         router.push("/sign-up/step1");
       }
 

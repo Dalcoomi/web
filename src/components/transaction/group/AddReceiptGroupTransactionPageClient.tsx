@@ -98,7 +98,7 @@ export default function AddReceiptMyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [teamId, router]); // teamId와 router를 의존성에 포함
+  }, [teamId, router, addToast]);
 
   // 총 금액 계산
   const totalAmount = receiptItems.reduce((sum, item) => {
@@ -392,6 +392,7 @@ export default function AddReceiptMyTransactionPageClient() {
             "T" +
             transactionDateTime.toLocaleTimeString("sv-SE"),
           transactionType: "EXPENSE" as const,
+          synchronizeTransaction: false,
         };
       });
 

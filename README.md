@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dalcoomi Web
 
-## Getting Started
+개인·그룹 가계부와 AI 영수증 분석을 제공하는 달쿠미의 웹/PWA 프론트엔드입니다.
 
-First, run the development server:
+## 기술 스택
+
+- Next.js 16 App Router, React 19, TypeScript
+- Tailwind CSS 4, Zustand 5
+- `@ducanh2912/next-pwa`
+- `@dnd-kit` 기반 그룹 순서 편집
+
+## 실행
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+환경 변수는 `APP_ENV`에 따라 `env-config/.env.local`, `.env.dev`, `.env.prod`에서 로드합니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 품질 검사
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm audit
+```
 
-## Learn More
+## 주요 구조
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app`: 페이지 및 OAuth Route Handler
+- `src/components`: 도메인·공통 UI
+- `src/services`: 백엔드 API와 체험 데이터 어댑터
+- `src/stores`: 회원·토스트 전역 상태
+- `src/utils`: API 클라이언트, 토큰, 체험 모드, 날짜·검증 유틸
+- `ai-context`: 에이전트와 개발자를 위한 프로젝트/API 문서
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 인증과 체험 모드
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 실제 로그인은 access/refresh token 쿠키를 사용하며 401 응답 시 access token을 한 번만 재발급합니다.
+- 체험 모드는 로그인 화면에서 사용자가 명시적으로 시작해야 활성화됩니다.
+- 체험 여부는 현재 브라우저 탭의 `sessionStorage`에 저장되고, 데이터 변경은 메모리에만 반영됩니다.
+- 로그인 성공 또는 체험 모드 종료 시 체험 상태가 제거됩니다.

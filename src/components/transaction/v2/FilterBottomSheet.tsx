@@ -3,32 +3,21 @@
 import Image from "next/image";
 import { useMemo, useState, useEffect } from "react";
 import BottomModal from "@/components/ui/BottomModal";
-
-export type TransactionTypeFilter = "ALL" | "EXPENSE" | "INCOME";
-
-export interface CreatorFilterOption {
-  nickname: string;
-  profileImageUrl?: string | null;
-}
-
-export interface FilterDraftState {
-  type: TransactionTypeFilter;
-  categoryNames: string[];
-  creatorNicknames: string[];
-}
+import type {
+  CreatorFilterOption,
+  TransactionCategoriesByType,
+  TransactionFilterState,
+  TransactionTypeFilter,
+} from "@/features/transaction/model/transactionFilter";
 
 interface FilterBottomSheetProps {
   isMounted: boolean;
   isOpen: boolean;
   isGroup: boolean;
-  categoriesByType: {
-    ALL: string[];
-    EXPENSE: string[];
-    INCOME: string[];
-  };
+  categoriesByType: TransactionCategoriesByType;
   creators?: CreatorFilterOption[];
-  draft: FilterDraftState;
-  onChangeDraft: (next: FilterDraftState) => void;
+  draft: TransactionFilterState;
+  onChangeDraft: (next: TransactionFilterState) => void;
   onReset: () => void;
   onApply: () => void;
   onClose: () => void;
@@ -348,4 +337,3 @@ export default function FilterBottomSheet({
     </BottomModal>
   );
 }
-

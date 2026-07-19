@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isDemoMode } from "@/utils/demoMode";
+import { exitDemoMode, isDemoMode } from "@/utils/demoMode";
 
 export default function DemoModeTopBanner() {
   const router = useRouter();
@@ -17,6 +17,11 @@ export default function DemoModeTopBanner() {
   if (!isMounted || !showBanner) {
     return null;
   }
+
+  const handleExitDemoMode = () => {
+    exitDemoMode();
+    router.push("/");
+  };
 
   return (
     <>
@@ -36,7 +41,7 @@ export default function DemoModeTopBanner() {
             </div>
 
             <button
-              onClick={() => router.push("/login")}
+              onClick={handleExitDemoMode}
               className="shrink-0 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold leading-4 text-white transition-colors hover:bg-slate-800 cursor-pointer"
             >
               로그인하고 이용하기

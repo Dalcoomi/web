@@ -1,6 +1,13 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef, useCallback, type PointerEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  type PointerEvent,
+} from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import GroupTransactionItem from "@/components/transaction/GroupTransactionItem";
@@ -12,9 +19,7 @@ import TransactionFilter from "@/components/transaction/v2/TransactionFilter";
 import SortBottomSheet, {
   SortOption,
 } from "@/components/transaction/v2/SortBottomSheet";
-import FilterBottomSheet, {
-  FilterDraftState,
-} from "@/components/transaction/v2/FilterBottomSheet";
+import FilterBottomSheet from "@/components/transaction/v2/FilterBottomSheet";
 import TransactionTypeToggle, {
   ViewMode,
 } from "@/components/transaction/v2/TransactionTypeToggle";
@@ -29,6 +34,7 @@ import {
   GroupInfo,
   getGroups,
   Group,
+  updateGroupOrder,
 } from "@/services/groupService";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
@@ -36,15 +42,20 @@ import TransactionPageSkeleton from "@/components/skeletons/TransactionPageSkele
 import Skeleton from "@/components/skeletons/Skeleton";
 import Sidebar from "@/components/ui/Sidebar";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
-import { BRAND_COLORS } from "@/constants/brandColors";
 import { getTeamCategories } from "@/services/categoryService";
 import DemoModeTopBanner from "@/components/common/DemoModeTopBanner";
 import { isDemoMode } from "@/utils/demoMode";
+import { arrayMove } from "@dnd-kit/sortable";
+import type { TransactionCategoriesByType } from "@/features/transaction/model/transactionFilter";
+import { useAnimatedModal } from "@/hooks/useAnimatedModal";
+import { useTransactionFilters } from "@/features/transaction/hooks/useTransactionFilters";
+import GroupSwitcherModal from "@/features/transaction/components/GroupSwitcherModal";
 
 let cachedGroupModalList: Group[] = [];
 const MAX_GROUPS_PER_MEMBER = 3;
 const MAX_GROUPS_REACHED_MESSAGE =
   "이미 최대 3개 그룹에 참여 중이어서 새 그룹을 만들 수 없어요.";
+const GROUP_FILTER_STORAGE_KEY_PREFIX = "group-transaction-filter-v1";
 
 export default function GroupTransactionPageClient() {
   const router = useRouter();
@@ -69,6 +80,11 @@ export default function GroupTransactionPageClient() {
     "그룹 정보 확인하기",
   );
   const [groups, setGroups] = useState<Group[]>(cachedGroupModalList);
+  const [editableGroups, setEditableGroups] = useState<Group[]>(
+    cachedGroupModalList,
+  );
+  const [isGroupOrderEditMode, setIsGroupOrderEditMode] = useState(false);
+  const [isSavingGroupOrder, setIsSavingGroupOrder] = useState(false);
 
   // 개인/그룹 토글 상태
   const [viewMode, setViewMode] = useState<ViewMode>("group");
@@ -86,29 +102,18 @@ export default function GroupTransactionPageClient() {
   // 플로팅 버튼 토글 상태
   const [isFloatingMenuOpen, setIsFloatingMenuOpen] = useState<boolean>(false);
   const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
-  const [isSortModalMounted, setIsSortModalMounted] = useState(false);
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [isFilterModalMounted, setIsFilterModalMounted] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [appliedFilter, setAppliedFilter] = useState<FilterDraftState>({
-    type: "ALL",
-    categoryNames: [],
-    creatorNicknames: [],
-  });
-  const [draftFilter, setDraftFilter] = useState<FilterDraftState>({
-    type: "ALL",
-    categoryNames: [],
-    creatorNicknames: [],
-  });
-  const [categoriesByType, setCategoriesByType] = useState<{
-    ALL: string[];
-    EXPENSE: string[];
-    INCOME: string[];
-  }>({
-    ALL: [],
-    EXPENSE: [],
-    INCOME: [],
-  });
+  const {
+    isMounted: isSortModalMounted,
+    isOpen: showSortModal,
+    open: openSortModal,
+    close: handleCloseSortModal,
+  } = useAnimatedModal();
+  const [categoriesByType, setCategoriesByType] =
+    useState<TransactionCategoriesByType>({
+      ALL: [],
+      EXPENSE: [],
+      INCOME: [],
+    });
 
   // 날짜 관련 상태
   const getSavedDate = (): Date => {
@@ -152,16 +157,35 @@ export default function GroupTransactionPageClient() {
   const stickyThresholdRef = useRef(0);
 
   const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sortModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const filterModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
   const hasFetchedMember = useRef(false);
   const hasOpenedFromQueryRef = useRef(false);
   const modalDragStartYRef = useRef<number | null>(null);
   const modalIsDraggingRef = useRef(false);
   const [modalDragOffset, setModalDragOffset] = useState(0);
   const MODAL_CLOSE_DRAG_THRESHOLD = 160;
+  const groupFilterStorageKey = `${GROUP_FILTER_STORAGE_KEY_PREFIX}-${teamId}`;
+  const allCreatorNicknames = useMemo(
+    () =>
+      (groupInfo?.members ?? []).map((memberInfo) => memberInfo.nickname),
+    [groupInfo?.members],
+  );
+  const {
+    appliedFilter,
+    draftFilter,
+    setDraftFilter,
+    filterButtonLabel,
+    isFilterModalMounted,
+    showFilterModal,
+    openFilter: openFilterModal,
+    closeFilter: handleCloseFilterModal,
+    resetFilter: handleResetFilter,
+    applyFilter: handleApplyFilter,
+  } = useTransactionFilters({
+    storageKey: groupFilterStorageKey,
+    categoriesByType,
+    creatorNicknames: allCreatorNicknames,
+    enabled: isValidTeamId,
+  });
   const getCanEditGroupInfo = useCallback((
     info: GroupInfo | null,
     groupList: Group[],
@@ -207,6 +231,7 @@ export default function GroupTransactionPageClient() {
       if (!isCancelled) {
         cachedGroupModalList = myGroups;
         setGroups(myGroups);
+        setEditableGroups(myGroups);
       }
       const isMemberOfTeam = myGroups.some(
         (group) => String(group.teamId) === String(teamId),
@@ -229,18 +254,14 @@ export default function GroupTransactionPageClient() {
       if (closeModalTimerRef.current) {
         clearTimeout(closeModalTimerRef.current);
       }
-      if (sortModalCloseTimerRef.current) {
-        clearTimeout(sortModalCloseTimerRef.current);
-      }
-      if (filterModalCloseTimerRef.current) {
-        clearTimeout(filterModalCloseTimerRef.current);
-      }
     };
   }, []);
 
   useEffect(() => {
     setGroupInfoActionLabel("그룹 정보 확인하기");
     setGroupInfo(null);
+    setIsGroupOrderEditMode(false);
+    setIsSavingGroupOrder(false);
   }, [teamId]);
 
   // 그룹 정보 로딩
@@ -287,36 +308,10 @@ export default function GroupTransactionPageClient() {
         EXPENSE: expenseNames,
         INCOME: incomeNames,
       });
-
-      const defaultFilter: FilterDraftState = {
-        type: "ALL",
-        categoryNames: all,
-        creatorNicknames: [],
-      };
-
-      setAppliedFilter(defaultFilter);
-      setDraftFilter(defaultFilter);
     };
 
     void fetchCategories();
   }, [isValidTeamId, teamId]);
-
-  useEffect(() => {
-    const allCreatorNicknames = (groupInfo?.members ?? []).map(
-      (memberInfo) => memberInfo.nickname,
-    );
-
-    if (allCreatorNicknames.length === 0) return;
-
-    setAppliedFilter((prev) => ({
-      ...prev,
-      creatorNicknames: allCreatorNicknames,
-    }));
-    setDraftFilter((prev) => ({
-      ...prev,
-      creatorNicknames: allCreatorNicknames,
-    }));
-  }, [groupInfo?.members]);
 
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
@@ -575,32 +570,7 @@ export default function GroupTransactionPageClient() {
 
   const handleOpenSortModal = () => {
     setIsFloatingMenuOpen(false);
-
-    if (sortModalCloseTimerRef.current) {
-      clearTimeout(sortModalCloseTimerRef.current);
-      sortModalCloseTimerRef.current = null;
-    }
-
-    if (!isSortModalMounted) {
-      setIsSortModalMounted(true);
-      requestAnimationFrame(() => setShowSortModal(true));
-      return;
-    }
-
-    setShowSortModal(true);
-  };
-
-  const handleCloseSortModal = () => {
-    setShowSortModal(false);
-
-    if (sortModalCloseTimerRef.current) {
-      clearTimeout(sortModalCloseTimerRef.current);
-    }
-
-    sortModalCloseTimerRef.current = setTimeout(() => {
-      setIsSortModalMounted(false);
-      sortModalCloseTimerRef.current = null;
-    }, 220);
+    openSortModal();
   };
 
   const handleSelectSort = (sort: SortOption) => {
@@ -610,52 +580,7 @@ export default function GroupTransactionPageClient() {
 
   const handleOpenFilterModal = () => {
     setIsFloatingMenuOpen(false);
-
-    if (filterModalCloseTimerRef.current) {
-      clearTimeout(filterModalCloseTimerRef.current);
-      filterModalCloseTimerRef.current = null;
-    }
-
-    setDraftFilter(appliedFilter);
-
-    if (!isFilterModalMounted) {
-      setIsFilterModalMounted(true);
-      requestAnimationFrame(() => setShowFilterModal(true));
-      return;
-    }
-
-    setShowFilterModal(true);
-  };
-
-  const handleCloseFilterModal = () => {
-    setShowFilterModal(false);
-
-    if (filterModalCloseTimerRef.current) {
-      clearTimeout(filterModalCloseTimerRef.current);
-    }
-
-    filterModalCloseTimerRef.current = setTimeout(() => {
-      setIsFilterModalMounted(false);
-      filterModalCloseTimerRef.current = null;
-    }, 220);
-  };
-
-  const handleResetFilter = () => {
-    const allCategories = categoriesByType.ALL;
-    const allCreatorNicknames = (groupInfo?.members ?? []).map(
-      (memberInfo) => memberInfo.nickname,
-    );
-
-    setDraftFilter({
-      type: "ALL",
-      categoryNames: allCategories,
-      creatorNicknames: allCreatorNicknames,
-    });
-  };
-
-  const handleApplyFilter = () => {
-    setAppliedFilter(draftFilter);
-    handleCloseFilterModal();
+    openFilterModal();
   };
 
   const openGroupModalWithResolvedLabel = useCallback(async () => {
@@ -669,6 +594,9 @@ export default function GroupTransactionPageClient() {
       setGroupInfo(info);
       const fetchedGroups = groupsResponse.groups ?? [];
       setGroups(fetchedGroups);
+      setEditableGroups(fetchedGroups);
+      setIsGroupOrderEditMode(false);
+      setIsSavingGroupOrder(false);
 
       const canEdit = getCanEditGroupInfo(
         info,
@@ -742,9 +670,19 @@ export default function GroupTransactionPageClient() {
     return true;
   };
 
+  const handleCreateGroupFromModal = async () => {
+    const canNavigate = await handleCreateGroup();
+    if (canNavigate) {
+      setShowGroupModal(false);
+    }
+  };
+
   const handleCloseGroupModal = () => {
     setModalDragOffset(0);
     setShowGroupModal(false);
+    setIsGroupOrderEditMode(false);
+    setIsSavingGroupOrder(false);
+    setEditableGroups(groups);
 
     if (closeModalTimerRef.current) {
       clearTimeout(closeModalTimerRef.current);
@@ -788,10 +726,60 @@ export default function GroupTransactionPageClient() {
   };
 
   const handleSelectGroup = (selectedTeamId: string) => {
+    if (isGroupOrderEditMode) return;
     if (selectedTeamId === teamId) return;
     sessionStorage.removeItem(`group-transaction-date-${selectedTeamId}`);
     sessionStorage.removeItem(`group-transaction-scroll-${selectedTeamId}`);
     router.push(`/transaction/group/${selectedTeamId}?groupModal=open`);
+  };
+
+  const handleGroupOrderEditToggle = () => {
+    if (isGroupOrderEditMode) return;
+    setEditableGroups(groups);
+    setIsGroupOrderEditMode(true);
+  };
+
+  const handleCompleteGroupOrderEdit = async () => {
+    if (!isGroupOrderEditMode || isSavingGroupOrder) return;
+    setIsSavingGroupOrder(true);
+
+    try {
+      await updateGroupOrder(
+        editableGroups.map((group, index) => ({
+          teamId: group.teamId,
+          displayOrder: index,
+        })),
+      );
+
+      cachedGroupModalList = editableGroups;
+      setGroups(editableGroups);
+      setIsGroupOrderEditMode(false);
+    } catch {
+      addToast("error", "그룹 순서 저장에 실패했습니다.");
+    } finally {
+      setIsSavingGroupOrder(false);
+    }
+  };
+
+  const handleGroupOrderDragEnd = (
+    activeTeamId: string,
+    overTeamId: string,
+  ) => {
+    if (!isGroupOrderEditMode) return;
+    if (activeTeamId === overTeamId) return;
+
+    setEditableGroups((prev) => {
+      const oldIndex = prev.findIndex(
+        (group) => group.teamId === activeTeamId,
+      );
+      const newIndex = prev.findIndex(
+        (group) => group.teamId === overTeamId,
+      );
+      if (oldIndex < 0 || newIndex < 0) {
+        return prev;
+      }
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   };
 
   const handleGroupInfoEdit = () => {
@@ -816,14 +804,8 @@ export default function GroupTransactionPageClient() {
     }
   };
 
-  const getLabelColor = (label?: string) => {
-    if (!label) return BRAND_COLORS.gray;
-    return label in BRAND_COLORS
-      ? BRAND_COLORS[label as keyof typeof BRAND_COLORS]
-      : BRAND_COLORS.gray;
-  };
-
   useEffect(() => {
+    if (isGroupOrderEditMode) return;
     if (!isGroupModalMounted) return;
 
     const fetchGroups = async () => {
@@ -832,6 +814,7 @@ export default function GroupTransactionPageClient() {
         const nextGroups = response.groups || [];
         cachedGroupModalList = nextGroups;
         setGroups(nextGroups);
+        setEditableGroups(nextGroups);
       } catch (error: unknown) {
         const message =
           error instanceof Error
@@ -842,7 +825,7 @@ export default function GroupTransactionPageClient() {
     };
 
     fetchGroups();
-  }, [isGroupModalMounted, addToast]);
+  }, [isGroupModalMounted, isGroupOrderEditMode, addToast]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-30 relative font-landing overflow-hidden">
@@ -908,6 +891,7 @@ export default function GroupTransactionPageClient() {
               {/* 필터 버튼 영역 (Sticky) */}
               <TransactionFilter
                 selectedSort={selectedSort}
+                selectedAll={filterButtonLabel}
                 onSortToggle={handleOpenSortModal}
                 onAllToggle={handleOpenFilterModal}
                 stickyTopClass={isSticky ? "top-[106px]" : "top-[102px]"}
@@ -999,110 +983,29 @@ export default function GroupTransactionPageClient() {
         onClose={handleCloseFilterModal}
       />
 
-      {isGroupModalMounted && (
-        <>
-          <div
-            className={`absolute inset-0 z-40 transition-opacity duration-200 ${
-              showGroupModal
-                ? "bg-[#d9d9d9] opacity-50"
-                : "bg-[#d9d9d9] opacity-0"
-            }`}
-            onClick={handleCloseGroupModal}
-          />
-          <div
-            className={`absolute left-0 right-0 bottom-0 z-50 bg-gray-30 rounded-t-[20px] rounded-b-none px-5 pt-3 pb-0 ${
-              modalIsDraggingRef.current
-                ? ""
-                : "transition-transform duration-200 ease-out"
-            }`}
-            style={{
-              transform: showGroupModal
-                ? `translateY(${modalDragOffset}px)`
-                : "translateY(100%)",
-            }}
-          >
-            <div
-              className="w-16 h-[5px] bg-gray-100 rounded-[100px] mx-auto mb-5 cursor-grab active:cursor-grabbing touch-none"
-              onPointerDown={handleModalHandlePointerDown}
-              onPointerMove={handleModalHandlePointerMove}
-              onPointerUp={handleModalHandlePointerUp}
-              onPointerCancel={handleModalHandlePointerUp}
-            />
-
-            <p className="text-body2-semibold text-gray-500 mt-2 mb-3">
-              그룹 목록
-            </p>
-
-            <div className="space-y-0 mb-3 max-h-[220px] overflow-y-auto">
-              {groups.map((group) => (
-                <button
-                  key={group.teamId}
-                  onClick={() => handleSelectGroup(group.teamId)}
-                  className="w-full h-[46px] px-2 py-3 flex items-center cursor-pointer"
-                >
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <span
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: getLabelColor(group.label) }}
-                    />
-                    <span className="text-body1-semibold text-gray-900 truncate">
-                      {group.title}
-                    </span>
-                  </div>
-                  {String(group.teamId) === String(teamId) && (
-                    <Image
-                      src="/images/transaction/v2/체크_블랙.svg"
-                      alt="선택됨"
-                      width={24}
-                      height={24}
-                      className="ml-4 flex-shrink-0"
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={async () => {
-                const canNavigate = await handleCreateGroup();
-                if (canNavigate) {
-                  setShowGroupModal(false);
-                }
-              }}
-              className="w-full h-12 px-5 py-3 rounded-[100px] bg-gray-50 border border-gray-100 cursor-pointer mb-2 flex items-center justify-center gap-2"
-            >
-              <Image
-                src="/images/transaction/v2/증가_가능.svg"
-                alt="그룹 추가"
-                width={24}
-                height={24}
-              />
-              <span className="text-body1-semibold text-gray-900">
-                그룹 새로 만들기
-              </span>
-            </button>
-
-            <div className="-mx-5 py-4">
-              <div className="border-t border-gray-100" />
-            </div>
-
-            <div className="mt-2 space-y-0">
-              <button
-                onClick={handleGroupInfoEdit}
-                className="w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer"
-              >
-                {groupInfoActionLabel}
-              </button>
-              <button
-                onClick={handleGroupInvite}
-                className="w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer mb-8"
-              >
-                그룹 초대하기
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      <GroupSwitcherModal
+        isMounted={isGroupModalMounted}
+        isOpen={showGroupModal}
+        isDragging={modalIsDraggingRef.current}
+        dragOffset={modalDragOffset}
+        groups={groups}
+        editableGroups={editableGroups}
+        selectedTeamId={teamId}
+        isEditMode={isGroupOrderEditMode}
+        isSavingOrder={isSavingGroupOrder}
+        infoActionLabel={groupInfoActionLabel}
+        onClose={handleCloseGroupModal}
+        onHandlePointerDown={handleModalHandlePointerDown}
+        onHandlePointerMove={handleModalHandlePointerMove}
+        onHandlePointerUp={handleModalHandlePointerUp}
+        onToggleOrderEdit={handleGroupOrderEditToggle}
+        onCompleteOrderEdit={handleCompleteGroupOrderEdit}
+        onReorder={handleGroupOrderDragEnd}
+        onSelectGroup={handleSelectGroup}
+        onCreateGroup={handleCreateGroupFromModal}
+        onOpenGroupInfo={handleGroupInfoEdit}
+        onInviteGroup={handleGroupInvite}
+      />
 
       {!isGroupModalMounted && !isSortModalMounted && !isFilterModalMounted && (
         <>

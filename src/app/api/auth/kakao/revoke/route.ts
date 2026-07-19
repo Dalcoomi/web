@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
           }
         } else {
         }
-      } catch (refreshError) {}
+      } catch {}
     }
 
     // 🔥 2단계: 토큰 해제 요청

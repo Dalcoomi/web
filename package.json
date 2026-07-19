@@ -7,21 +7,22 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint src next.config.ts tailwind.config.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "next": "^16.1.6",
-    "next-pwa": "^5.6.0",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@vercel/analytics": "^2.0.1",
+    "next": "^16.2.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -29,8 +30,12 @@
     "baseline-browser-mapping": "^2.9.19",
     "dotenv": "^16.5.0",
     "eslint": "^9",
-    "eslint-config-next": "15.3.1",
+    "eslint-config-next": "^16.2.10",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@rollup/plugin-terser": "1.0.0",
+    "postcss": "8.5.10"
   }
 }

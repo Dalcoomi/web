@@ -63,7 +63,8 @@ export default function GroupLeavePageClient() {
 
     return groupInfo.leaderNickname === member?.nickname;
   }, [groupInfo, member?.nickname]);
-  const isLastMemberLeader = isCurrentUserLeader && groupInfo.members.length === 1;
+  const isLastMemberLeader =
+    isCurrentUserLeader && groupInfo?.members.length === 1;
 
   const handleBackToGroupInfo = () => {
     if (window.history.length > 1) {

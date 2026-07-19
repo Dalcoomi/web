@@ -130,7 +130,7 @@ export function useAuth() {
   useEffect(() => {
     if (!mounted) return;
 
-    const handleAuthError = async (event: Event) => {
+    const handleAuthError = async () => {
       const refreshToken = getRefreshToken();
       if (refreshToken) {
         const newToken = await refreshAccessToken();
@@ -156,7 +156,7 @@ export function useAuth() {
       }
     };
 
-    const handleTokenRefresh = (event: Event) => {
+    const handleTokenRefresh = () => {
       setIsLoggedIn(true);
     };
 
@@ -167,7 +167,7 @@ export function useAuth() {
       window.removeEventListener("auth-error", handleAuthError);
       window.removeEventListener("token-refreshed", handleTokenRefresh);
     };
-  }, [router, mounted, refreshAccessToken, clearMember]);
+  }, [router, mounted, clearMember]);
 
   // 기타 함수들
   const checkTokenValidity = useCallback(() => {
@@ -204,7 +204,7 @@ export function useAuth() {
 
     setIsLoggedIn(true);
     return true;
-  }, [refreshAccessToken, clearMember]);
+  }, [clearMember]);
 
   return {
     isLoggedIn,

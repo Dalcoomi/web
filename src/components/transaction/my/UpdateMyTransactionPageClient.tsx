@@ -102,7 +102,7 @@ export default function UpdateMyTransactionPageClient() {
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [transactionId, router]);
+  }, [transactionId, router, addToast]);
 
   // 폼 유효성 검사
   useEffect(() => {

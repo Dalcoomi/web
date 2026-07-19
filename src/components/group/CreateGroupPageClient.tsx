@@ -15,6 +15,7 @@ const LABEL_COLORS = [
   { id: "red", value: BRAND_COLORS.red },
   { id: "yellow", value: BRAND_COLORS.yellow },
 ] as const;
+type LabelColorId = (typeof LABEL_COLORS)[number]["id"];
 
 const MIN_MEMBER_LIMIT = 1;
 const MAX_MEMBER_LIMIT = 10;
@@ -63,7 +64,9 @@ export default function CreateGroupPageClient() {
   const [memberLimitInput, setMemberLimitInput] = useState(
     String(MIN_MEMBER_LIMIT),
   );
-  const [selectedColor, setSelectedColor] = useState(LABEL_COLORS[0].id);
+  const [selectedColor, setSelectedColor] = useState<LabelColorId>(
+    LABEL_COLORS[0].id
+  );
   const [purpose, setPurpose] = useState("");
 
   useEffect(() => {

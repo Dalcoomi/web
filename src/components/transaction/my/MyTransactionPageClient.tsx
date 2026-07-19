@@ -11,9 +11,7 @@ import TransactionFilter from "@/components/transaction/v2/TransactionFilter";
 import SortBottomSheet, {
   SortOption,
 } from "@/components/transaction/v2/SortBottomSheet";
-import FilterBottomSheet, {
-  FilterDraftState,
-} from "@/components/transaction/v2/FilterBottomSheet";
+import FilterBottomSheet from "@/components/transaction/v2/FilterBottomSheet";
 import TransactionTypeToggle, {
   ViewMode,
 } from "@/components/transaction/v2/TransactionTypeToggle";
@@ -31,6 +29,11 @@ import { getMyCategories } from "@/services/categoryService";
 import Sidebar from "@/components/ui/Sidebar";
 import DemoModeTopBanner from "@/components/common/DemoModeTopBanner";
 import { isDemoMode } from "@/utils/demoMode";
+import type { TransactionCategoriesByType } from "@/features/transaction/model/transactionFilter";
+import { useAnimatedModal } from "@/hooks/useAnimatedModal";
+import { useTransactionFilters } from "@/features/transaction/hooks/useTransactionFilters";
+
+const MY_FILTER_STORAGE_KEY = "my-transaction-filter-v1";
 
 export default function MyTransactionPageClient() {
   const router = useRouter();
@@ -69,28 +72,32 @@ export default function MyTransactionPageClient() {
   // 플로팅 버튼 토글 상태
   const [isFloatingMenuOpen, setIsFloatingMenuOpen] = useState<boolean>(false);
   const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
-  const [isSortModalMounted, setIsSortModalMounted] = useState(false);
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [isFilterModalMounted, setIsFilterModalMounted] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [appliedFilter, setAppliedFilter] = useState<FilterDraftState>({
-    type: "ALL",
-    categoryNames: [],
-    creatorNicknames: [],
-  });
-  const [draftFilter, setDraftFilter] = useState<FilterDraftState>({
-    type: "ALL",
-    categoryNames: [],
-    creatorNicknames: [],
-  });
-  const [categoriesByType, setCategoriesByType] = useState<{
-    ALL: string[];
-    EXPENSE: string[];
-    INCOME: string[];
-  }>({
-    ALL: [],
-    EXPENSE: [],
-    INCOME: [],
+  const {
+    isMounted: isSortModalMounted,
+    isOpen: showSortModal,
+    open: openSortModal,
+    close: handleCloseSortModal,
+  } = useAnimatedModal();
+  const [categoriesByType, setCategoriesByType] =
+    useState<TransactionCategoriesByType>({
+      ALL: [],
+      EXPENSE: [],
+      INCOME: [],
+    });
+  const {
+    appliedFilter,
+    draftFilter,
+    setDraftFilter,
+    filterButtonLabel,
+    isFilterModalMounted,
+    showFilterModal,
+    openFilter: openFilterModal,
+    closeFilter: handleCloseFilterModal,
+    resetFilter: handleResetFilter,
+    applyFilter: handleApplyFilter,
+  } = useTransactionFilters({
+    storageKey: MY_FILTER_STORAGE_KEY,
+    categoriesByType,
   });
 
   // 날짜 관련 상태
@@ -134,10 +141,6 @@ export default function MyTransactionPageClient() {
   const stickyThresholdRef = useRef(0);
 
   const hasFetchedMember = useRef(false);
-  const sortModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const filterModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
 
   useEffect(() => {
     if (!hasFetchedMember.current) {
@@ -145,17 +148,6 @@ export default function MyTransactionPageClient() {
       hasFetchedMember.current = true;
     }
   }, [fetchMember]);
-
-  useEffect(() => {
-    return () => {
-      if (sortModalCloseTimerRef.current) {
-        clearTimeout(sortModalCloseTimerRef.current);
-      }
-      if (filterModalCloseTimerRef.current) {
-        clearTimeout(filterModalCloseTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -173,15 +165,6 @@ export default function MyTransactionPageClient() {
         EXPENSE: expenseNames,
         INCOME: incomeNames,
       });
-
-      const defaultFilter: FilterDraftState = {
-        type: "ALL",
-        categoryNames: all,
-        creatorNicknames: [],
-      };
-
-      setAppliedFilter(defaultFilter);
-      setDraftFilter(defaultFilter);
     };
 
     void fetchCategories();
@@ -423,32 +406,7 @@ export default function MyTransactionPageClient() {
 
   const handleOpenSortModal = () => {
     setIsFloatingMenuOpen(false);
-
-    if (sortModalCloseTimerRef.current) {
-      clearTimeout(sortModalCloseTimerRef.current);
-      sortModalCloseTimerRef.current = null;
-    }
-
-    if (!isSortModalMounted) {
-      setIsSortModalMounted(true);
-      requestAnimationFrame(() => setShowSortModal(true));
-      return;
-    }
-
-    setShowSortModal(true);
-  };
-
-  const handleCloseSortModal = () => {
-    setShowSortModal(false);
-
-    if (sortModalCloseTimerRef.current) {
-      clearTimeout(sortModalCloseTimerRef.current);
-    }
-
-    sortModalCloseTimerRef.current = setTimeout(() => {
-      setIsSortModalMounted(false);
-      sortModalCloseTimerRef.current = null;
-    }, 220);
+    openSortModal();
   };
 
   const handleSelectSort = (sort: SortOption) => {
@@ -458,48 +416,7 @@ export default function MyTransactionPageClient() {
 
   const handleOpenFilterModal = () => {
     setIsFloatingMenuOpen(false);
-
-    if (filterModalCloseTimerRef.current) {
-      clearTimeout(filterModalCloseTimerRef.current);
-      filterModalCloseTimerRef.current = null;
-    }
-
-    setDraftFilter(appliedFilter);
-
-    if (!isFilterModalMounted) {
-      setIsFilterModalMounted(true);
-      requestAnimationFrame(() => setShowFilterModal(true));
-      return;
-    }
-
-    setShowFilterModal(true);
-  };
-
-  const handleCloseFilterModal = () => {
-    setShowFilterModal(false);
-
-    if (filterModalCloseTimerRef.current) {
-      clearTimeout(filterModalCloseTimerRef.current);
-    }
-
-    filterModalCloseTimerRef.current = setTimeout(() => {
-      setIsFilterModalMounted(false);
-      filterModalCloseTimerRef.current = null;
-    }, 220);
-  };
-
-  const handleResetFilter = () => {
-    const allCategories = categoriesByType.ALL;
-    setDraftFilter({
-      type: "ALL",
-      categoryNames: allCategories,
-      creatorNicknames: [],
-    });
-  };
-
-  const handleApplyFilter = () => {
-    setAppliedFilter(draftFilter);
-    handleCloseFilterModal();
+    openFilterModal();
   };
 
   return (
@@ -549,6 +466,7 @@ export default function MyTransactionPageClient() {
               {/* 필터 버튼 영역 (Sticky) */}
               <TransactionFilter
                 selectedSort={selectedSort}
+                selectedAll={filterButtonLabel}
                 onSortToggle={handleOpenSortModal}
                 onAllToggle={handleOpenFilterModal}
                 stickyTopClass={isSticky ? "top-[106px]" : "top-[102px]"}

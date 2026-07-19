@@ -21,7 +21,7 @@ export default function ClientProviders({
 
     if (isLoggedIn !== clientAuth) {
       if (!clientAuth && pathname.startsWith("/profile")) {
-        router.replace("/login");
+        router.replace("/");
       }
     }
   }, [pathname, isLoggedIn, router]);

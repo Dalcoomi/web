@@ -8,6 +8,7 @@ import TopBar from "@/components/ui/TopBar";
 import BottomBar from "@/components/ui/BottomBar";
 import { useMemberStore } from "@/stores/useMemberStore";
 import { useToastStore } from "@/stores/useToastStore";
+import { getErrorMessage } from "@/utils/errorMessage";
 import { useAuth } from "@/hooks/useAuth";
 import {
   withdrawMember,
@@ -127,7 +128,10 @@ export default function ProfilePageClient() {
         .getState()
         .updateMember({ aiLearningAgreement: newAgreement });
     } catch (error) {
-      addToast("error", error || "AI 학습 동의 설정 변경 중 오류가 발생했습니다.");
+      addToast(
+        "error",
+        getErrorMessage(error, "AI 학습 동의 설정 변경 중 오류가 발생했습니다.")
+      );
     } finally {
       setIsUpdatingAiAgreement(false);
     }
@@ -283,9 +287,9 @@ export default function ProfilePageClient() {
                   }),
                 });
               }
-            } catch (tokenError) {}
+            } catch {}
           }
-        } catch (socialError) {}
+        } catch {}
       }
 
       // 🔥 2단계: 회원탈퇴 API 호출 (그룹 탈퇴도 함께 처리됨)
@@ -306,7 +310,7 @@ export default function ProfilePageClient() {
       addToast("success", `${withdrawTypeText}가 완료되었습니다.`);
       logout(); // 로그아웃 처리
     } catch (error) {
-      addToast("error", error || "회원탈퇴 중 오류가 발생했습니다.");
+      addToast("error", getErrorMessage(error, "회원탈퇴 중 오류가 발생했습니다."));
     } finally {
       setIsProcessing(false);
     }
