@@ -6,7 +6,6 @@ import {
   useRef,
   useCallback,
   useMemo,
-  type CSSProperties,
   type PointerEvent,
 } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
@@ -20,9 +19,7 @@ import TransactionFilter from "@/components/transaction/v2/TransactionFilter";
 import SortBottomSheet, {
   SortOption,
 } from "@/components/transaction/v2/SortBottomSheet";
-import FilterBottomSheet, {
-  FilterDraftState,
-} from "@/components/transaction/v2/FilterBottomSheet";
+import FilterBottomSheet from "@/components/transaction/v2/FilterBottomSheet";
 import TransactionTypeToggle, {
   ViewMode,
 } from "@/components/transaction/v2/TransactionTypeToggle";
@@ -45,105 +42,20 @@ import TransactionPageSkeleton from "@/components/skeletons/TransactionPageSkele
 import Skeleton from "@/components/skeletons/Skeleton";
 import Sidebar from "@/components/ui/Sidebar";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
-import { BRAND_COLORS } from "@/constants/brandColors";
 import { getTeamCategories } from "@/services/categoryService";
 import DemoModeTopBanner from "@/components/common/DemoModeTopBanner";
 import { isDemoMode } from "@/utils/demoMode";
-import {
-  DndContext,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import {
-  restrictToParentElement,
-  restrictToVerticalAxis,
-} from "@dnd-kit/modifiers";
-import { CSS } from "@dnd-kit/utilities";
+import { arrayMove } from "@dnd-kit/sortable";
+import type { TransactionCategoriesByType } from "@/features/transaction/model/transactionFilter";
+import { useAnimatedModal } from "@/hooks/useAnimatedModal";
+import { useTransactionFilters } from "@/features/transaction/hooks/useTransactionFilters";
+import GroupSwitcherModal from "@/features/transaction/components/GroupSwitcherModal";
 
 let cachedGroupModalList: Group[] = [];
 const MAX_GROUPS_PER_MEMBER = 3;
 const MAX_GROUPS_REACHED_MESSAGE =
   "이미 최대 3개 그룹에 참여 중이어서 새 그룹을 만들 수 없어요.";
 const GROUP_FILTER_STORAGE_KEY_PREFIX = "group-transaction-filter-v1";
-
-const isStringArray = (value: unknown): value is string[] =>
-  Array.isArray(value) && value.every((item) => typeof item === "string");
-
-const isTransactionTypeFilter = (
-  value: unknown,
-): value is FilterDraftState["type"] =>
-  value === "ALL" || value === "EXPENSE" || value === "INCOME";
-
-const isSameStringSet = (selected: string[], all: string[]) =>
-  selected.length === all.length && all.every((item) => selected.includes(item));
-
-const isSameFilterState = (a: FilterDraftState, b: FilterDraftState) =>
-  a.type === b.type &&
-  a.categoryNames.length === b.categoryNames.length &&
-  a.creatorNicknames.length === b.creatorNicknames.length &&
-  a.categoryNames.every((item) => b.categoryNames.includes(item)) &&
-  a.creatorNicknames.every((item) => b.creatorNicknames.includes(item));
-
-const readStoredFilter = (storageKey: string): FilterDraftState | null => {
-  if (typeof window === "undefined") return null;
-
-  const raw = sessionStorage.getItem(storageKey);
-  if (!raw) return null;
-
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return null;
-
-    const candidate = parsed as Partial<FilterDraftState>;
-    if (
-      !isTransactionTypeFilter(candidate.type) ||
-      !isStringArray(candidate.categoryNames) ||
-      !isStringArray(candidate.creatorNicknames)
-    ) {
-      return null;
-    }
-
-    return {
-      type: candidate.type,
-      categoryNames: candidate.categoryNames,
-      creatorNicknames: candidate.creatorNicknames,
-    };
-  } catch {
-    return null;
-  }
-};
-
-const normalizeFilterState = (
-  filter: FilterDraftState,
-  allCategories: string[],
-  allCreators: string[],
-): FilterDraftState => {
-  const categoryNames = filter.categoryNames.filter((name) =>
-    allCategories.includes(name),
-  );
-  const creatorNicknames =
-    allCreators.length === 0
-      ? filter.creatorNicknames
-      : filter.creatorNicknames.filter((nickname) =>
-          allCreators.includes(nickname),
-        );
-
-  return {
-    ...filter,
-    categoryNames,
-    creatorNicknames,
-  };
-};
 
 export default function GroupTransactionPageClient() {
   const router = useRouter();
@@ -190,29 +102,18 @@ export default function GroupTransactionPageClient() {
   // 플로팅 버튼 토글 상태
   const [isFloatingMenuOpen, setIsFloatingMenuOpen] = useState<boolean>(false);
   const [selectedSort, setSelectedSort] = useState<SortOption>("최신순");
-  const [isSortModalMounted, setIsSortModalMounted] = useState(false);
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [isFilterModalMounted, setIsFilterModalMounted] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [appliedFilter, setAppliedFilter] = useState<FilterDraftState>({
-    type: "ALL",
-    categoryNames: [],
-    creatorNicknames: [],
-  });
-  const [draftFilter, setDraftFilter] = useState<FilterDraftState>({
-    type: "ALL",
-    categoryNames: [],
-    creatorNicknames: [],
-  });
-  const [categoriesByType, setCategoriesByType] = useState<{
-    ALL: string[];
-    EXPENSE: string[];
-    INCOME: string[];
-  }>({
-    ALL: [],
-    EXPENSE: [],
-    INCOME: [],
-  });
+  const {
+    isMounted: isSortModalMounted,
+    isOpen: showSortModal,
+    open: openSortModal,
+    close: handleCloseSortModal,
+  } = useAnimatedModal();
+  const [categoriesByType, setCategoriesByType] =
+    useState<TransactionCategoriesByType>({
+      ALL: [],
+      EXPENSE: [],
+      INCOME: [],
+    });
 
   // 날짜 관련 상태
   const getSavedDate = (): Date => {
@@ -254,13 +155,8 @@ export default function GroupTransactionPageClient() {
   const shouldRestoreScroll = useRef(false);
   const summarySectionRef = useRef<HTMLDivElement>(null);
   const stickyThresholdRef = useRef(0);
-  const hasHydratedFilterRef = useRef(false);
 
   const closeModalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sortModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const filterModalCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
   const hasFetchedMember = useRef(false);
   const hasOpenedFromQueryRef = useRef(false);
   const modalDragStartYRef = useRef<number | null>(null);
@@ -268,24 +164,28 @@ export default function GroupTransactionPageClient() {
   const [modalDragOffset, setModalDragOffset] = useState(0);
   const MODAL_CLOSE_DRAG_THRESHOLD = 160;
   const groupFilterStorageKey = `${GROUP_FILTER_STORAGE_KEY_PREFIX}-${teamId}`;
-  const groupOrderSensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 120,
-        tolerance: 8,
-      },
-    }),
-  );
   const allCreatorNicknames = useMemo(
     () =>
       (groupInfo?.members ?? []).map((memberInfo) => memberInfo.nickname),
     [groupInfo?.members],
   );
+  const {
+    appliedFilter,
+    draftFilter,
+    setDraftFilter,
+    filterButtonLabel,
+    isFilterModalMounted,
+    showFilterModal,
+    openFilter: openFilterModal,
+    closeFilter: handleCloseFilterModal,
+    resetFilter: handleResetFilter,
+    applyFilter: handleApplyFilter,
+  } = useTransactionFilters({
+    storageKey: groupFilterStorageKey,
+    categoriesByType,
+    creatorNicknames: allCreatorNicknames,
+    enabled: isValidTeamId,
+  });
   const getCanEditGroupInfo = useCallback((
     info: GroupInfo | null,
     groupList: Group[],
@@ -354,19 +254,12 @@ export default function GroupTransactionPageClient() {
       if (closeModalTimerRef.current) {
         clearTimeout(closeModalTimerRef.current);
       }
-      if (sortModalCloseTimerRef.current) {
-        clearTimeout(sortModalCloseTimerRef.current);
-      }
-      if (filterModalCloseTimerRef.current) {
-        clearTimeout(filterModalCloseTimerRef.current);
-      }
     };
   }, []);
 
   useEffect(() => {
     setGroupInfoActionLabel("그룹 정보 확인하기");
     setGroupInfo(null);
-    hasHydratedFilterRef.current = false;
     setIsGroupOrderEditMode(false);
     setIsSavingGroupOrder(false);
   }, [teamId]);
@@ -419,50 +312,6 @@ export default function GroupTransactionPageClient() {
 
     void fetchCategories();
   }, [isValidTeamId, teamId]);
-
-  useEffect(() => {
-    const allCategories = categoriesByType.ALL;
-    if (allCategories.length === 0 || !isValidTeamId) return;
-
-    const defaultFilter: FilterDraftState = {
-      type: "ALL",
-      categoryNames: allCategories,
-      creatorNicknames: allCreatorNicknames,
-    };
-
-    if (!hasHydratedFilterRef.current) {
-      const stored = readStoredFilter(groupFilterStorageKey);
-      const next = normalizeFilterState(
-        stored ?? defaultFilter,
-        allCategories,
-        allCreatorNicknames,
-      );
-      setAppliedFilter(next);
-      setDraftFilter(next);
-      hasHydratedFilterRef.current = true;
-      return;
-    }
-
-    setAppliedFilter((prev) => {
-      const next = normalizeFilterState(prev, allCategories, allCreatorNicknames);
-      return isSameFilterState(prev, next) ? prev : next;
-    });
-    setDraftFilter((prev) => {
-      const next = normalizeFilterState(prev, allCategories, allCreatorNicknames);
-      return isSameFilterState(prev, next) ? prev : next;
-    });
-  }, [
-    allCreatorNicknames,
-    categoriesByType.ALL,
-    groupFilterStorageKey,
-    isValidTeamId,
-  ]);
-
-  useEffect(() => {
-    if (!hasHydratedFilterRef.current || !isValidTeamId) return;
-    if (typeof window === "undefined") return;
-    sessionStorage.setItem(groupFilterStorageKey, JSON.stringify(appliedFilter));
-  }, [appliedFilter, groupFilterStorageKey, isValidTeamId]);
 
   // 사이드바 메뉴 핸들러
   const handleMenuClick = () => {
@@ -651,20 +500,6 @@ export default function GroupTransactionPageClient() {
     });
   };
 
-  const isCategoryFilterApplied =
-    categoriesByType.ALL.length > 0 &&
-    appliedFilter.categoryNames.length > 0 &&
-    !isSameStringSet(appliedFilter.categoryNames, categoriesByType.ALL);
-  const isCreatorFilterApplied =
-    allCreatorNicknames.length > 0 &&
-    appliedFilter.creatorNicknames.length > 0 &&
-    !isSameStringSet(appliedFilter.creatorNicknames, allCreatorNicknames);
-  const isFilterApplied =
-    appliedFilter.type !== "ALL" ||
-    isCategoryFilterApplied ||
-    isCreatorFilterApplied;
-  const filterButtonLabel = isFilterApplied ? "필터 적용 중" : "필터";
-
   // 날짜 변경 핸들러
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -735,32 +570,7 @@ export default function GroupTransactionPageClient() {
 
   const handleOpenSortModal = () => {
     setIsFloatingMenuOpen(false);
-
-    if (sortModalCloseTimerRef.current) {
-      clearTimeout(sortModalCloseTimerRef.current);
-      sortModalCloseTimerRef.current = null;
-    }
-
-    if (!isSortModalMounted) {
-      setIsSortModalMounted(true);
-      requestAnimationFrame(() => setShowSortModal(true));
-      return;
-    }
-
-    setShowSortModal(true);
-  };
-
-  const handleCloseSortModal = () => {
-    setShowSortModal(false);
-
-    if (sortModalCloseTimerRef.current) {
-      clearTimeout(sortModalCloseTimerRef.current);
-    }
-
-    sortModalCloseTimerRef.current = setTimeout(() => {
-      setIsSortModalMounted(false);
-      sortModalCloseTimerRef.current = null;
-    }, 220);
+    openSortModal();
   };
 
   const handleSelectSort = (sort: SortOption) => {
@@ -770,52 +580,7 @@ export default function GroupTransactionPageClient() {
 
   const handleOpenFilterModal = () => {
     setIsFloatingMenuOpen(false);
-
-    if (filterModalCloseTimerRef.current) {
-      clearTimeout(filterModalCloseTimerRef.current);
-      filterModalCloseTimerRef.current = null;
-    }
-
-    setDraftFilter(appliedFilter);
-
-    if (!isFilterModalMounted) {
-      setIsFilterModalMounted(true);
-      requestAnimationFrame(() => setShowFilterModal(true));
-      return;
-    }
-
-    setShowFilterModal(true);
-  };
-
-  const handleCloseFilterModal = () => {
-    setShowFilterModal(false);
-
-    if (filterModalCloseTimerRef.current) {
-      clearTimeout(filterModalCloseTimerRef.current);
-    }
-
-    filterModalCloseTimerRef.current = setTimeout(() => {
-      setIsFilterModalMounted(false);
-      filterModalCloseTimerRef.current = null;
-    }, 220);
-  };
-
-  const handleResetFilter = () => {
-    const allCategories = categoriesByType.ALL;
-    const allCreatorNicknames = (groupInfo?.members ?? []).map(
-      (memberInfo) => memberInfo.nickname,
-    );
-
-    setDraftFilter({
-      type: "ALL",
-      categoryNames: allCategories,
-      creatorNicknames: allCreatorNicknames,
-    });
-  };
-
-  const handleApplyFilter = () => {
-    setAppliedFilter(draftFilter);
-    handleCloseFilterModal();
+    openFilterModal();
   };
 
   const openGroupModalWithResolvedLabel = useCallback(async () => {
@@ -905,6 +670,13 @@ export default function GroupTransactionPageClient() {
     return true;
   };
 
+  const handleCreateGroupFromModal = async () => {
+    const canNavigate = await handleCreateGroup();
+    if (canNavigate) {
+      setShowGroupModal(false);
+    }
+  };
+
   const handleCloseGroupModal = () => {
     setModalDragOffset(0);
     setShowGroupModal(false);
@@ -989,15 +761,20 @@ export default function GroupTransactionPageClient() {
     }
   };
 
-  const handleGroupOrderDragEnd = (event: DragEndEvent) => {
+  const handleGroupOrderDragEnd = (
+    activeTeamId: string,
+    overTeamId: string,
+  ) => {
     if (!isGroupOrderEditMode) return;
-
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    if (activeTeamId === overTeamId) return;
 
     setEditableGroups((prev) => {
-      const oldIndex = prev.findIndex((group) => group.teamId === active.id);
-      const newIndex = prev.findIndex((group) => group.teamId === over.id);
+      const oldIndex = prev.findIndex(
+        (group) => group.teamId === activeTeamId,
+      );
+      const newIndex = prev.findIndex(
+        (group) => group.teamId === overTeamId,
+      );
       if (oldIndex < 0 || newIndex < 0) {
         return prev;
       }
@@ -1025,13 +802,6 @@ export default function GroupTransactionPageClient() {
     } catch (error) {
       addToast("error", String(error) || "초대 코드 복사에 실패했습니다.");
     }
-  };
-
-  const getLabelColor = (label?: string) => {
-    if (!label) return BRAND_COLORS.gray;
-    return label in BRAND_COLORS
-      ? BRAND_COLORS[label as keyof typeof BRAND_COLORS]
-      : BRAND_COLORS.gray;
   };
 
   useEffect(() => {
@@ -1213,129 +983,29 @@ export default function GroupTransactionPageClient() {
         onClose={handleCloseFilterModal}
       />
 
-      {isGroupModalMounted && (
-        <>
-          <div
-            className={`absolute inset-0 z-40 transition-opacity duration-200 ${
-              showGroupModal
-                ? "bg-[#d9d9d9] opacity-50"
-                : "bg-[#d9d9d9] opacity-0"
-            }`}
-            onClick={handleCloseGroupModal}
-          />
-          <div
-            className={`absolute left-0 right-0 bottom-0 z-50 bg-gray-30 rounded-t-[20px] rounded-b-none px-5 pt-3 pb-0 ${
-              modalIsDraggingRef.current
-                ? ""
-                : "transition-transform duration-200 ease-out"
-            }`}
-            style={{
-              transform: showGroupModal
-                ? `translateY(${modalDragOffset}px)`
-                : "translateY(100%)",
-            }}
-          >
-            <div
-              className="w-16 h-[5px] bg-gray-100 rounded-[100px] mx-auto mb-5 cursor-grab active:cursor-grabbing touch-none"
-              onPointerDown={handleModalHandlePointerDown}
-              onPointerMove={handleModalHandlePointerMove}
-              onPointerUp={handleModalHandlePointerUp}
-              onPointerCancel={handleModalHandlePointerUp}
-            />
-
-            <div className="mt-2 mb-3 flex items-center justify-between">
-              <p className="text-body2-semibold text-gray-500">그룹 목록</p>
-              {groups.length > 0 && (
-                <button
-                  type="button"
-                  disabled={isSavingGroupOrder}
-                  onClick={
-                    isGroupOrderEditMode
-                      ? handleCompleteGroupOrderEdit
-                      : handleGroupOrderEditToggle
-                  }
-                  className={`text-body2-semibold cursor-pointer ${
-                    isSavingGroupOrder ? "opacity-60" : ""
-                  }`}
-                  style={{
-                    color: isGroupOrderEditMode
-                      ? BRAND_COLORS.red
-                      : BRAND_COLORS.gray,
-                  }}
-                >
-                  {isGroupOrderEditMode ? "편집 완료" : "순서 편집"}
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-0 mb-3 max-h-[220px] overflow-y-auto">
-              <DndContext
-                sensors={groupOrderSensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleGroupOrderDragEnd}
-                modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-              >
-                <SortableContext
-                  items={(isGroupOrderEditMode ? editableGroups : groups).map(
-                    (group) => group.teamId,
-                  )}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {(isGroupOrderEditMode ? editableGroups : groups).map((group) => (
-                    <SortableGroupModalItem
-                      key={group.teamId}
-                      group={group}
-                      isSelected={String(group.teamId) === String(teamId)}
-                      isEditMode={isGroupOrderEditMode}
-                      getLabelColor={getLabelColor}
-                      onSelect={handleSelectGroup}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            </div>
-
-            <button
-              onClick={async () => {
-                const canNavigate = await handleCreateGroup();
-                if (canNavigate) {
-                  setShowGroupModal(false);
-                }
-              }}
-              className="w-full h-12 px-5 py-3 rounded-[100px] bg-gray-50 border border-gray-100 cursor-pointer mb-2 flex items-center justify-center gap-2"
-            >
-              <Image
-                src="/images/transaction/v2/증가_가능.svg"
-                alt="그룹 추가"
-                width={24}
-                height={24}
-              />
-              <span className="text-body1-semibold text-gray-900">
-                그룹 새로 만들기
-              </span>
-            </button>
-
-            <div className="-mx-5 py-4">
-              <div className="border-t border-gray-100" />
-            </div>
-
-            <div className="mt-2 space-y-0">
-              <button
-                onClick={handleGroupInfoEdit}
-                className="w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer"
-              >
-                {groupInfoActionLabel}
-              </button>
-              <button
-                onClick={handleGroupInvite}
-                className="w-full h-[46px] py-3 text-left text-body1-semibold text-gray-900 cursor-pointer mb-8"
-              >
-                그룹 초대하기
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      <GroupSwitcherModal
+        isMounted={isGroupModalMounted}
+        isOpen={showGroupModal}
+        isDragging={modalIsDraggingRef.current}
+        dragOffset={modalDragOffset}
+        groups={groups}
+        editableGroups={editableGroups}
+        selectedTeamId={teamId}
+        isEditMode={isGroupOrderEditMode}
+        isSavingOrder={isSavingGroupOrder}
+        infoActionLabel={groupInfoActionLabel}
+        onClose={handleCloseGroupModal}
+        onHandlePointerDown={handleModalHandlePointerDown}
+        onHandlePointerMove={handleModalHandlePointerMove}
+        onHandlePointerUp={handleModalHandlePointerUp}
+        onToggleOrderEdit={handleGroupOrderEditToggle}
+        onCompleteOrderEdit={handleCompleteGroupOrderEdit}
+        onReorder={handleGroupOrderDragEnd}
+        onSelectGroup={handleSelectGroup}
+        onCreateGroup={handleCreateGroupFromModal}
+        onOpenGroupInfo={handleGroupInfoEdit}
+        onInviteGroup={handleGroupInvite}
+      />
 
       {!isGroupModalMounted && !isSortModalMounted && !isFilterModalMounted && (
         <>
@@ -1363,86 +1033,6 @@ export default function GroupTransactionPageClient() {
             />
           </div>
         </>
-      )}
-    </div>
-  );
-}
-
-interface SortableGroupModalItemProps {
-  group: Group;
-  isSelected: boolean;
-  isEditMode: boolean;
-  onSelect: (teamId: string) => void;
-  getLabelColor: (label?: string) => string;
-}
-
-function SortableGroupModalItem({
-  group,
-  isSelected,
-  isEditMode,
-  onSelect,
-  getLabelColor,
-}: SortableGroupModalItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({
-      id: group.teamId,
-      disabled: !isEditMode,
-    });
-
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`w-full h-[46px] px-2 py-3 flex items-center ${
-        isEditMode ? "cursor-default" : "cursor-pointer"
-      } ${isDragging ? "opacity-80" : ""}`}
-    >
-      <button
-        type="button"
-        onClick={() => onSelect(group.teamId)}
-        disabled={isEditMode}
-        className="min-w-0 flex-1 flex items-center gap-4 text-left disabled:cursor-default"
-      >
-        <span
-          className="w-3 h-3 rounded-full flex-shrink-0"
-          style={{ backgroundColor: getLabelColor(group.label) }}
-        />
-        <span className="text-body1-semibold text-gray-900 truncate">
-          {group.title}
-        </span>
-      </button>
-
-      {isEditMode ? (
-        <button
-          type="button"
-          aria-label={`${group.title} 순서 이동`}
-          className="ml-4 flex-shrink-0 p-0.5 cursor-grab active:cursor-grabbing touch-none"
-          {...attributes}
-          {...listeners}
-        >
-          <Image
-            src="/images/transaction/v2/햄버거_메뉴.svg"
-            alt=""
-            aria-hidden
-            width={20}
-            height={20}
-          />
-        </button>
-      ) : (
-        isSelected && (
-          <Image
-            src="/images/transaction/v2/체크_블랙.svg"
-            alt="선택됨"
-            width={24}
-            height={24}
-            className="ml-4 flex-shrink-0"
-          />
-        )
       )}
     </div>
   );
